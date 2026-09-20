@@ -1,0 +1,21 @@
+[submodule "components/localization"]
+	path = components/localization
+	url = https://github.com/FYP-UAV-ENTC-22/castor-localization.git
+[submodule "external/IsaacLab"]
+	path = external/IsaacLab
+	url = https://github.com/FYP-UAV-ENTC-22/IsaacLab.git
+[submodule "external/skrl"]
+	path = external/skrl
+	url = https://github.com/FYP-UAV-ENTC-22/skrl.git
+[submodule "external/PX4-Autopilot"]
+	path = external/PX4-Autopilot
+	url = https://github.com/FYP-UAV-ENTC-22/PX4-Autopilot.git
+[submodule "external/pegasus_simulator"]
+	path = external/pegasus_simulator
+	url = https://github.com/FYP-UAV-ENTC-22/pegasus_simulator.git
+[submodule "external/MARL_cooperative_aerial_manipulation_ext"]
+	path = external/MARL_cooperative_aerial_manipulation_ext
+	url = https://github.com/FYP-UAV-ENTC-22/MARL_cooperative_aerial_manipulation_ext.git
+[submodule "legacy/drone-ops"]
+	path = legacy/drone-ops
+	url = https://github.com/FYP-UAV-ENTC-22/castor-drone-ops.git
