@@ -35,7 +35,7 @@ CASTOR_ENV="${CASTOR_ENV:-castor}"
 # shellcheck disable=SC1091
 source "$(conda info --base)/etc/profile.d/conda.sh"
 conda activate "$CASTOR_ENV" || {
-    echo "env.sh: conda env '$CASTOR_ENV' not found — run ./setup.sh first" >&2
+    echo "env.sh: conda env '$CASTOR_ENV' not found, run ./setup.sh first" >&2
     return 1
 }
 
