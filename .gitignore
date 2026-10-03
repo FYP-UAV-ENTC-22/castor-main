@@ -1,9 +1,6 @@
 # Private developer docs, cloned by setup.sh for org members only.
 /dev-docs/
 
-# Isaac Sim lives outside the workspace; setup.sh links it in.
-/external/IsaacLab/_isaac_sim
-
 # Training output.
 /logs/
 /outputs/
@@ -12,3 +9,10 @@ __pycache__/
 *.py[cod]
 .venv/
 .DS_Store
+temp
+
+# Per-component colcon workspaces (make <component>-build in a dev container).
+/.component_workspaces/
+# Local fleet list and fetched logs.
+/deploy/fleet/hosts.txt
+/castor-logs/

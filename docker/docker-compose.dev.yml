@@ -1,0 +1,49 @@
+# Development containers: one per component, the repo mounted at /home/ws.
+#
+#   make <component>-dev-image    build castor-<component>:dev (docker/build_dev.sh)
+#   make <component>-dev-up       start it
+#   make <component>-dev-shell    open a shell, then `make <component>-build`
+#
+# VS Code: "Reopen in Container" on .devcontainer/<component>/ attaches to the
+# same service. Same host network, domain and robot.yaml as the real stack, so a
+# dev container can run next to the production containers on one laptop.
+
+name: castor-dev
+
+x-dev-service: &dev-service
+  network_mode: host
+  ipc: host
+  pid: host
+  init: true
+  environment:
+    ROS_DOMAIN_ID: "20"
+    CASTOR_ROBOT_CONFIG: /etc/castor/robot.yaml
+    DISPLAY: ${DISPLAY:-}
+  volumes:
+    - ..:/home/ws
+    - ${CASTOR_ROBOT_CONFIG:-../deploy/robot.laptop.yaml}:/etc/castor/robot.yaml:ro
+    - /tmp/.X11-unix:/tmp/.X11-unix
+    - /dev:/dev
+  device_cgroup_rules:
+    - "c 204:* rmw"
+    - "c 166:* rmw"
+    - "c 188:* rmw"
+    - "c 189:* rmw"
+
+services:
+  vehicle:
+    <<: *dev-service
+    image: castor-vehicle:dev
+  localization:
+    <<: *dev-service
+    image: castor-localization:dev
+  planning:
+    <<: *dev-service
+    image: castor-planning:dev
+    cap_add: [SYS_NICE]
+    ulimits:
+      rtprio: 95
+      memlock: -1
+  system:
+    <<: *dev-service
+    image: castor-system:dev

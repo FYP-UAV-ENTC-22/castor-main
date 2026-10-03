@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Default Fast DDS profile for every CASTOR container: the ROS nodes and the
+  Micro XRCE-DDS Agent that speaks for PX4. Set through FASTRTPS_DEFAULT_PROFILES_FILE
+  (Fast DDS 2.x, Jazzy) and FASTDDS_DEFAULT_PROFILES_FILE (3.x) in docker/Dockerfile.
+
+  DDS never leaves the host: shared memory between containers, UDP on 127.0.0.1
+  only (discovery runs as multicast on loopback). Hosts talk through the zenoh
+  bridge, whose Cyclone DDS is pinned to 127.0.0.1 the same way by CYCLONEDDS_URI
+  in docker/docker-compose.prod.yml.
+
+  Why not ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST instead: with it, Fast DDS sends
+  announcements to 127.0.0.1 but advertises the Wi-Fi and docker0 addresses for
+  replies, and so does the bridge's Cyclone in its own LOCALHOST mode. Each side
+  then only finds the other if the bridge happens to start last; a node that
+  starts after the bridge is never bridged (measured 2026-10-02). It also leaves
+  rmw_fastrtps free to replace the transports below, so the variable stays at the
+  ROS default (SUBNET) and this profile is what keeps DDS on the host.
+
+  The agent does not read ROS variables at all. Without this profile PX4's /fmu
+  topics would be discoverable, and writable, from any machine on the network.
+
+  Lease 5 s (default 20 s): how long a participant that died without saying
+  goodbye (a crash) stays in everyone's graph. The zenoh bridge tracks local
+  publishers by node name, so if a node comes back under the same name before its
+  old participant expires, the expiry later retires the route and the new node's
+  topics silently stop crossing. Respawns and container restarts therefore wait
+  longer than this lease: RESPAWN_DELAY_S in castor_common/launch_helpers.py and
+  castor_wait_out_old_participants in docker/castor_env.sh.
+-->
+<dds xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+  <profiles>
+    <transport_descriptors>
+      <transport_descriptor>
+        <transport_id>castor_shm</transport_id>
+        <type>SHM</type>
+      </transport_descriptor>
+      <transport_descriptor>
+        <transport_id>castor_udp_loopback</transport_id>
+        <type>UDPv4</type>
+        <interfaceWhiteList>
+          <address>127.0.0.1</address>
+        </interfaceWhiteList>
+      </transport_descriptor>
+    </transport_descriptors>
+
+    <!-- every participant created with default QoS: ROS nodes, and the agent when
+         PX4's UXRCE_DDS_PTCFG = 0 -->
+    <participant profile_name="castor_localhost" is_default_profile="true">
+      <rtps>
+        <builtin>
+          <discovery_config>
+            <leaseDuration><sec>5</sec></leaseDuration>
+            <leaseAnnouncement><sec>1</sec></leaseAnnouncement>
+          </discovery_config>
+        </builtin>
+        <userTransports>
+          <transport_id>castor_shm</transport_id>
+          <transport_id>castor_udp_loopback</transport_id>
+        </userTransports>
+        <useBuiltinTransports>false</useBuiltinTransports>
+      </rtps>
+    </participant>
+
+    <!-- the agent's participant when PX4's UXRCE_DDS_PTCFG = 2 (custom profile) -->
+    <participant profile_name="px4_participant">
+      <rtps>
+        <name>px4_participant</name>
+        <builtin>
+          <discovery_config>
+            <leaseDuration><sec>5</sec></leaseDuration>
+            <leaseAnnouncement><sec>1</sec></leaseAnnouncement>
+          </discovery_config>
+        </builtin>
+        <userTransports>
+          <transport_id>castor_shm</transport_id>
+          <transport_id>castor_udp_loopback</transport_id>
+        </userTransports>
+        <useBuiltinTransports>false</useBuiltinTransports>
+      </rtps>
+    </participant>
+  </profiles>
+</dds>

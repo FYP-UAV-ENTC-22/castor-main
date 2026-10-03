@@ -1,0 +1,2 @@
+# Python packages for the planning component that are not available through apt/rosdep.
+# Training (Isaac Lab, skrl, the MARL ext) never goes in this image; it needs Isaac Sim and a GPU.

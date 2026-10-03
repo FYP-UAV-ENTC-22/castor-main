@@ -1,0 +1,76 @@
+# Holybro S500 V2 with 2216 KV920 motors, 9450 propellers and a 4S battery.
+#
+# Units: m, kg, N, s. Body frame is FLU (x forward, y left, z up) with its origin at the centre of the arm plane;
+# that is the point Pegasus reports and RAPTOR controls.
+#
+# Every number carries where it came from:
+#   [pub]    published: Holybro S500 V2 kit page, PX4 "Holybro S500 V2 + Pixhawk 4" build guide, T-Motor AIR2216II data
+#   [photo]  scaled from the PX4 build-guide photos. MEASURE on the real airframe and replace.
+#   [est]    engineering estimate. MEASURE, or replace with a test-stand value.
+name: s500
+
+frame:
+  wheelbase: 0.480              # [pub] motor-to-motor diagonal
+  plate_size: [0.150, 0.150]    # [photo] top plate and power-management board footprint, x y
+  plate_thickness: 0.0015       # [pub] 1.5 mm plates
+  arm_width: 0.034              # [photo]
+  arm_height: 0.022             # [photo] the arms are sandwiched between the two plates
+  arm_root_radius: 0.055        # [photo] where an arm leaves the plates
+
+motor:                          # AIR2216II-KV920 class
+  diameter: 0.028               # [pub] 28 mm can
+  height: 0.030                 # [photo]
+
+propeller:                      # 9450: 9.4 in diameter, 5.0 in pitch
+  diameter: 0.2388              # [pub]
+  mass: 0.014                   # [pub] ~14 g, nylon/glass-fibre 9450
+  height_above_motor: 0.008     # [photo] propeller plane above the motor can
+  show_disc: false              # also draw a translucent rotor disc (visual only, handy for checking clearances)
+
+landing_gear:                   # two T legs: one vertical pole per side, a tee connector, a foam-covered skid
+  pole_diameter: 0.016          # [pub] 16 mm carbon tube
+  pole_length: 0.140            # [photo] MEASURE. Exposed tube from the top mount to the tee; also the mount rod's travel
+  pole_spacing: 0.120           # [photo] MEASURE. Left-right, centre to centre
+  pole_x: 0.0                   # [photo] fore-aft position of both poles
+  top_mount_height: 0.012       # [photo] plastic mount between the bottom plate and the pole
+  tee_size: [0.032, 0.026, 0.036]  # [photo] x y z
+  skid_diameter: 0.016          # [photo] skid tube
+  foam_diameter: 0.026          # [photo] foam rings on the skid; this is what touches the ground
+  skid_length: 0.280            # [photo] MEASURE
+  # With these numbers the overall height (skid bottom to motor top) is 0.242 m; Holybro publishes 240 mm.
+
+battery_mount:                  # stock S500 V2 battery mount: two 10 mm rails under the frame, between the legs
+  enabled: true
+  rail_diameter: 0.010          # [pub] 10 mm carbon tube
+  rail_length: 0.300            # [photo]
+  rail_spacing: 0.068           # [photo] left-right, centre to centre
+  drop: 0.023                   # [photo] rail axis below the bottom plate
+
+mass:
+  total: null                   # MEASURE: all-up mass including props. When set, every item below scales to match.
+  com_override: null            # [x, y, z] body frame, if measured
+  inertia_override: null        # [ixx, iyy, izz] about the CoM, if measured (e.g. bifilar pendulum)
+  items:                        # [est] budget: 1.444 kg here + 4 x 0.014 kg props = 1.500 kg all-up
+    - {name: motors_escs, kind: motors, mass: 0.296}        # 4 x (64 g motor [pub] + 10 g ESC)
+    - {name: arms, kind: arms, mass: 0.160}
+    - {name: plates_pmb, kind: box, mass: 0.085, size: [0.150, 0.150, 0.025], pos: [0.0, 0.0, 0.0]}
+    - {name: landing_gear, kind: landing_gear, mass: 0.180}
+    - {name: battery_mount, kind: box, mass: 0.060, size: [0.300, 0.080, 0.020], pos: [0.0, 0.0, -0.036]}
+    - {name: battery, kind: box, mass: 0.400, size: [0.135, 0.043, 0.035], pos: [0.0, 0.0, -0.061]}  # 4S, under the rails
+    - {name: avionics, kind: box, mass: 0.180, size: [0.090, 0.060, 0.030], pos: [0.0, 0.0, 0.0275]}  # Pixhawk 6C mini, Pi 5, UWB, RC, telemetry
+    - {name: gps_mast, kind: box, mass: 0.040, size: [0.050, 0.050, 0.015], pos: [-0.060, 0.0, 0.110]}
+    - {name: wiring_misc, kind: box, mass: 0.043, size: [0.120, 0.120, 0.020], pos: [0.0, 0.0, 0.0]}
+
+propulsion:
+  max_thrust_per_motor: 11.5    # [est] N at full throttle. AIR2216II-KV920 + T1045 at 16 V gives 1332 g [pub];
+                                #   the 9450's smaller disc but steeper pitch lands near 1.1-1.3 kgf. 11.5 N = 1.17 kgf.
+  torque_to_thrust: 0.0138      # [pub] m: yaw reaction torque per newton of thrust, 0.18 N m / 13.07 N, same table
+  max_rotor_velocity: 1100.0    # rad/s at throttle 1. RaptorBackend maps throttle u to 1000 u + 100 rad/s.
+  spin_directions: [-1, -1, 1, 1]  # PX4 quad-X: 1 FR CCW, 2 BL CCW, 3 FL CW, 4 BR CW (Pegasus: -1 = CCW)
+  motor_time_constant: 0.0      # s. 0 = instantaneous, as Pegasus' Iris. 0.03-0.05 is typical for this motor class.
+  linear_drag: [0.50, 0.30, 0.0]  # [est] N/(m/s) in the body frame, Pegasus' Iris values
+
+physics:
+  solver_position_iterations: 32  # PhysX articulation defaults
+  solver_velocity_iterations: 1
+  angular_damping: 0.05           # PhysX default, the same as the Iris asset

@@ -1,0 +1,113 @@
+# The onboard stack, as it runs on every drone's Pi (and on a laptop next to the
+# simulator). One ROS graph per host, on the host network:
+#
+#   vehicle, localization, planning, system   CASTOR components (Fast DDS, domain 20, localhost only)
+#   zenoh-config                              renders the bridge config from robot.yaml, then exits
+#   zenoh-bridge                              the only route on or off the host, allow-listed topics only
+#
+# robot.yaml (default /etc/castor/robot.yaml) is the one per-robot file: id,
+# namespace, team slot, device paths, zenoh peers. Edit it, then restart the stack.
+#
+# Variables (deploy/pi/stack.env on a Pi, or the environment):
+#   CASTOR_REGISTRY      default ghcr.io/fyp-uav-entc-22
+#   CASTOR_TAG           default main; use sha-<rev> to freeze a fleet, local for your own builds
+#   CASTOR_ROBOT_CONFIG  default /etc/castor/robot.yaml
+#   ZENOH_BRIDGE_IMAGE   default eclipse/zenoh-bridge-ros2dds:1.10.1, pinned by digest
+#
+# Nothing here pulls on its own: images change only when someone runs
+# deploy/pi/castor-update.sh (or `docker compose pull`).
+
+name: castor
+
+x-ros-service: &ros-service
+  network_mode: host
+  ipc: host            # Fast DDS shares memory between containers on the same host
+  pid: host            # unique PIDs across containers (launch names nodes launch_ros_<pid>)
+  init: true
+  restart: unless-stopped
+  stop_signal: SIGINT      # ros2 launch's clean shutdown; on SIGTERM it orphans its nodes
+  stop_grace_period: 15s   # launch escalates SIGINT -> SIGTERM -> SIGKILL over 10 s itself
+  environment: &ros-env
+    ROS_DOMAIN_ID: "20"
+    CASTOR_ROBOT_CONFIG: /etc/castor/robot.yaml
+
+services:
+  zenoh-config:
+    image: ${CASTOR_REGISTRY:-ghcr.io/fyp-uav-entc-22}/castor-system:${CASTOR_TAG:-main}
+    network_mode: host
+    restart: "no"
+    command: ["castor-config", "zenoh-bridge", "--out", "/run/castor/zenoh-bridge.json5"]
+    environment: *ros-env
+    volumes:
+      - ${CASTOR_ROBOT_CONFIG:-/etc/castor/robot.yaml}:/etc/castor/robot.yaml:ro
+      - /run/castor:/run/castor
+
+  zenoh-bridge:
+    image: ${ZENOH_BRIDGE_IMAGE:-eclipse/zenoh-bridge-ros2dds:1.10.1@sha256:74fae6a9d4f449c53d1ee6f0faaca97d01c1e68dfcafd785b657f01907157d22}
+    network_mode: host
+    restart: unless-stopped
+    depends_on:
+      zenoh-config:
+        condition: service_completed_successfully
+    command: ["-c", "/run/castor/zenoh-bridge.json5"]
+    environment:
+      ROS_DISTRO: jazzy    # the bridge assumes iron when unset (ros_discovery_info format)
+      # Its Cyclone DDS on loopback only, matching docker/fastdds_localhost.xml in the
+      # other containers. Without this it joins DDS on the Wi-Fi.
+      CYCLONEDDS_URI: '<CycloneDDS><Domain><General><Interfaces><NetworkInterface address="127.0.0.1" multicast="true"/></Interfaces><DontRoute>true</DontRoute></General></Domain></CycloneDDS>'
+    volumes:
+      - /run/castor:/run/castor:ro
+
+  vehicle:
+    <<: *ros-service
+    image: ${CASTOR_REGISTRY:-ghcr.io/fyp-uav-entc-22}/castor-vehicle:${CASTOR_TAG:-main}
+    environment:
+      <<: *ros-env
+      DISPLAY: ${DISPLAY:-}
+    volumes:
+      - ${CASTOR_ROBOT_CONFIG:-/etc/castor/robot.yaml}:/etc/castor/robot.yaml:ro
+      - /run/castor:/run/castor
+      - /var/log/castor:/var/log/castor
+      # Whole /dev plus cgroup rules instead of `devices:`, so the container
+      # starts with the FC or UWB board unplugged and sees them when they appear.
+      - /dev:/dev
+      - /tmp/.X11-unix:/tmp/.X11-unix     # QGroundControl (castor-qgc) on the host's display
+      - qgc-home:/home/qgc
+    device_cgroup_rules:
+      - "c 204:* rmw"   # ttyAMA*  Pi PL011 UARTs (FC on GPIO 14/15)
+      - "c 4:64 rmw"    # ttyS0    Pi mini UART
+      - "c 166:* rmw"   # ttyACM*  USB CDC: Nucleo / UWB board, FC over USB
+      - "c 188:* rmw"   # ttyUSB*  USB serial adapters
+      - "c 189:* rmw"   # USB devices: ST-Link for flashing the UWB boards
+      - "c 226:* rmw"   # /dev/dri for QGC's OpenGL
+
+  localization:
+    <<: *ros-service
+    image: ${CASTOR_REGISTRY:-ghcr.io/fyp-uav-entc-22}/castor-localization:${CASTOR_TAG:-main}
+    volumes:
+      - ${CASTOR_ROBOT_CONFIG:-/etc/castor/robot.yaml}:/etc/castor/robot.yaml:ro
+      - /var/log/castor:/var/log/castor
+
+  planning:
+    <<: *ros-service
+    image: ${CASTOR_REGISTRY:-ghcr.io/fyp-uav-entc-22}/castor-planning:${CASTOR_TAG:-main}
+    cap_add:
+      - SYS_NICE          # lets the policy loop ask for SCHED_FIFO (sched_fifo_priority:=N)
+    ulimits:
+      rtprio: 95
+      memlock: -1
+    volumes:
+      - ${CASTOR_ROBOT_CONFIG:-/etc/castor/robot.yaml}:/etc/castor/robot.yaml:ro
+      - /var/log/castor:/var/log/castor
+      - /var/lib/castor/models:/var/lib/castor/models:ro
+
+  system:
+    <<: *ros-service
+    image: ${CASTOR_REGISTRY:-ghcr.io/fyp-uav-entc-22}/castor-system:${CASTOR_TAG:-main}
+    volumes:
+      - ${CASTOR_ROBOT_CONFIG:-/etc/castor/robot.yaml}:/etc/castor/robot.yaml:ro
+      - /run/castor:/run/castor           # the update gate castor-update.sh reads
+      - /var/log/castor:/var/log/castor   # MCAP recordings (record:=true)
+
+volumes:
+  qgc-home:

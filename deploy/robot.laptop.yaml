@@ -1,0 +1,19 @@
+# robot.yaml for running the stack on a development laptop with no flight
+# controller attached. Used by docker-compose.dev.yml and `make stack-up` unless
+# CASTOR_ROBOT_CONFIG points elsewhere.
+
+robot:
+  id: 1
+  namespace: drone1
+  hardware: laptop
+
+team:
+  size: 3
+  index: 0
+
+fc:
+  enabled: false         # set true with transport: udp to talk to PX4 SITL
+
+zenoh:
+  connect: []
+  multicast_scouting: false   # keep a dev laptop's graph to itself

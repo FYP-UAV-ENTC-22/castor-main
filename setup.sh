@@ -30,7 +30,8 @@ DEV_DOCS_REPO="git@github.com:FYP-UAV-ENTC-22/castor-dev-docs.git"
 # --------------------------------------------------------------------- plumbing
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-ISAACLAB_DIR="$ROOT/external/IsaacLab"
+ISAACLAB_DIR="$ROOT/components/simulation/IsaacLab"
+PLANNING_DIR="$ROOT/components/planning"
 
 SKIP_ENV=0
 SKIP_DOCS=0
@@ -73,7 +74,7 @@ say "Linking Isaac Sim"
         ISAACSIM_PATH=/path/to/isaacsim ./setup.sh"
 
 ln -sfn "$ISAACSIM_PATH" "$ISAACLAB_DIR/_isaac_sim"
-warn "external/IsaacLab/_isaac_sim -> $ISAACSIM_PATH"
+warn "components/simulation/IsaacLab/_isaac_sim -> $ISAACSIM_PATH"
 
 # ------------------------------------------------------- 3. conda environment
 
@@ -104,8 +105,32 @@ else
     # set makes pip backtrack and quietly upgrade torch to a CUDA 13 build,
     # which Isaac Sim cannot load. This project only uses skrl, and only our own
     # fork of it, so install no frameworks here and add the fork below.
+    # isaaclab pins flatdict==4.0.1, an sdist whose setup.py imports
+    # pkg_resources. pip builds it in an isolated env with the newest
+    # setuptools, which no longer ships pkg_resources, so the build fails and
+    # takes the whole isaaclab install down with it. Build it once here against
+    # a setuptools that still has pkg_resources, and isaaclab finds it satisfied.
+    warn "Pre-building flatdict (needs pkg_resources, gone from new setuptools)"
+    python -m pip install "setuptools<81"
+    python -m pip install --no-build-isolation flatdict==4.0.1
+
     warn "Installing Isaac Lab (this pulls the ~3 GB torch CUDA wheel set)"
     "$ISAACLAB_DIR/isaaclab.sh" --install none
+
+    # isaaclab.sh installs each source/ package through `find -exec`, which
+    # swallows a failing pip, so a broken install still exits 0. Check each
+    # package is actually registered and its dependencies are complete.
+    # isaaclab_assets and isaaclab_tasks import carb/omni at module load, which
+    # only exist once AppLauncher has started Isaac Sim, so only the core
+    # package is import-tested here.
+    for pkg in isaaclab isaaclab_assets isaaclab_mimic isaaclab_rl isaaclab_tasks; do
+        python -m pip show "$pkg" >/dev/null 2>&1 \
+            || die "Isaac Lab package '$pkg' did not install; scroll up for the pip error"
+    done
+    python -c 'import isaaclab' || die "isaaclab is registered but does not import"
+    broken=$(python -m pip check 2>/dev/null | grep -i '^isaaclab' || true)
+    [ -z "$broken" ] || die "Isaac Lab dependencies missing:"$'\n'"$broken"
+    warn "Isaac Lab packages installed and complete"
 
     # Pin whatever torch Isaac Lab just picked (the version is hardcoded per
     # architecture inside isaaclab.sh) so nothing below can drag in a different
@@ -123,8 +148,8 @@ else
     warn "pinned torch==$torch_ver for the remaining installs"
 
     warn "Installing skrl and the MARL extension (editable)"
-    python -m pip install -e "$ROOT/external/skrl"
-    python -m pip install -e "$ROOT/external/MARL_cooperative_aerial_manipulation_ext/exts/MARL_mav_carry_ext"
+    python -m pip install -e "$PLANNING_DIR/skrl"
+    python -m pip install -e "$PLANNING_DIR/MARL_cooperative_aerial_manipulation_ext/exts/MARL_mav_carry_ext"
 
     # A transitive dependency swapping torch out is the likeliest way for this
     # environment to end up subtly broken, so check instead of assuming.
@@ -168,7 +193,7 @@ cat <<EOF
 
     Then smoke-test training (about a minute):
 
-        cd $ROOT/external/MARL_cooperative_aerial_manipulation_ext
+        cd $ROOT/components/planning/MARL_cooperative_aerial_manipulation_ext
         python scripts/skrl/train.py \\
             --task=Isaac-flycrane-payload-decentralized-hovering-v0 \\
             --headless --num_envs=8 --max_iterations=3 --seed=42 --algorithm=MAPPO

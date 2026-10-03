@@ -1,0 +1,21 @@
+# robot.yaml for the ground station laptop. Its zenoh bridge publishes team
+# commands (/team/*) to the drones and receives every drone's heartbeats,
+# vehicle and supervisor state. Run only the bridge (and ROS tools) on it:
+#
+#   CASTOR_ROBOT_CONFIG=$PWD/deploy/robot.ground-station.yaml \
+#       docker compose -f docker/docker-compose.prod.yml up -d zenoh-bridge
+#   docker compose -f docker/docker-compose.prod.yml run --rm system bash   # ros2 CLI on the team graph
+
+robot:
+  id: 100                # outside the drones' range
+  namespace: gcs
+  hardware: laptop
+
+team:
+  size: 1
+  index: 0
+
+zenoh:
+  role: ground_station
+  connect: []            # or list each drone: ["tcp/<drone-ip>:7447", ...]
+  multicast_scouting: true

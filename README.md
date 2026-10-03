@@ -39,44 +39,86 @@ source env/env.sh
 
 ## Layout
 
+Every piece of source lives under the component that owns it. Each component
+becomes one container; submodules sit inside the component that uses them.
+
 ```
 castor-main/
-├── setup.sh              one-command workspace setup
-├── env/env.sh            activates the `castor` conda env
-├── components/           CASTOR's own runtime components
-│   ├── localization/     UWB (DW3000) ranging firmware — STM32 Nucleo
-│   ├── simulation/       reserved
-│   ├── vehicle/          reserved — flight controller and sensor interfacing
-│   ├── control/          reserved
-│   └── system/           reserved — state machine, safety, MRM
-├── external/             third-party repositories, forked but never renamed
-│   ├── IsaacLab/         v2.3.0, patched for Isaac Sim 5.1
-│   ├── MARL_cooperative_aerial_manipulation_ext/   the RL task and training
-│   ├── skrl/             RL algorithms (MAPPO / IPPO)
-│   ├── PX4-Autopilot/    flight firmware; the RAPTOR neural-policy module
-│   └── pegasus_simulator/  PX4 + ROS 2 bridge for Isaac Sim
-└── legacy/drone-ops/     retired ArduCopter spike — historical record only
+├── setup.sh                  one-command workspace setup
+├── env/env.sh                activates the `castor` conda env
+├── components/
+│   ├── vehicle/              flight controller and sensor interfacing
+│   │   ├── PX4-Autopilot/    (fork) flight firmware; the RAPTOR neural-policy module
+│   │   ├── uwb_firmware/     (castor-localization) UWB DW3000 ranging firmware, STM32
+│   │   └── tools/            MAVLink sniffer, RAPTOR goto
+│   ├── localization/         state estimation (empty for now)
+│   ├── planning/             the MARL policy: training source and onboard runtime
+│   │   ├── MARL_cooperative_aerial_manipulation_ext/   (fork) the RL task and training
+│   │   └── skrl/             (fork) RL algorithms (MAPPO / IPPO)
+│   ├── system/               state machine, behaviour trees, safety, MRM
+│   └── simulation/           Isaac Sim based simulation
+│       ├── IsaacLab/         (fork) v2.3.0, patched for Isaac Sim 5.1
+│       ├── pegasus_simulator/  (fork) PX4 + ROS 2 bridge for Isaac Sim
+│       └── tests/            RAPTOR on Pegasus
+└── legacy/drone-ops/         retired ArduCopter spike, historical record only
 ```
 
 Two rules hold across the workspace:
 
-- **Forked repositories keep their upstream names.** Anything under `external/`
-  is somebody else's project that we track and patch; renaming it would hide
+- **Forked repositories keep their upstream names.** IsaacLab, skrl,
+  PX4-Autopilot, pegasus_simulator and MARL_cooperative_aerial_manipulation_ext
+  are somebody else's projects that we track and patch; renaming them would hide
   that. Only CASTOR's own repositories carry the `castor-` prefix.
 - **Each subproject has its own conventions.** Different languages, build
   systems and safety constraints — read the subproject before assuming anything
   carries over.
 
-The five directories under `components/` are the units that will later become
-separate containers. `localization`, `vehicle`, `control` and `system` are the
-ones intended to run on the Raspberry Pi alongside the flight controller; all
-five run on a laptop or GPU workstation during simulation and training.
+`vehicle`, `localization`, `planning` and `system` run on every drone's
+Raspberry Pi. All five, simulation included, run on a laptop or GPU workstation
+during simulation and training.
+
+### Moving from the old `external/` layout
+
+The submodules used to live under `external/`, and their names changed with the
+move. In an existing clone, after pulling:
+
+```bash
+# external/ now holds only stale checkouts. Check them for unpushed work first:
+for d in external/*/; do git -C "$d" status --short --branch; done
+rm -rf external                 # only once nothing above needs saving
+git submodule sync
+git submodule update --init     # fetches each submodule at its new path
+./setup.sh                      # rebuilds the conda env against the new paths
+```
+
+A fresh clone plus `./setup.sh` gets the same result.
+
+## Containers
+
+Each onboard component runs in its own ROS 2 Jazzy container, all on the host
+network and one ROS graph (Fast DDS, domain 20), with a zenoh bridge carrying
+selected topics between drones and the ground station. Images are multi-arch
+(amd64 and arm64), so the same tag runs on a laptop, a Pi 4 or a Pi 5:
+`ghcr.io/fyp-uav-entc-22/castor-{vehicle,localization,planning,system}`.
+
+Robot identity (id, ROS namespace, the policy's team slot, device paths) comes
+from one mounted file, `/etc/castor/robot.yaml`; see
+[deploy/robot.example.yaml](deploy/robot.example.yaml).
+
+```bash
+make help                 # every target
+make images-test          # build and test the four images locally
+make stack-up             # run them here, against deploy/robot.laptop.yaml
+```
+
+- [docker/README.md](docker/README.md): images, dev containers, adding dependencies.
+- [deploy/README.md](deploy/README.md): setting up a Pi, robot.yaml, updating (always manual).
 
 ## Running a training smoke test
 
 ```bash
 source env/env.sh
-cd external/MARL_cooperative_aerial_manipulation_ext
+cd components/planning/MARL_cooperative_aerial_manipulation_ext
 python scripts/skrl/train.py \
     --task=Isaac-flycrane-payload-decentralized-hovering-v0 \
     --headless --num_envs=8 --max_iterations=3 --seed=42 --algorithm=MAPPO

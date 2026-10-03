@@ -1,0 +1,11 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-7.4.4, pluggy-1.4.0
+cachedir: /home/ws/.component_workspaces/localization/build/castor_common/.pytest_cache
+rootdir: /home/ws/components/common/castor_common
+plugins: launch-testing-ros-0.26.12, ament-flake8-0.17.5, ament-xmllint-0.17.5, ament-pep257-0.17.5, ament-lint-0.17.5, ament-copyright-0.17.5, launch-testing-3.4.11, colcon-core-0.21.3
+collected 18 items
+
+test/test_robot_config.py ..................                             [100%]
+
+- generated xml file: /home/ws/.component_workspaces/localization/build/castor_common/pytest.xml -
+============================== 18 passed in 0.05s ==============================

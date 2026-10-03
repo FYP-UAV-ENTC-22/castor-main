@@ -1,0 +1,6 @@
+#!/bin/sh
+# Micro XRCE-DDS Agent (the PX4 uXRCE-DDS bridge) with its own Fast DDS build.
+# The agent's superbuild ships its own Fast DDS/Fast CDR; keep them on this
+# process's library path only, so they never shadow ROS's copies.
+AGENT=/opt/castor/third_party/xrce-agent
+LD_LIBRARY_PATH="$AGENT/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}" exec "$AGENT/bin/MicroXRCEAgent" "$@"

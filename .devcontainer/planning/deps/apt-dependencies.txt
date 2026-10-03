@@ -1,0 +1,4 @@
+# Build and development packages for the planning component (dev image and build stage).
+# ROS dependencies come from each package.xml through rosdep; list only what rosdep can't express.
+curl
+ca-certificates

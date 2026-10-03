@@ -40,9 +40,9 @@ conda activate "$CASTOR_ENV" || {
 }
 
 export CASTOR_ROOT
-export ISAACLAB_PATH="$CASTOR_ROOT/external/IsaacLab"
-export MARL_EXT_PATH="$CASTOR_ROOT/external/MARL_cooperative_aerial_manipulation_ext"
-export PEGASUS_PATH="$CASTOR_ROOT/external/pegasus_simulator"
+export ISAACLAB_PATH="$CASTOR_ROOT/components/simulation/IsaacLab"
+export MARL_EXT_PATH="$CASTOR_ROOT/components/planning/MARL_cooperative_aerial_manipulation_ext"
+export PEGASUS_PATH="$CASTOR_ROOT/components/simulation/pegasus_simulator"
 
 echo "CASTOR env ready:"
 echo "  workspace  $CASTOR_ROOT"

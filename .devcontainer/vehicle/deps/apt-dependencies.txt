@@ -1,0 +1,12 @@
+# Build and development packages for the vehicle component (dev image and build stage).
+# ROS dependencies come from each package.xml through rosdep; list only what rosdep can't express.
+curl
+ca-certificates
+git
+meson
+ninja-build
+pkg-config
+# flashing the UWB boards from a dev container
+openocd
+stlink-tools
+dfu-util

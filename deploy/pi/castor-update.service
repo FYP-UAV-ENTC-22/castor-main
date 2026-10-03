@@ -1,0 +1,12 @@
+# Run only on demand:   sudo systemctl start castor-update
+# Never enabled, and there is deliberately no timer: images change only when a
+# person decides they should. Output goes to `journalctl -u castor-update`.
+[Unit]
+Description=CASTOR image update (manual)
+Requires=docker.service
+After=docker.service network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/castor/stack.env
+ExecStart=/opt/castor/src/deploy/pi/castor-update.sh

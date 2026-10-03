@@ -1,0 +1,20 @@
+[Unit]
+Description=CASTOR onboard stack (starts local images; never pulls)
+Documentation=https://github.com/FYP-UAV-ENTC-22/castor-main/blob/main/deploy/README.md
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=-/etc/castor/stack.env
+WorkingDirectory=/opt/castor/src
+# --pull never: boot must not wait on, or be changed by, the network. Images
+# only change when someone runs castor-update.
+ExecStart=/usr/bin/docker compose -f docker/docker-compose.prod.yml up -d --pull never --remove-orphans
+ExecStop=/usr/bin/docker compose -f docker/docker-compose.prod.yml down
+TimeoutStartSec=300
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,2 @@
+# Non-ROS runtime packages for localization-final. ROS exec dependencies are resolved
+# from package.xml automatically.

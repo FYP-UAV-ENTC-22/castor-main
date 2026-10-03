@@ -1,0 +1,2 @@
+# Packages every CASTOR image's build stage needs, beyond ros:jazzy-ros-base.
+python3-pytest

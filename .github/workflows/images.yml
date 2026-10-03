@@ -1,0 +1,175 @@
+# Build, test and publish the CASTOR runtime images to GHCR.
+#
+#   pull request   build + colcon test every changed component, for amd64 and arm64; push nothing
+#   push to main   the same, then push ghcr.io/fyp-uav-entc-22/castor-<component>:main and :sha-<rev>
+#   tag v*         the same for every component, plus :<tag>
+#
+# arm64 builds run natively on GitHub's free arm64 runners (public repos), so
+# there is no QEMU emulation. Pis never update on their own; they pick a new
+# build up only when someone runs castor-update on them.
+#
+# The simulation image is not built here: it is based on NVIDIA's Isaac Sim
+# image, which may not be republished publicly, and it is far too big for a
+# hosted runner.
+
+name: images
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+    paths:
+      - "components/common/**"
+      - "components/vehicle/**"
+      - "components/localization/**"
+      - "components/planning/**"
+      - "components/system/**"
+      - "docker/**"
+      - ".devcontainer/**"
+      - ".dockerignore"
+      - ".gitmodules"
+      - ".github/workflows/images.yml"
+  pull_request:
+    paths:
+      - "components/common/**"
+      - "components/vehicle/**"
+      - "components/localization/**"
+      - "components/planning/**"
+      - "components/system/**"
+      - "docker/**"
+      - ".devcontainer/**"
+      - ".dockerignore"
+      - ".gitmodules"
+      - ".github/workflows/images.yml"
+  workflow_dispatch:
+    inputs:
+      components:
+        description: "Components to build, space-separated (empty = all)"
+        required: false
+        default: ""
+
+concurrency:
+  group: images-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CASTOR_REGISTRY: ghcr.io/fyp-uav-entc-22
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    outputs:
+      components: ${{ steps.pick.outputs.components }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: pick
+        env:
+          EVENT: ${{ github.event_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          INPUT: ${{ github.event.inputs.components }}
+          BEFORE: ${{ github.event.before }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          all="vehicle localization planning system"
+          if [ "$EVENT" = workflow_dispatch ]; then
+            picked="${INPUT:-$all}"
+          elif [ "$REF_TYPE" = tag ]; then
+            picked="$all"
+          else
+            base="${PR_BASE:-$BEFORE}"
+            if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+              picked="$all"          # first push of a branch, or history not available
+            else
+              changed=$(git diff --name-only "$base" "$GITHUB_SHA")
+              if echo "$changed" | grep -qE '^(components/common/|docker/|\.devcontainer/common/|\.dockerignore|\.gitmodules|\.github/workflows/images\.yml)'; then
+                picked="$all"
+              else
+                picked=""
+                for c in $all; do
+                  echo "$changed" | grep -qE "^(components/$c/|\.devcontainer/$c/)" && picked="$picked $c"
+                done
+              fi
+            fi
+          fi
+          json=$(printf '%s\n' $picked | jq -R . | jq -cs 'map(select(length > 0))')
+          echo "components=$json" >> "$GITHUB_OUTPUT"
+          echo "building: $json"
+
+  build:
+    needs: plan
+    if: needs.plan.outputs.components != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        component: ${{ fromJSON(needs.plan.outputs.components) }}
+        arch: [amd64, arm64]
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: PX4 message definitions (vehicle only, no nested submodules)
+        if: matrix.component == 'vehicle'
+        run: git submodule update --init --depth 1 components/vehicle/PX4-Autopilot
+      - uses: docker/setup-buildx-action@v3
+      - name: Log in to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Test and build (pull request)
+        if: github.event_name == 'pull_request'
+        run: docker/build_runtime.sh --platform linux/${{ matrix.arch }} --test --cache ${{ matrix.component }}
+      - name: Test, build and push by digest
+        if: github.event_name != 'pull_request'
+        run: docker/build_runtime.sh --platform linux/${{ matrix.arch }} --test --cache --push-by-digest digests ${{ matrix.component }}
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'pull_request'
+        with:
+          name: digest-${{ matrix.component }}-${{ matrix.arch }}
+          path: digests/*
+          retention-days: 1
+
+  publish:
+    needs: [plan, build]
+    if: github.event_name != 'pull_request'
+    strategy:
+      matrix:
+        component: ${{ fromJSON(needs.plan.outputs.components) }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: digest-${{ matrix.component }}-*
+          path: digests
+          merge-multiple: true
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tag the multi-arch image
+        env:
+          IMAGE: ${{ env.CASTOR_REGISTRY }}/castor-${{ matrix.component }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          tags=(-t "$IMAGE:sha-${GITHUB_SHA::12}")
+          if [ "$REF_TYPE" = tag ]; then tags+=(-t "$IMAGE:$REF_NAME"); else tags+=(-t "$IMAGE:main"); fi
+          sources=()
+          for f in digests/*; do sources+=("$IMAGE@$(cat "$f")"); done
+          [ ${#sources[@]} -eq 2 ] || { echo "expected 2 digests (amd64, arm64), got ${#sources[@]}"; exit 1; }
+          docker buildx imagetools create "${tags[@]}" "${sources[@]}"
+          docker buildx imagetools inspect "$IMAGE:sha-${GITHUB_SHA::12}"

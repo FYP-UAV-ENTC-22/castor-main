@@ -1,0 +1,2 @@
+# Non-ROS runtime packages for planning-final. ROS exec dependencies are resolved
+# from package.xml automatically. ONNX Runtime is a prebuilt under /opt/castor/third_party.

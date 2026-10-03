@@ -1,0 +1,28 @@
+[0.000000] (-) TimerEvent: {}
+[0.000279] (castor_interfaces) JobQueued: {'identifier': 'castor_interfaces', 'dependencies': OrderedDict({'castor_interfaces': '/home/ws/.component_workspaces/localization/install/castor_interfaces'})}
+[0.000354] (castor_common) JobQueued: {'identifier': 'castor_common', 'dependencies': OrderedDict({'castor_interfaces': '/home/ws/.component_workspaces/localization/install/castor_interfaces', 'castor_common': '/home/ws/.component_workspaces/localization/install/castor_common'})}
+[0.000445] (localization_launch) JobQueued: {'identifier': 'localization_launch', 'dependencies': OrderedDict({'castor_interfaces': '/home/ws/.component_workspaces/localization/install/castor_interfaces', 'castor_common': '/home/ws/.component_workspaces/localization/install/castor_common', 'localization_launch': '/home/ws/.component_workspaces/localization/install/localization_launch'})}
+[0.000598] (castor_interfaces) JobStarted: {'identifier': 'castor_interfaces'}
+[0.018257] (castor_interfaces) JobEnded: {'identifier': 'castor_interfaces', 'rc': 0}
+[0.018740] (castor_common) JobStarted: {'identifier': 'castor_common'}
+[0.099978] (-) TimerEvent: {}
+[0.146896] (castor_common) Command: {'cmd': ['/usr/bin/python3', '-m', 'pytest'], 'cwd': '/home/ws/components/common/castor_common', 'env': OrderedDict({'HOSTNAME': 'radG16', 'SHLVL': '2', 'LD_LIBRARY_PATH': '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib:/opt/castor/common/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/lib', 'HOME': '/home/castor', 'OLDPWD': '/home/ws/components/localization', 'PYTHONUNBUFFERED': '1', 'ROS_PYTHON_VERSION': '3', 'MAKEFLAGS': ' --no-print-directory', 'COLCON_PREFIX_PATH': '/opt/castor/common', 'ROS_DISTRO': 'jazzy', 'CASTOR_ROBOT_CONFIG': '/etc/castor/robot.yaml', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'CASTOR_COMPONENT': 'localization', 'PATH': '/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', 'MAKELEVEL': '2', 'DISPLAY': ':1', 'LANG': 'C.UTF-8', 'RMW_IMPLEMENTATION': 'rmw_fastrtps_cpp', 'ROS_DOMAIN_ID': '20', 'AMENT_PREFIX_PATH': '/home/ws/.component_workspaces/localization/install/castor_common:/home/ws/.component_workspaces/localization/install/castor_interfaces:/opt/castor/common:/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'PWD': '/home/ws/.component_workspaces/localization/build/castor_common', 'LC_ALL': 'C.UTF-8', 'PYTHONPATH': '/home/ws/.component_workspaces/localization/build/castor_common:/home/ws/.component_workspaces/localization/install/castor_common/lib/python3.12/site-packages:/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages:/opt/castor/common/lib/python3.12/site-packages:/opt/ros/jazzy/lib/python3.12/site-packages', 'MFLAGS': '--no-print-directory', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/home/ws/.component_workspaces/localization/install/castor_interfaces:/opt/castor/common', 'PYTHONDONTWRITEBYTECODE': '1', 'PYTEST_ADDOPTS': '--tb=short --junit-xml=/home/ws/.component_workspaces/localization/build/castor_common/pytest.xml --junit-prefix=castor_common -o cache_dir=/home/ws/.component_workspaces/localization/build/castor_common/.pytest_cache'}), 'shell': False}
+[0.200078] (-) TimerEvent: {}
+[0.300231] (-) TimerEvent: {}
+[0.333016] (castor_common) StdoutLine: {'line': b'============================= test session starts ==============================\n'}
+[0.333198] (castor_common) StdoutLine: {'line': b'platform linux -- Python 3.12.3, pytest-7.4.4, pluggy-1.4.0\n'}
+[0.335465] (castor_common) StdoutLine: {'line': b'cachedir: /home/ws/.component_workspaces/localization/build/castor_common/.pytest_cache\n'}
+[0.335634] (castor_common) StdoutLine: {'line': b'rootdir: /home/ws/components/common/castor_common\n'}
+[0.335705] (castor_common) StdoutLine: {'line': b'plugins: launch-testing-ros-0.26.12, ament-flake8-0.17.5, ament-xmllint-0.17.5, ament-pep257-0.17.5, ament-lint-0.17.5, ament-copyright-0.17.5, launch-testing-3.4.11, colcon-core-0.21.3\n'}
+[0.357170] (castor_common) StdoutLine: {'line': b'collected 18 items\n'}
+[0.357333] (castor_common) StdoutLine: {'line': b'\n'}
+[0.381042] (castor_common) StdoutLine: {'line': b'test/test_robot_config.py ..................                             [100%]\n'}
+[0.381179] (castor_common) StdoutLine: {'line': b'\n'}
+[0.381226] (castor_common) StdoutLine: {'line': b'- generated xml file: /home/ws/.component_workspaces/localization/build/castor_common/pytest.xml -\n'}
+[0.381268] (castor_common) StdoutLine: {'line': b'============================== 18 passed in 0.05s ==============================\n'}
+[0.400396] (-) TimerEvent: {}
+[0.404866] (castor_common) CommandEnded: {'returncode': 0}
+[0.405161] (castor_common) JobEnded: {'identifier': 'castor_common', 'rc': 0}
+[0.405524] (localization_launch) JobStarted: {'identifier': 'localization_launch'}
+[0.419517] (localization_launch) JobEnded: {'identifier': 'localization_launch', 'rc': 0}
+[0.419813] (-) EventReactorShutdown: {}

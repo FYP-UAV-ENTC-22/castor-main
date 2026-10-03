@@ -1,0 +1,4 @@
+# Copy to hosts.txt (gitignored) and list the drones, one user@host per line.
+# drone1@drone1-pi.local
+# drone2@drone2-pi.local
+# drone3@drone3-pi.local

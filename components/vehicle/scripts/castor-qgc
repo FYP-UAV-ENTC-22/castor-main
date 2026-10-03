@@ -1,0 +1,27 @@
+#!/bin/bash
+# Open QGroundControl from inside the vehicle container.
+#
+#   make vehicle-qgc        (from the host; runs `xhost +local:` first)
+#   docker compose -f docker/docker-compose.prod.yml exec vehicle castor-qgc
+#
+# QGC refuses to run as root, so it runs as an unprivileged user (uid
+# QGC_UID, default 1000) with its settings in the qgc-home volume. It needs an
+# X display: the host's (DISPLAY plus /tmp/.X11-unix, mounted by compose) or an
+# `ssh -X` session. It talks to the FC over UDP 14550 (PX4 SITL, or
+# mavlink-router on hardware) and never opens the FC serial port itself.
+set -euo pipefail
+
+QGC_DIR=/opt/castor/third_party/qgc
+QGC_UID="${QGC_UID:-1000}"
+QGC_GID="${QGC_GID:-1000}"
+QGC_HOME="${QGC_HOME:-/home/qgc}"
+
+[ -x "$QGC_DIR/AppRun" ] || { echo "castor-qgc: QGroundControl is not installed in this image ($QGC_DIR)" >&2; exit 1; }
+[ -n "${DISPLAY:-}" ] || { echo "castor-qgc: DISPLAY is not set; no X display to open QGC on" >&2; exit 1; }
+
+mkdir -p "$QGC_HOME"
+chown "$QGC_UID:$QGC_GID" "$QGC_HOME" 2>/dev/null || true
+
+exec setpriv --reuid="$QGC_UID" --regid="$QGC_GID" --clear-groups \
+    env HOME="$QGC_HOME" DISPLAY="$DISPLAY" QT_X11_NO_MITSHM=1 \
+    "$QGC_DIR/AppRun" "$@"

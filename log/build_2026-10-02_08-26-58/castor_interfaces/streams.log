@@ -1,0 +1,355 @@
+[0.007s] Invoking command in '/home/ws/.component_workspaces/localization/build/castor_interfaces': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake /home/ws/components/common/castor_interfaces -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/ws/.component_workspaces/localization/install/castor_interfaces
+[0.055s] -- The C compiler identification is GNU 13.3.0
+[0.101s] -- The CXX compiler identification is GNU 13.3.0
+[0.115s] -- Detecting C compiler ABI info
+[0.184s] -- Detecting C compiler ABI info - done
+[0.193s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.193s] -- Detecting C compile features
+[0.193s] -- Detecting C compile features - done
+[0.201s] -- Detecting CXX compiler ABI info
+[0.278s] -- Detecting CXX compiler ABI info - done
+[0.285s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.285s] -- Detecting CXX compile features
+[0.285s] -- Detecting CXX compile features - done
+[0.287s] -- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.382s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[0.443s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.465s] -- Found rosidl_default_generators: 1.6.1 (/opt/ros/jazzy/share/rosidl_default_generators/cmake)
+[0.470s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[0.500s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[0.530s] -- Found rosidl_adapter: 4.6.9 (/opt/ros/jazzy/share/rosidl_adapter/cmake)
+[0.532s] -- Found builtin_interfaces: 2.0.4 (/opt/ros/jazzy/share/builtin_interfaces/cmake)
+[0.542s] -- Found std_msgs: 5.3.8 (/opt/ros/jazzy/share/std_msgs/cmake)
+[0.557s] -- Found geometry_msgs: 5.3.8 (/opt/ros/jazzy/share/geometry_msgs/cmake)
+[1.043s] -- Found ament_cmake_ros: 0.12.1 (/opt/ros/jazzy/share/ament_cmake_ros/cmake)
+[1.440s] -- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c
+[1.939s] -- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp
+[1.942s] -- Found python_cmake_module: 0.11.1 (/opt/ros/jazzy/share/python_cmake_module/cmake)
+[2.037s] -- Found PythonExtra: /usr/bin/python3  
+[2.371s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter Development NumPy Development.Module Development.Embed 
+[2.453s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[2.462s] -- Configuring done (2.4s)
+[2.503s] -- Generating done (0.0s)
+[2.512s] -- Build files have been written to: /home/ws/.component_workspaces/localization/build/castor_interfaces
+[2.518s] Invoked command in '/home/ws/.component_workspaces/localization/build/castor_interfaces' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake /home/ws/components/common/castor_interfaces -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/ws/.component_workspaces/localization/install/castor_interfaces
+[2.518s] Invoking command in '/home/ws/.component_workspaces/localization/build/castor_interfaces': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /home/ws/.component_workspaces/localization/build/castor_interfaces -- -j24 -l24
+[2.564s] [  1%] Generating type hashes for ROS interfaces
+[2.564s] [  2%] Generating Rust code for ROS interfaces
+[2.568s] [  2%] Built target ament_cmake_python_symlink_castor_interfaces
+[2.708s] running egg_info
+[2.709s] creating castor_interfaces.egg-info
+[2.719s] writing castor_interfaces.egg-info/PKG-INFO
+[2.719s] writing dependency_links to castor_interfaces.egg-info/dependency_links.txt
+[2.719s] writing top-level names to castor_interfaces.egg-info/top_level.txt
+[2.719s] writing manifest file 'castor_interfaces.egg-info/SOURCES.txt'
+[2.749s] reading manifest file 'castor_interfaces.egg-info/SOURCES.txt'
+[2.749s] writing manifest file 'castor_interfaces.egg-info/SOURCES.txt'
+[2.776s] [  2%] Built target ament_cmake_python_build_castor_interfaces_egg
+[2.980s] [  2%] Built target castor_interfaces__rosidl_generator_type_description
+[2.991s] [  3%] Generating C code for ROS interfaces
+[2.991s] [  3%] Built target castor_interfaces__rs
+[3.000s] [  4%] Generating C++ code for ROS interfaces
+[3.526s] [  4%] Built target castor_interfaces__cpp
+[3.595s] [  5%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/vehicle_state__functions.c.o
+[3.595s] [  7%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/vehicle_state__type_support.c.o
+[3.595s] [  8%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/heartbeat__type_support.c.o
+[3.595s] [  9%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/heartbeat__description.c.o
+[3.596s] [ 10%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/position_setpoint__type_support.c.o
+[3.596s] [ 14%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/heartbeat__functions.c.o
+[3.596s] [ 14%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/position_setpoint__functions.c.o
+[3.596s] [ 14%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/position_setpoint__description.c.o
+[3.596s] [ 15%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/vehicle_state__description.c.o
+[3.596s] [ 16%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/team_command__description.c.o
+[3.598s] [ 17%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/supervisor_state__description.c.o
+[3.598s] [ 18%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/supervisor_state__type_support.c.o
+[3.598s] [ 20%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/policy_status__description.c.o
+[3.598s] [ 21%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/supervisor_state__functions.c.o
+[3.598s] [ 24%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/team_command__functions.c.o
+[3.599s] [ 24%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/policy_status__functions.c.o
+[3.599s] [ 25%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/policy_status__type_support.c.o
+[3.599s] [ 25%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/team_command__type_support.c.o
+[3.726s] [ 27%] Linking C shared library libcastor_interfaces__rosidl_generator_c.so
+[3.764s] [ 27%] Built target castor_interfaces__rosidl_generator_c
+[3.772s] [ 28%] Generating C type support dispatch for ROS interfaces
+[3.772s] [ 29%] Generating C introspection for ROS interfaces
+[3.772s] [ 30%] Generating C type support for eProsima Fast-RTPS
+[3.772s] [ 31%] Generating C++ type support for eProsima Fast-RTPS
+[3.773s] [ 32%] Generating C++ type support dispatch for ROS interfaces
+[3.775s] [ 34%] Generating C++ introspection for ROS interfaces
+[4.331s] [ 35%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/castor_interfaces/msg/team_command__type_support.cpp.o
+[4.332s] [ 36%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/castor_interfaces/msg/policy_status__type_support.cpp.o
+[4.333s] [ 37%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/castor_interfaces/msg/heartbeat__type_support.cpp.o
+[4.334s] [ 38%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/castor_interfaces/msg/vehicle_state__type_support.cpp.o
+[4.334s] [ 40%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/castor_interfaces/msg/position_setpoint__type_support.cpp.o
+[4.334s] [ 41%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/castor_interfaces/msg/supervisor_state__type_support.cpp.o
+[4.343s] [ 42%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/castor_interfaces/msg/heartbeat__type_support.cpp.o
+[4.343s] [ 44%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/castor_interfaces/msg/team_command__type_support.cpp.o
+[4.343s] [ 44%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/castor_interfaces/msg/vehicle_state__type_support.cpp.o
+[4.343s] [ 45%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/castor_interfaces/msg/position_setpoint__type_support.cpp.o
+[4.343s] [ 47%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/castor_interfaces/msg/supervisor_state__type_support.cpp.o
+[4.344s] [ 48%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/castor_interfaces/msg/policy_status__type_support.cpp.o
+[4.386s] [ 49%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/castor_interfaces/msg/detail/supervisor_state__type_support.cpp.o
+[4.386s] [ 50%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/castor_interfaces/msg/detail/vehicle_state__type_support.cpp.o
+[4.386s] [ 51%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/castor_interfaces/msg/detail/heartbeat__type_support.cpp.o
+[4.386s] [ 52%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/castor_interfaces/msg/detail/team_command__type_support.cpp.o
+[4.386s] [ 54%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/castor_interfaces/msg/detail/position_setpoint__type_support.cpp.o
+[4.387s] [ 55%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/castor_interfaces/msg/detail/policy_status__type_support.cpp.o
+[4.413s] [ 56%] Linking CXX shared library libcastor_interfaces__rosidl_typesupport_c.so
+[4.476s] [ 56%] Built target castor_interfaces__rosidl_typesupport_c
+[4.496s] [ 62%] Building C object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/castor_interfaces/msg/detail/policy_status__type_support.c.o
+[4.496s] [ 62%] Building C object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/castor_interfaces/msg/detail/team_command__type_support.c.o
+[4.496s] [ 62%] Building C object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/castor_interfaces/msg/detail/heartbeat__type_support.c.o
+[4.496s] [ 62%] Building C object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/castor_interfaces/msg/detail/vehicle_state__type_support.c.o
+[4.496s] [ 62%] Building C object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/castor_interfaces/msg/detail/position_setpoint__type_support.c.o
+[4.496s] [ 63%] Building C object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/castor_interfaces/msg/detail/supervisor_state__type_support.c.o
+[4.579s] [ 64%] Linking C shared library libcastor_interfaces__rosidl_typesupport_introspection_c.so
+[4.599s] [ 67%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/castor_interfaces/msg/detail/heartbeat__type_support_c.cpp.o
+[4.599s] [ 67%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/castor_interfaces/msg/detail/vehicle_state__type_support_c.cpp.o
+[4.600s] [ 68%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/castor_interfaces/msg/detail/position_setpoint__type_support_c.cpp.o
+[4.600s] [ 70%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/castor_interfaces/msg/detail/supervisor_state__type_support_c.cpp.o
+[4.600s] [ 70%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/castor_interfaces/msg/detail/policy_status__type_support_c.cpp.o
+[4.600s] [ 74%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/castor_interfaces/msg/detail/dds_fastrtps/position_setpoint__type_support.cpp.o
+[4.600s] [ 74%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/castor_interfaces/msg/detail/dds_fastrtps/heartbeat__type_support.cpp.o
+[4.600s] [ 74%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/castor_interfaces/msg/detail/dds_fastrtps/team_command__type_support.cpp.o
+[4.601s] [ 75%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/castor_interfaces/msg/detail/dds_fastrtps/vehicle_state__type_support.cpp.o
+[4.601s] [ 76%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/castor_interfaces/msg/detail/team_command__type_support_c.cpp.o
+[4.604s] [ 77%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/castor_interfaces/msg/detail/dds_fastrtps/supervisor_state__type_support.cpp.o
+[4.658s] [ 77%] Built target castor_interfaces__rosidl_typesupport_introspection_c
+[4.686s] [ 78%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/castor_interfaces/msg/detail/dds_fastrtps/policy_status__type_support.cpp.o
+[4.902s] [ 80%] Linking CXX shared library libcastor_interfaces__rosidl_typesupport_cpp.so
+[4.950s] [ 80%] Built target castor_interfaces__rosidl_typesupport_cpp
+[5.036s] [ 81%] Linking CXX shared library libcastor_interfaces__rosidl_typesupport_introspection_cpp.so
+[5.112s] [ 81%] Built target castor_interfaces__rosidl_typesupport_introspection_cpp
+[5.463s] [ 82%] Linking CXX shared library libcastor_interfaces__rosidl_typesupport_fastrtps_c.so
+[5.521s] [ 82%] Built target castor_interfaces__rosidl_typesupport_fastrtps_c
+[5.551s] [ 83%] Linking CXX shared library libcastor_interfaces__rosidl_typesupport_fastrtps_cpp.so
+[5.615s] [ 83%] Built target castor_interfaces__rosidl_typesupport_fastrtps_cpp
+[5.631s] [ 83%] Built target castor_interfaces
+[5.647s] [ 84%] Generating Python code for ROS interfaces
+[6.373s] [ 84%] Built target castor_interfaces__py
+[6.390s] [ 85%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_py.dir/rosidl_generator_py/castor_interfaces/msg/_heartbeat_s.c.o
+[6.391s] [ 87%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_py.dir/rosidl_generator_py/castor_interfaces/msg/_position_setpoint_s.c.o
+[6.391s] [ 88%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_py.dir/rosidl_generator_py/castor_interfaces/msg/_supervisor_state_s.c.o
+[6.393s] [ 89%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_py.dir/rosidl_generator_py/castor_interfaces/msg/_vehicle_state_s.c.o
+[6.395s] [ 90%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_py.dir/rosidl_generator_py/castor_interfaces/msg/_team_command_s.c.o
+[6.395s] [ 91%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_py.dir/rosidl_generator_py/castor_interfaces/msg/_policy_status_s.c.o
+[6.544s] [ 92%] Linking C shared library libcastor_interfaces__rosidl_generator_py.so
+[6.592s] [ 92%] Built target castor_interfaces__rosidl_generator_py
+[6.615s] [ 94%] Building C object CMakeFiles/castor_interfaces_s__rosidl_typesupport_introspection_c.dir/rosidl_generator_py/castor_interfaces/_castor_interfaces_s.ep.rosidl_typesupport_introspection_c.c.o
+[6.615s] [ 95%] Building C object CMakeFiles/castor_interfaces_s__rosidl_typesupport_c.dir/rosidl_generator_py/castor_interfaces/_castor_interfaces_s.ep.rosidl_typesupport_c.c.o
+[6.616s] [ 96%] Building C object CMakeFiles/castor_interfaces_s__rosidl_typesupport_fastrtps_c.dir/rosidl_generator_py/castor_interfaces/_castor_interfaces_s.ep.rosidl_typesupport_fastrtps_c.c.o
+[6.748s] [ 98%] Linking C shared module rosidl_generator_py/castor_interfaces/castor_interfaces_s__rosidl_typesupport_c.so
+[6.748s] [ 98%] Linking C shared module rosidl_generator_py/castor_interfaces/castor_interfaces_s__rosidl_typesupport_introspection_c.so
+[6.750s] [100%] Linking C shared module rosidl_generator_py/castor_interfaces/castor_interfaces_s__rosidl_typesupport_fastrtps_c.so
+[6.771s] [100%] Built target castor_interfaces_s__rosidl_typesupport_introspection_c
+[6.775s] [100%] Built target castor_interfaces_s__rosidl_typesupport_fastrtps_c
+[6.775s] [100%] Built target castor_interfaces_s__rosidl_typesupport_c
+[6.785s] Invoked command in '/home/ws/.component_workspaces/localization/build/castor_interfaces' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --build /home/ws/.component_workspaces/localization/build/castor_interfaces -- -j24 -l24
+[6.792s] Invoking command in '/home/ws/.component_workspaces/localization/build/castor_interfaces': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --install /home/ws/.component_workspaces/localization/build/castor_interfaces
+[6.802s] -- Install configuration: "RelWithDebInfo"
+[6.803s] -- Execute custom install script
+[6.803s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/ament_index/resource_index/rosidl_interfaces/castor_interfaces
+[6.812s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/Heartbeat.json
+[6.822s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/VehicleState.json
+[6.831s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/PositionSetpoint.json
+[6.838s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/TeamCommand.json
+[6.845s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/SupervisorState.json
+[6.852s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/PolicyStatus.json
+[6.863s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__functions.h
+[6.873s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__struct.h
+[6.882s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__type_support.h
+[6.892s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__functions.h
+[6.900s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__struct.h
+[6.909s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__type_support.h
+[6.917s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__functions.h
+[6.924s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__struct.h
+[6.930s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__type_support.h
+[6.936s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__functions.h
+[6.943s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__struct.h
+[6.949s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__type_support.h
+[6.954s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__functions.h
+[6.962s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__struct.h
+[6.971s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__type_support.h
+[6.980s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__functions.h
+[6.989s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__struct.h
+[6.997s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__type_support.h
+[7.005s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/heartbeat.h
+[7.012s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/policy_status.h
+[7.020s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/position_setpoint.h
+[7.029s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/rosidl_generator_c__visibility_control.h
+[7.037s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/supervisor_state.h
+[7.045s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/team_command.h
+[7.053s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/vehicle_state.h
+[7.064s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/environment/library_path.sh
+[7.070s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/environment/library_path.dsv
+[7.080s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__rosidl_typesupport_fastrtps_c.h
+[7.089s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__rosidl_typesupport_fastrtps_c.h
+[7.097s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__rosidl_typesupport_fastrtps_c.h
+[7.103s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__rosidl_typesupport_fastrtps_c.h
+[7.112s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__rosidl_typesupport_fastrtps_c.h
+[7.121s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__rosidl_typesupport_fastrtps_c.h
+[7.128s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/rosidl_typesupport_fastrtps_c__visibility_control.h
+[7.135s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__rosidl_typesupport_introspection_c.h
+[7.143s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__rosidl_typesupport_introspection_c.h
+[7.150s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__rosidl_typesupport_introspection_c.h
+[7.157s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__rosidl_typesupport_introspection_c.h
+[7.162s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__rosidl_typesupport_introspection_c.h
+[7.169s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__rosidl_typesupport_introspection_c.h
+[7.175s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/rosidl_typesupport_introspection_c__visibility_control.h
+[7.182s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__builder.hpp
+[7.188s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__struct.hpp
+[7.194s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__traits.hpp
+[7.199s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__type_support.hpp
+[7.206s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__builder.hpp
+[7.212s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__struct.hpp
+[7.218s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__traits.hpp
+[7.223s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__type_support.hpp
+[7.231s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__builder.hpp
+[7.236s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__struct.hpp
+[7.243s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__traits.hpp
+[7.248s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__type_support.hpp
+[7.255s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__builder.hpp
+[7.260s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__struct.hpp
+[7.266s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__traits.hpp
+[7.271s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__type_support.hpp
+[7.276s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__builder.hpp
+[7.281s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__struct.hpp
+[7.287s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__traits.hpp
+[7.293s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__type_support.hpp
+[7.298s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__builder.hpp
+[7.304s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__struct.hpp
+[7.312s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__traits.hpp
+[7.320s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__type_support.hpp
+[7.330s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/heartbeat.hpp
+[7.338s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/policy_status.hpp
+[7.346s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/position_setpoint.hpp
+[7.355s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/rosidl_generator_cpp__visibility_control.hpp
+[7.362s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/supervisor_state.hpp
+[7.367s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/team_command.hpp
+[7.372s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/vehicle_state.hpp
+[7.379s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__rosidl_typesupport_fastrtps_cpp.hpp
+[7.384s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__rosidl_typesupport_fastrtps_cpp.hpp
+[7.389s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__rosidl_typesupport_fastrtps_cpp.hpp
+[7.394s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__rosidl_typesupport_fastrtps_cpp.hpp
+[7.399s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__rosidl_typesupport_fastrtps_cpp.hpp
+[7.406s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__rosidl_typesupport_fastrtps_cpp.hpp
+[7.414s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h
+[7.419s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__rosidl_typesupport_introspection_cpp.hpp
+[7.425s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__rosidl_typesupport_introspection_cpp.hpp
+[7.431s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__rosidl_typesupport_introspection_cpp.hpp
+[7.436s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__rosidl_typesupport_introspection_cpp.hpp
+[7.441s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__rosidl_typesupport_introspection_cpp.hpp
+[7.446s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__rosidl_typesupport_introspection_cpp.hpp
+[7.452s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/environment/pythonpath.sh
+[7.459s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/environment/pythonpath.dsv
+[7.467s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces-0.1.0-py3.12.egg-info/PKG-INFO
+[7.476s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces-0.1.0-py3.12.egg-info/SOURCES.txt
+[7.482s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces-0.1.0-py3.12.egg-info/dependency_links.txt
+[7.488s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces-0.1.0-py3.12.egg-info/top_level.txt
+[7.494s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/__init__.py
+[7.501s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/_castor_interfaces_s.ep.rosidl_typesupport_c.c
+[7.508s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/_castor_interfaces_s.ep.rosidl_typesupport_fastrtps_c.c
+[7.517s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/_castor_interfaces_s.ep.rosidl_typesupport_introspection_c.c
+[7.525s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/castor_interfaces_s__rosidl_typesupport_c.so
+[7.534s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/castor_interfaces_s__rosidl_typesupport_fastrtps_c.so
+[7.541s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/castor_interfaces_s__rosidl_typesupport_introspection_c.so
+[7.549s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/__init__.py
+[7.557s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_heartbeat.py
+[7.562s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_heartbeat_s.c
+[7.571s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_policy_status.py
+[7.580s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_policy_status_s.c
+[7.589s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_position_setpoint.py
+[7.598s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_position_setpoint_s.c
+[7.606s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_supervisor_state.py
+[7.614s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_supervisor_state_s.c
+[7.621s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_team_command.py
+[7.630s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_team_command_s.c
+[7.638s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_vehicle_state.py
+[7.646s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_vehicle_state_s.c
+[7.655s] -- Up-to-date symlink: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/castor_interfaces_s__rosidl_typesupport_fastrtps_c.so
+[7.655s] -- Up-to-date symlink: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/castor_interfaces_s__rosidl_typesupport_introspection_c.so
+[7.655s] -- Up-to-date symlink: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/castor_interfaces_s__rosidl_typesupport_c.so
+[7.656s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/rust/Cargo.toml
+[7.664s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/rust/build.rs
+[7.674s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/rust/src/lib.rs
+[7.682s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/rust/src/msg.rs
+[7.690s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/rust/src/msg/rmw.rs
+[7.696s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/Heartbeat.idl
+[7.704s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/VehicleState.idl
+[7.710s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/PositionSetpoint.idl
+[7.719s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/TeamCommand.idl
+[7.725s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/SupervisorState.idl
+[7.733s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/PolicyStatus.idl
+[7.743s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/Heartbeat.msg
+[7.749s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/VehicleState.msg
+[7.756s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/PositionSetpoint.msg
+[7.764s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/TeamCommand.msg
+[7.773s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/SupervisorState.msg
+[7.782s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/PolicyStatus.msg
+[7.791s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/ament_index/resource_index/package_run_dependencies/castor_interfaces
+[7.799s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/ament_index/resource_index/parent_prefix_path/castor_interfaces
+[7.808s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/environment/ament_prefix_path.sh
+[7.819s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/environment/ament_prefix_path.dsv
+[7.827s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/environment/path.sh
+[7.836s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/environment/path.dsv
+[7.844s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/local_setup.bash
+[7.853s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/local_setup.sh
+[7.861s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/local_setup.zsh
+[7.870s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/local_setup.dsv
+[7.879s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/package.dsv
+[7.886s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/ament_index/resource_index/packages/castor_interfaces
+[7.894s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/rosidl_cmake-extras.cmake
+[7.902s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/ament_cmake_export_dependencies-extras.cmake
+[7.912s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/ament_cmake_export_include_directories-extras.cmake
+[7.918s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/ament_cmake_export_libraries-extras.cmake
+[7.924s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/ament_cmake_export_targets-extras.cmake
+[7.931s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/rosidl_cmake_export_typesupport_targets-extras.cmake
+[7.938s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake
+[7.946s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/rosidl_cmake_aggregate_target-extras.cmake
+[7.952s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/castor_interfacesConfig.cmake
+[7.957s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/castor_interfacesConfig-version.cmake
+[7.965s] -- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/package.xml
+[7.972s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_generator_c.so
+[7.973s] -- Set non-toolchain portion of runtime path of "/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_generator_c.so" to ""
+[7.973s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_fastrtps_c.so
+[7.973s] -- Set non-toolchain portion of runtime path of "/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_fastrtps_c.so" to ""
+[7.974s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_introspection_c.so
+[7.974s] -- Set non-toolchain portion of runtime path of "/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_introspection_c.so" to ""
+[7.974s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_c.so
+[7.974s] -- Set non-toolchain portion of runtime path of "/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_c.so" to ""
+[7.974s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_fastrtps_cpp.so
+[7.975s] -- Set non-toolchain portion of runtime path of "/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_fastrtps_cpp.so" to ""
+[7.975s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_introspection_cpp.so
+[7.975s] -- Set non-toolchain portion of runtime path of "/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_introspection_cpp.so" to ""
+[7.975s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_cpp.so
+[7.975s] -- Set non-toolchain portion of runtime path of "/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_cpp.so" to ""
+[8.004s] Listing '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces'...
+[8.004s] Compiling '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/__init__.py'...
+[8.005s] Listing '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg'...
+[8.005s] Compiling '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/__init__.py'...
+[8.005s] Compiling '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_heartbeat.py'...
+[8.006s] Compiling '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_policy_status.py'...
+[8.008s] Compiling '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_position_setpoint.py'...
+[8.009s] Compiling '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_supervisor_state.py'...
+[8.010s] Compiling '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_team_command.py'...
+[8.011s] Compiling '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_vehicle_state.py'...
+[8.016s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_generator_py.so
+[8.016s] -- Set non-toolchain portion of runtime path of "/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_generator_py.so" to ""
+[8.016s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/export_castor_interfaces__rosidl_generator_cExport.cmake
+[8.017s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/export_castor_interfaces__rosidl_generator_cExport-relwithdebinfo.cmake
+[8.017s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/export_castor_interfaces__rosidl_typesupport_fastrtps_cExport.cmake
+[8.017s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/export_castor_interfaces__rosidl_typesupport_fastrtps_cExport-relwithdebinfo.cmake
+[8.017s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/castor_interfaces__rosidl_typesupport_introspection_cExport.cmake
+[8.017s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/castor_interfaces__rosidl_typesupport_introspection_cExport-relwithdebinfo.cmake
+[8.017s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/castor_interfaces__rosidl_typesupport_cExport.cmake
+[8.017s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/castor_interfaces__rosidl_typesupport_cExport-relwithdebinfo.cmake
+[8.017s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/export_castor_interfaces__rosidl_generator_cppExport.cmake
+[8.017s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/export_castor_interfaces__rosidl_typesupport_fastrtps_cppExport.cmake
+[8.017s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/export_castor_interfaces__rosidl_typesupport_fastrtps_cppExport-relwithdebinfo.cmake
+[8.017s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/castor_interfaces__rosidl_typesupport_introspection_cppExport.cmake
+[8.017s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/castor_interfaces__rosidl_typesupport_introspection_cppExport-relwithdebinfo.cmake
+[8.017s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/castor_interfaces__rosidl_typesupport_cppExport.cmake
+[8.017s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/castor_interfaces__rosidl_typesupport_cppExport-relwithdebinfo.cmake
+[8.017s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/export_castor_interfaces__rosidl_generator_pyExport.cmake
+[8.017s] -- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/export_castor_interfaces__rosidl_generator_pyExport-relwithdebinfo.cmake
+[8.019s] Invoked command in '/home/ws/.component_workspaces/localization/build/castor_interfaces' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/opt/ros/jazzy /usr/bin/cmake --install /home/ws/.component_workspaces/localization/build/castor_interfaces

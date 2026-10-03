@@ -1,0 +1,18 @@
+{
+    "name": "CASTOR System",
+    "dockerComposeFile": ["../../docker/docker-compose.dev.yml"],
+    "service": "system",
+    "workspaceFolder": "/home/ws",
+    "remoteUser": "castor",
+    "initializeCommand": "sh ./.devcontainer/initialize.sh",
+    "postCreateCommand": "sh ./.devcontainer/system/postCreate.sh",
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools",
+                "ms-python.python",
+                "ms-iot.vscode-ros"
+            ]
+        }
+    }
+}

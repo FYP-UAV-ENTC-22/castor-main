@@ -1,0 +1,42 @@
+# /etc/castor/robot.yaml: who this host is. Every CASTOR container mounts it
+# read-only; edit it and restart the stack (sudo systemctl restart castor-stack)
+# to change the namespace, the policy's one-hot slot or the device paths.
+#
+# `castor-config check` (inside any CASTOR container) validates it. Unknown keys
+# are errors, so typos fail loudly instead of falling back to defaults.
+
+robot:
+  id: 1                  # unique in the fleet, >= 1. Should match the FC's MAV_SYS_ID.
+  namespace: drone1      # ROS namespace for every node: /drone1/vehicle/..., /drone1/system/...
+  hardware: rpi5         # rpi4 | rpi5 | laptop | workstation
+
+team:
+  size: 3                # number of agents the deployed policy was trained for
+  index: 0               # this robot's slot, 0..size-1 -> one-hot [1, 0, 0]
+
+fc:
+  enabled: true          # false on a bench Pi with no flight controller
+  transport: serial      # serial (real FC) | udp (PX4 SITL)
+  # Pi 5: /dev/ttyAMA0 on GPIO 14/15 needs dtoverlay=uart0-pi5.
+  # Pi 4: /dev/ttyAMA0 with dtoverlay=disable-bt (or /dev/ttyS0, the mini UART).
+  device: /dev/ttyAMA0
+  baud: 921600           # must match the FC's SER_TELx_BAUD for the uXRCE-DDS port
+  udp_port: 8888         # SITL only
+  px4_namespace: ""      # uxrce_dds_client namespace on the FC; "" means /fmu/...
+
+mavlink:
+  enabled: false         # mavlink-router: a second FC port carrying MAVLink -> UDP for QGC
+  device: ""             # e.g. /dev/ttyACM0 (FC over USB) or a second UART
+  baud: 921600
+  gcs_endpoints:
+    - 127.0.0.1:14550    # QGC on this host; add the ground station's IP:14550
+
+uwb:
+  enabled: false
+  device: /dev/ttyACM0
+
+zenoh:
+  role: drone            # drone: share own state, accept /team/*; ground_station: the reverse
+  connect: []            # other bridges / the ground station, e.g. ["tcp/192.168.1.10:7447"]
+  listen_port: 7447
+  multicast_scouting: true   # find other bridges on the same network without listing them

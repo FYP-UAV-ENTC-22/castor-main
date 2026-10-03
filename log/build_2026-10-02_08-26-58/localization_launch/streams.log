@@ -1,0 +1,48 @@
+[0.010s] Invoking command in '/home/ws/.component_workspaces/localization/build/localization_launch': AMENT_PREFIX_PATH=/home/ws/.component_workspaces/localization/install/castor_common:/home/ws/.component_workspaces/localization/install/castor_interfaces:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/ws/.component_workspaces/localization/install/castor_interfaces:/opt/castor/common:/opt/ros/jazzy LD_LIBRARY_PATH=/home/ws/.component_workspaces/localization/install/castor_interfaces/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/ws/.component_workspaces/localization/build/castor_common:/home/ws/.component_workspaces/localization/install/castor_common/lib/python3.12/site-packages:/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/cmake /home/ws/components/localization/localization_launch -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/ws/.component_workspaces/localization/install/localization_launch
+[0.049s] -- The C compiler identification is GNU 13.3.0
+[0.089s] -- The CXX compiler identification is GNU 13.3.0
+[0.104s] -- Detecting C compiler ABI info
+[0.197s] -- Detecting C compiler ABI info - done
+[0.204s] -- Check for working C compiler: /usr/bin/cc - skipped
+[0.205s] -- Detecting C compile features
+[0.205s] -- Detecting C compile features - done
+[0.216s] -- Detecting CXX compiler ABI info
+[0.323s] -- Detecting CXX compiler ABI info - done
+[0.334s] -- Check for working CXX compiler: /usr/bin/c++ - skipped
+[0.334s] -- Detecting CXX compile features
+[0.335s] -- Detecting CXX compile features - done
+[0.336s] -- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)
+[0.442s] -- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter 
+[0.502s] -- Override CMake install command with custom implementation using symlinks instead of copying resources
+[0.584s] -- Configuring done (0.6s)
+[0.585s] -- Generating done (0.0s)
+[0.586s] CMake Warning:
+[0.586s]   Manually-specified variables were not used by the project:
+[0.586s] 
+[0.586s]     CMAKE_EXPORT_COMPILE_COMMANDS
+[0.586s] 
+[0.586s] 
+[0.586s] -- Build files have been written to: /home/ws/.component_workspaces/localization/build/localization_launch
+[0.589s] Invoked command in '/home/ws/.component_workspaces/localization/build/localization_launch' returned '0': AMENT_PREFIX_PATH=/home/ws/.component_workspaces/localization/install/castor_common:/home/ws/.component_workspaces/localization/install/castor_interfaces:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/ws/.component_workspaces/localization/install/castor_interfaces:/opt/castor/common:/opt/ros/jazzy LD_LIBRARY_PATH=/home/ws/.component_workspaces/localization/install/castor_interfaces/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/ws/.component_workspaces/localization/build/castor_common:/home/ws/.component_workspaces/localization/install/castor_common/lib/python3.12/site-packages:/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/cmake /home/ws/components/localization/localization_launch -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DAMENT_CMAKE_SYMLINK_INSTALL=1 -DCMAKE_INSTALL_PREFIX=/home/ws/.component_workspaces/localization/install/localization_launch
+[0.589s] Invoking command in '/home/ws/.component_workspaces/localization/build/localization_launch': AMENT_PREFIX_PATH=/home/ws/.component_workspaces/localization/install/castor_common:/home/ws/.component_workspaces/localization/install/castor_interfaces:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/ws/.component_workspaces/localization/install/castor_interfaces:/opt/castor/common:/opt/ros/jazzy LD_LIBRARY_PATH=/home/ws/.component_workspaces/localization/install/castor_interfaces/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/ws/.component_workspaces/localization/build/castor_common:/home/ws/.component_workspaces/localization/install/castor_common/lib/python3.12/site-packages:/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/cmake --build /home/ws/.component_workspaces/localization/build/localization_launch -- -j24 -l24
+[0.619s] Invoked command in '/home/ws/.component_workspaces/localization/build/localization_launch' returned '0': AMENT_PREFIX_PATH=/home/ws/.component_workspaces/localization/install/castor_common:/home/ws/.component_workspaces/localization/install/castor_interfaces:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/ws/.component_workspaces/localization/install/castor_interfaces:/opt/castor/common:/opt/ros/jazzy LD_LIBRARY_PATH=/home/ws/.component_workspaces/localization/install/castor_interfaces/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/ws/.component_workspaces/localization/build/castor_common:/home/ws/.component_workspaces/localization/install/castor_common/lib/python3.12/site-packages:/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/cmake --build /home/ws/.component_workspaces/localization/build/localization_launch -- -j24 -l24
+[0.620s] Invoking command in '/home/ws/.component_workspaces/localization/build/localization_launch': AMENT_PREFIX_PATH=/home/ws/.component_workspaces/localization/install/castor_common:/home/ws/.component_workspaces/localization/install/castor_interfaces:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/ws/.component_workspaces/localization/install/castor_interfaces:/opt/castor/common:/opt/ros/jazzy LD_LIBRARY_PATH=/home/ws/.component_workspaces/localization/install/castor_interfaces/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/ws/.component_workspaces/localization/build/castor_common:/home/ws/.component_workspaces/localization/install/castor_common/lib/python3.12/site-packages:/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/cmake --install /home/ws/.component_workspaces/localization/build/localization_launch
+[0.629s] -- Install configuration: "RelWithDebInfo"
+[0.630s] -- Execute custom install script
+[0.630s] -- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/launch/localization.launch.py
+[0.638s] -- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/ament_index/resource_index/package_run_dependencies/localization_launch
+[0.645s] -- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/ament_index/resource_index/parent_prefix_path/localization_launch
+[0.654s] -- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/environment/ament_prefix_path.sh
+[0.662s] -- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/environment/ament_prefix_path.dsv
+[0.670s] -- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/environment/path.sh
+[0.680s] -- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/environment/path.dsv
+[0.689s] -- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/local_setup.bash
+[0.698s] -- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/local_setup.sh
+[0.705s] -- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/local_setup.zsh
+[0.715s] -- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/local_setup.dsv
+[0.723s] -- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/package.dsv
+[0.729s] -- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/ament_index/resource_index/packages/localization_launch
+[0.739s] -- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/cmake/localization_launchConfig.cmake
+[0.747s] -- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/cmake/localization_launchConfig-version.cmake
+[0.753s] -- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/package.xml
+[0.763s] Invoked command in '/home/ws/.component_workspaces/localization/build/localization_launch' returned '0': AMENT_PREFIX_PATH=/home/ws/.component_workspaces/localization/install/castor_common:/home/ws/.component_workspaces/localization/install/castor_interfaces:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/ws/.component_workspaces/localization/install/castor_interfaces:/opt/castor/common:/opt/ros/jazzy LD_LIBRARY_PATH=/home/ws/.component_workspaces/localization/install/castor_interfaces/lib:${LD_LIBRARY_PATH} PYTHONPATH=/home/ws/.component_workspaces/localization/build/castor_common:/home/ws/.component_workspaces/localization/install/castor_common/lib/python3.12/site-packages:/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages:${PYTHONPATH} /usr/bin/cmake --install /home/ws/.component_workspaces/localization/build/localization_launch

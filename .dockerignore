@@ -1,0 +1,22 @@
+# The build context is the repo root. Send only what docker/Dockerfile copies,
+# and never a submodule: PX4-Autopilot alone is ~3 GB, and the UWB firmware's
+# vendor SDK must never end up in an image.
+*
+!docker/
+!.devcontainer/
+!components/common/
+!components/vehicle/
+!components/localization/
+!components/planning/
+!components/system/
+
+components/vehicle/PX4-Autopilot
+components/vehicle/uwb_firmware
+components/vehicle/tools
+components/planning/MARL_cooperative_aerial_manipulation_ext
+components/planning/skrl
+**/README.md
+**/__pycache__
+**/*.py[cod]
+**/.pytest_cache
+.component_workspaces

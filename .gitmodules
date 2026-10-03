@@ -1,20 +1,20 @@
-[submodule "components/localization"]
-	path = components/localization
+[submodule "components/vehicle/uwb_firmware"]
+	path = components/vehicle/uwb_firmware
 	url = https://github.com/FYP-UAV-ENTC-22/castor-localization.git
-[submodule "external/IsaacLab"]
-	path = external/IsaacLab
+[submodule "components/simulation/IsaacLab"]
+	path = components/simulation/IsaacLab
 	url = https://github.com/FYP-UAV-ENTC-22/IsaacLab.git
-[submodule "external/skrl"]
-	path = external/skrl
+[submodule "components/planning/skrl"]
+	path = components/planning/skrl
 	url = https://github.com/FYP-UAV-ENTC-22/skrl.git
-[submodule "external/PX4-Autopilot"]
-	path = external/PX4-Autopilot
+[submodule "components/vehicle/PX4-Autopilot"]
+	path = components/vehicle/PX4-Autopilot
 	url = https://github.com/FYP-UAV-ENTC-22/PX4-Autopilot.git
-[submodule "external/pegasus_simulator"]
-	path = external/pegasus_simulator
+[submodule "components/simulation/pegasus_simulator"]
+	path = components/simulation/pegasus_simulator
 	url = https://github.com/FYP-UAV-ENTC-22/pegasus_simulator.git
-[submodule "external/MARL_cooperative_aerial_manipulation_ext"]
-	path = external/MARL_cooperative_aerial_manipulation_ext
+[submodule "components/planning/MARL_cooperative_aerial_manipulation_ext"]
+	path = components/planning/MARL_cooperative_aerial_manipulation_ext
 	url = https://github.com/FYP-UAV-ENTC-22/MARL_cooperative_aerial_manipulation_ext.git
 [submodule "legacy/drone-ops"]
 	path = legacy/drone-ops

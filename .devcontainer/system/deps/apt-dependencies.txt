@@ -1,0 +1,2 @@
+# Build and development packages for the system component (dev image and build stage).
+# ROS dependencies (yasmin, behaviortree_cpp, rosbag2) come from package.xml through rosdep.

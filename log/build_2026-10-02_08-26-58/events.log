@@ -1,0 +1,541 @@
+[0.000000] (-) TimerEvent: {}
+[0.000063] (castor_interfaces) JobQueued: {'identifier': 'castor_interfaces', 'dependencies': OrderedDict()}
+[0.000085] (castor_common) JobQueued: {'identifier': 'castor_common', 'dependencies': OrderedDict({'castor_interfaces': '/home/ws/.component_workspaces/localization/install/castor_interfaces'})}
+[0.000101] (localization_launch) JobQueued: {'identifier': 'localization_launch', 'dependencies': OrderedDict({'castor_interfaces': '/home/ws/.component_workspaces/localization/install/castor_interfaces', 'castor_common': '/home/ws/.component_workspaces/localization/install/castor_common'})}
+[0.000431] (castor_interfaces) JobStarted: {'identifier': 'castor_interfaces'}
+[0.006352] (castor_interfaces) JobProgress: {'identifier': 'castor_interfaces', 'progress': 'cmake'}
+[0.006833] (castor_interfaces) Command: {'cmd': ['/usr/bin/cmake', '/home/ws/components/common/castor_interfaces', '-DCMAKE_BUILD_TYPE=RelWithDebInfo', '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON', '-DAMENT_CMAKE_SYMLINK_INSTALL=1', '-DCMAKE_INSTALL_PREFIX=/home/ws/.component_workspaces/localization/install/castor_interfaces'], 'cwd': '/home/ws/.component_workspaces/localization/build/castor_interfaces', 'env': OrderedDict({'HOSTNAME': 'radG16', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/castor/common/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/lib', 'HOME': '/home/castor', 'OLDPWD': '/home/ws/components/localization', 'PYTHONUNBUFFERED': '1', 'ROS_PYTHON_VERSION': '3', 'MAKEFLAGS': ' --no-print-directory', 'COLCON_PREFIX_PATH': '/opt/castor/common', 'ROS_DISTRO': 'jazzy', 'CASTOR_ROBOT_CONFIG': '/etc/castor/robot.yaml', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'CASTOR_COMPONENT': 'localization', 'PATH': '/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', 'MAKELEVEL': '2', 'DISPLAY': ':1', 'LANG': 'C.UTF-8', 'RMW_IMPLEMENTATION': 'rmw_fastrtps_cpp', 'ROS_DOMAIN_ID': '20', 'AMENT_PREFIX_PATH': '/opt/castor/common:/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'PWD': '/home/ws/.component_workspaces/localization/build/castor_interfaces', 'LC_ALL': 'C.UTF-8', 'PYTHONPATH': '/opt/castor/common/lib/python3.12/site-packages:/opt/ros/jazzy/lib/python3.12/site-packages', 'MFLAGS': '--no-print-directory', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/opt/castor/common:/opt/ros/jazzy'}), 'shell': False}
+[0.054993] (castor_interfaces) StdoutLine: {'line': b'-- The C compiler identification is GNU 13.3.0\n'}
+[0.099823] (-) TimerEvent: {}
+[0.100979] (castor_interfaces) StdoutLine: {'line': b'-- The CXX compiler identification is GNU 13.3.0\n'}
+[0.115778] (castor_interfaces) StdoutLine: {'line': b'-- Detecting C compiler ABI info\n'}
+[0.184781] (castor_interfaces) StdoutLine: {'line': b'-- Detecting C compiler ABI info - done\n'}
+[0.192905] (castor_interfaces) StdoutLine: {'line': b'-- Check for working C compiler: /usr/bin/cc - skipped\n'}
+[0.193169] (castor_interfaces) StdoutLine: {'line': b'-- Detecting C compile features\n'}
+[0.193370] (castor_interfaces) StdoutLine: {'line': b'-- Detecting C compile features - done\n'}
+[0.199892] (-) TimerEvent: {}
+[0.201768] (castor_interfaces) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info\n'}
+[0.278697] (castor_interfaces) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info - done\n'}
+[0.285278] (castor_interfaces) StdoutLine: {'line': b'-- Check for working CXX compiler: /usr/bin/c++ - skipped\n'}
+[0.285485] (castor_interfaces) StdoutLine: {'line': b'-- Detecting CXX compile features\n'}
+[0.285723] (castor_interfaces) StdoutLine: {'line': b'-- Detecting CXX compile features - done\n'}
+[0.287204] (castor_interfaces) StdoutLine: {'line': b'-- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)\n'}
+[0.299976] (-) TimerEvent: {}
+[0.382458] (castor_interfaces) StdoutLine: {'line': b'-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter \n'}
+[0.400119] (-) TimerEvent: {}
+[0.442888] (castor_interfaces) StdoutLine: {'line': b'-- Override CMake install command with custom implementation using symlinks instead of copying resources\n'}
+[0.465447] (castor_interfaces) StdoutLine: {'line': b'-- Found rosidl_default_generators: 1.6.1 (/opt/ros/jazzy/share/rosidl_default_generators/cmake)\n'}
+[0.470670] (castor_interfaces) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c\n'}
+[0.500086] (castor_interfaces) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp\n'}
+[0.500263] (-) TimerEvent: {}
+[0.529965] (castor_interfaces) StdoutLine: {'line': b'-- Found rosidl_adapter: 4.6.9 (/opt/ros/jazzy/share/rosidl_adapter/cmake)\n'}
+[0.531975] (castor_interfaces) StdoutLine: {'line': b'-- Found builtin_interfaces: 2.0.4 (/opt/ros/jazzy/share/builtin_interfaces/cmake)\n'}
+[0.542503] (castor_interfaces) StdoutLine: {'line': b'-- Found std_msgs: 5.3.8 (/opt/ros/jazzy/share/std_msgs/cmake)\n'}
+[0.557326] (castor_interfaces) StdoutLine: {'line': b'-- Found geometry_msgs: 5.3.8 (/opt/ros/jazzy/share/geometry_msgs/cmake)\n'}
+[0.600454] (-) TimerEvent: {}
+[0.700693] (-) TimerEvent: {}
+[0.800834] (-) TimerEvent: {}
+[0.901066] (-) TimerEvent: {}
+[1.001290] (-) TimerEvent: {}
+[1.043438] (castor_interfaces) StdoutLine: {'line': b'-- Found ament_cmake_ros: 0.12.1 (/opt/ros/jazzy/share/ament_cmake_ros/cmake)\n'}
+[1.101459] (-) TimerEvent: {}
+[1.201714] (-) TimerEvent: {}
+[1.301880] (-) TimerEvent: {}
+[1.402126] (-) TimerEvent: {}
+[1.440669] (castor_interfaces) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_c: rosidl_typesupport_fastrtps_c;rosidl_typesupport_introspection_c\n'}
+[1.502337] (-) TimerEvent: {}
+[1.602505] (-) TimerEvent: {}
+[1.702649] (-) TimerEvent: {}
+[1.802776] (-) TimerEvent: {}
+[1.902904] (-) TimerEvent: {}
+[1.939685] (castor_interfaces) StdoutLine: {'line': b'-- Using all available rosidl_typesupport_cpp: rosidl_typesupport_fastrtps_cpp;rosidl_typesupport_introspection_cpp\n'}
+[1.942600] (castor_interfaces) StdoutLine: {'line': b'-- Found python_cmake_module: 0.11.1 (/opt/ros/jazzy/share/python_cmake_module/cmake)\n'}
+[2.003016] (-) TimerEvent: {}
+[2.037832] (castor_interfaces) StdoutLine: {'line': b'-- Found PythonExtra: /usr/bin/python3  \n'}
+[2.103109] (-) TimerEvent: {}
+[2.203340] (-) TimerEvent: {}
+[2.303481] (-) TimerEvent: {}
+[2.370842] (castor_interfaces) StdoutLine: {'line': b'-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter Development NumPy Development.Module Development.Embed \n'}
+[2.403657] (-) TimerEvent: {}
+[2.452877] (castor_interfaces) StdoutLine: {'line': b'-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter \n'}
+[2.462281] (castor_interfaces) StdoutLine: {'line': b'-- Configuring done (2.4s)\n'}
+[2.503395] (castor_interfaces) StdoutLine: {'line': b'-- Generating done (0.0s)\n'}
+[2.503712] (-) TimerEvent: {}
+[2.512588] (castor_interfaces) StdoutLine: {'line': b'-- Build files have been written to: /home/ws/.component_workspaces/localization/build/castor_interfaces\n'}
+[2.517874] (castor_interfaces) CommandEnded: {'returncode': 0}
+[2.518660] (castor_interfaces) JobProgress: {'identifier': 'castor_interfaces', 'progress': 'build'}
+[2.518676] (castor_interfaces) Command: {'cmd': ['/usr/bin/cmake', '--build', '/home/ws/.component_workspaces/localization/build/castor_interfaces', '--', '-j24', '-l24'], 'cwd': '/home/ws/.component_workspaces/localization/build/castor_interfaces', 'env': OrderedDict({'HOSTNAME': 'radG16', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/castor/common/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/lib', 'HOME': '/home/castor', 'OLDPWD': '/home/ws/components/localization', 'PYTHONUNBUFFERED': '1', 'ROS_PYTHON_VERSION': '3', 'MAKEFLAGS': ' --no-print-directory', 'COLCON_PREFIX_PATH': '/opt/castor/common', 'ROS_DISTRO': 'jazzy', 'CASTOR_ROBOT_CONFIG': '/etc/castor/robot.yaml', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'CASTOR_COMPONENT': 'localization', 'PATH': '/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', 'MAKELEVEL': '2', 'DISPLAY': ':1', 'LANG': 'C.UTF-8', 'RMW_IMPLEMENTATION': 'rmw_fastrtps_cpp', 'ROS_DOMAIN_ID': '20', 'AMENT_PREFIX_PATH': '/opt/castor/common:/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'PWD': '/home/ws/.component_workspaces/localization/build/castor_interfaces', 'LC_ALL': 'C.UTF-8', 'PYTHONPATH': '/opt/castor/common/lib/python3.12/site-packages:/opt/ros/jazzy/lib/python3.12/site-packages', 'MFLAGS': '--no-print-directory', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/opt/castor/common:/opt/ros/jazzy'}), 'shell': False}
+[2.564209] (castor_interfaces) StdoutLine: {'line': b'[  1%] Generating type hashes for ROS interfaces\n'}
+[2.564579] (castor_interfaces) StdoutLine: {'line': b'[  2%] Generating Rust code for ROS interfaces\n'}
+[2.568570] (castor_interfaces) StdoutLine: {'line': b'[  2%] Built target ament_cmake_python_symlink_castor_interfaces\n'}
+[2.603802] (-) TimerEvent: {}
+[2.703951] (-) TimerEvent: {}
+[2.708816] (castor_interfaces) StdoutLine: {'line': b'running egg_info\n'}
+[2.709627] (castor_interfaces) StdoutLine: {'line': b'creating castor_interfaces.egg-info\n'}
+[2.719459] (castor_interfaces) StdoutLine: {'line': b'writing castor_interfaces.egg-info/PKG-INFO\n'}
+[2.719574] (castor_interfaces) StdoutLine: {'line': b'writing dependency_links to castor_interfaces.egg-info/dependency_links.txt\n'}
+[2.719668] (castor_interfaces) StdoutLine: {'line': b'writing top-level names to castor_interfaces.egg-info/top_level.txt\n'}
+[2.719718] (castor_interfaces) StdoutLine: {'line': b"writing manifest file 'castor_interfaces.egg-info/SOURCES.txt'\n"}
+[2.749096] (castor_interfaces) StdoutLine: {'line': b"reading manifest file 'castor_interfaces.egg-info/SOURCES.txt'\n"}
+[2.749565] (castor_interfaces) StdoutLine: {'line': b"writing manifest file 'castor_interfaces.egg-info/SOURCES.txt'\n"}
+[2.775814] (castor_interfaces) StdoutLine: {'line': b'[  2%] Built target ament_cmake_python_build_castor_interfaces_egg\n'}
+[2.804128] (-) TimerEvent: {}
+[2.904292] (-) TimerEvent: {}
+[2.980408] (castor_interfaces) StdoutLine: {'line': b'[  2%] Built target castor_interfaces__rosidl_generator_type_description\n'}
+[2.990977] (castor_interfaces) StdoutLine: {'line': b'[  3%] Generating C code for ROS interfaces\n'}
+[2.991528] (castor_interfaces) StdoutLine: {'line': b'[  3%] Built target castor_interfaces__rs\n'}
+[2.999883] (castor_interfaces) StdoutLine: {'line': b'[  4%] Generating C++ code for ROS interfaces\n'}
+[3.004372] (-) TimerEvent: {}
+[3.104586] (-) TimerEvent: {}
+[3.204821] (-) TimerEvent: {}
+[3.305047] (-) TimerEvent: {}
+[3.405258] (-) TimerEvent: {}
+[3.505425] (-) TimerEvent: {}
+[3.525922] (castor_interfaces) StdoutLine: {'line': b'[  4%] Built target castor_interfaces__cpp\n'}
+[3.594814] (castor_interfaces) StdoutLine: {'line': b'[  5%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/vehicle_state__functions.c.o\n'}
+[3.595016] (castor_interfaces) StdoutLine: {'line': b'[  7%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/vehicle_state__type_support.c.o\n'}
+[3.595214] (castor_interfaces) StdoutLine: {'line': b'[  8%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/heartbeat__type_support.c.o\n'}
+[3.595697] (castor_interfaces) StdoutLine: {'line': b'[  9%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/heartbeat__description.c.o\n'}
+[3.596170] (castor_interfaces) StdoutLine: {'line': b'[ 10%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/position_setpoint__type_support.c.o\n'}
+[3.596422] (castor_interfaces) StdoutLine: {'line': b'[ 14%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/heartbeat__functions.c.o\n'}
+[3.596506] (castor_interfaces) StdoutLine: {'line': b'[ 14%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/position_setpoint__functions.c.o\n'}
+[3.596734] (castor_interfaces) StdoutLine: {'line': b'[ 14%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/position_setpoint__description.c.o\n'}
+[3.596804] (castor_interfaces) StdoutLine: {'line': b'[ 15%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/vehicle_state__description.c.o\n'}
+[3.596868] (castor_interfaces) StdoutLine: {'line': b'[ 16%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/team_command__description.c.o\n'}
+[3.598032] (castor_interfaces) StdoutLine: {'line': b'[ 17%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/supervisor_state__description.c.o\n'}
+[3.598233] (castor_interfaces) StdoutLine: {'line': b'[ 18%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/supervisor_state__type_support.c.o\n'}
+[3.598655] (castor_interfaces) StdoutLine: {'line': b'[ 20%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/policy_status__description.c.o\n'}
+[3.598790] (castor_interfaces) StdoutLine: {'line': b'[ 21%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/supervisor_state__functions.c.o\n'}
+[3.598869] (castor_interfaces) StdoutLine: {'line': b'[ 24%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/team_command__functions.c.o\n'}
+[3.598940] (castor_interfaces) StdoutLine: {'line': b'[ 24%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/policy_status__functions.c.o\n'}
+[3.599012] (castor_interfaces) StdoutLine: {'line': b'[ 25%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/policy_status__type_support.c.o\n'}
+[3.599082] (castor_interfaces) StdoutLine: {'line': b'[ 25%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_c.dir/rosidl_generator_c/castor_interfaces/msg/detail/team_command__type_support.c.o\n'}
+[3.605529] (-) TimerEvent: {}
+[3.705673] (-) TimerEvent: {}
+[3.726491] (castor_interfaces) StdoutLine: {'line': b'[ 27%] Linking C shared library libcastor_interfaces__rosidl_generator_c.so\n'}
+[3.764765] (castor_interfaces) StdoutLine: {'line': b'[ 27%] Built target castor_interfaces__rosidl_generator_c\n'}
+[3.772370] (castor_interfaces) StdoutLine: {'line': b'[ 28%] Generating C type support dispatch for ROS interfaces\n'}
+[3.772537] (castor_interfaces) StdoutLine: {'line': b'[ 29%] Generating C introspection for ROS interfaces\n'}
+[3.772690] (castor_interfaces) StdoutLine: {'line': b'[ 30%] Generating C type support for eProsima Fast-RTPS\n'}
+[3.772854] (castor_interfaces) StdoutLine: {'line': b'[ 31%] Generating C++ type support for eProsima Fast-RTPS\n'}
+[3.773138] (castor_interfaces) StdoutLine: {'line': b'[ 32%] Generating C++ type support dispatch for ROS interfaces\n'}
+[3.775782] (castor_interfaces) StdoutLine: {'line': b'[ 34%] Generating C++ introspection for ROS interfaces\n'}
+[3.805760] (-) TimerEvent: {}
+[3.905914] (-) TimerEvent: {}
+[4.006073] (-) TimerEvent: {}
+[4.106242] (-) TimerEvent: {}
+[4.206402] (-) TimerEvent: {}
+[4.306564] (-) TimerEvent: {}
+[4.331707] (castor_interfaces) StdoutLine: {'line': b'[ 35%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/castor_interfaces/msg/team_command__type_support.cpp.o\n'}
+[4.332412] (castor_interfaces) StdoutLine: {'line': b'[ 36%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/castor_interfaces/msg/policy_status__type_support.cpp.o\n'}
+[4.333628] (castor_interfaces) StdoutLine: {'line': b'[ 37%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/castor_interfaces/msg/heartbeat__type_support.cpp.o\n'}
+[4.333948] (castor_interfaces) StdoutLine: {'line': b'[ 38%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/castor_interfaces/msg/vehicle_state__type_support.cpp.o\n'}
+[4.334065] (castor_interfaces) StdoutLine: {'line': b'[ 40%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/castor_interfaces/msg/position_setpoint__type_support.cpp.o\n'}
+[4.334667] (castor_interfaces) StdoutLine: {'line': b'[ 41%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_c.dir/rosidl_typesupport_c/castor_interfaces/msg/supervisor_state__type_support.cpp.o\n'}
+[4.342780] (castor_interfaces) StdoutLine: {'line': b'[ 42%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/castor_interfaces/msg/heartbeat__type_support.cpp.o\n'}
+[4.342979] (castor_interfaces) StdoutLine: {'line': b'[ 44%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/castor_interfaces/msg/team_command__type_support.cpp.o\n'}
+[4.343072] (castor_interfaces) StdoutLine: {'line': b'[ 44%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/castor_interfaces/msg/vehicle_state__type_support.cpp.o\n'}
+[4.343324] (castor_interfaces) StdoutLine: {'line': b'[ 45%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/castor_interfaces/msg/position_setpoint__type_support.cpp.o\n'}
+[4.343495] (castor_interfaces) StdoutLine: {'line': b'[ 47%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/castor_interfaces/msg/supervisor_state__type_support.cpp.o\n'}
+[4.343950] (castor_interfaces) StdoutLine: {'line': b'[ 48%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_cpp.dir/rosidl_typesupport_cpp/castor_interfaces/msg/policy_status__type_support.cpp.o\n'}
+[4.385862] (castor_interfaces) StdoutLine: {'line': b'[ 49%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/castor_interfaces/msg/detail/supervisor_state__type_support.cpp.o\n'}
+[4.386071] (castor_interfaces) StdoutLine: {'line': b'[ 50%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/castor_interfaces/msg/detail/vehicle_state__type_support.cpp.o\n'}
+[4.386167] (castor_interfaces) StdoutLine: {'line': b'[ 51%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/castor_interfaces/msg/detail/heartbeat__type_support.cpp.o\n'}
+[4.386255] (castor_interfaces) StdoutLine: {'line': b'[ 52%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/castor_interfaces/msg/detail/team_command__type_support.cpp.o\n'}
+[4.386790] (castor_interfaces) StdoutLine: {'line': b'[ 54%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/castor_interfaces/msg/detail/position_setpoint__type_support.cpp.o\n'}
+[4.386913] (castor_interfaces) StdoutLine: {'line': b'[ 55%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_cpp.dir/rosidl_typesupport_introspection_cpp/castor_interfaces/msg/detail/policy_status__type_support.cpp.o\n'}
+[4.406664] (-) TimerEvent: {}
+[4.413662] (castor_interfaces) StdoutLine: {'line': b'[ 56%] Linking CXX shared library libcastor_interfaces__rosidl_typesupport_c.so\n'}
+[4.475953] (castor_interfaces) StdoutLine: {'line': b'[ 56%] Built target castor_interfaces__rosidl_typesupport_c\n'}
+[4.495806] (castor_interfaces) StdoutLine: {'line': b'[ 62%] Building C object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/castor_interfaces/msg/detail/policy_status__type_support.c.o\n'}
+[4.496050] (castor_interfaces) StdoutLine: {'line': b'[ 62%] Building C object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/castor_interfaces/msg/detail/team_command__type_support.c.o\n'}
+[4.496158] (castor_interfaces) StdoutLine: {'line': b'[ 62%] Building C object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/castor_interfaces/msg/detail/heartbeat__type_support.c.o\n'}
+[4.496256] (castor_interfaces) StdoutLine: {'line': b'[ 62%] Building C object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/castor_interfaces/msg/detail/vehicle_state__type_support.c.o\n'}
+[4.496359] (castor_interfaces) StdoutLine: {'line': b'[ 62%] Building C object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/castor_interfaces/msg/detail/position_setpoint__type_support.c.o\n'}
+[4.496448] (castor_interfaces) StdoutLine: {'line': b'[ 63%] Building C object CMakeFiles/castor_interfaces__rosidl_typesupport_introspection_c.dir/rosidl_typesupport_introspection_c/castor_interfaces/msg/detail/supervisor_state__type_support.c.o\n'}
+[4.509665] (-) TimerEvent: {}
+[4.579524] (castor_interfaces) StdoutLine: {'line': b'[ 64%] Linking C shared library libcastor_interfaces__rosidl_typesupport_introspection_c.so\n'}
+[4.599279] (castor_interfaces) StdoutLine: {'line': b'[ 67%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/castor_interfaces/msg/detail/heartbeat__type_support_c.cpp.o\n'}
+[4.599527] (castor_interfaces) StdoutLine: {'line': b'[ 67%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/castor_interfaces/msg/detail/vehicle_state__type_support_c.cpp.o\n'}
+[4.599871] (castor_interfaces) StdoutLine: {'line': b'[ 68%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/castor_interfaces/msg/detail/position_setpoint__type_support_c.cpp.o\n'}
+[4.599984] (castor_interfaces) StdoutLine: {'line': b'[ 70%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/castor_interfaces/msg/detail/supervisor_state__type_support_c.cpp.o\n'}
+[4.600078] (castor_interfaces) StdoutLine: {'line': b'[ 70%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/castor_interfaces/msg/detail/policy_status__type_support_c.cpp.o\n'}
+[4.600170] (castor_interfaces) StdoutLine: {'line': b'[ 74%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/castor_interfaces/msg/detail/dds_fastrtps/position_setpoint__type_support.cpp.o\n'}
+[4.600262] (castor_interfaces) StdoutLine: {'line': b'[ 74%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/castor_interfaces/msg/detail/dds_fastrtps/heartbeat__type_support.cpp.o\n'}
+[4.600348] (castor_interfaces) StdoutLine: {'line': b'[ 74%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/castor_interfaces/msg/detail/dds_fastrtps/team_command__type_support.cpp.o\n'}
+[4.600897] (castor_interfaces) StdoutLine: {'line': b'[ 75%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/castor_interfaces/msg/detail/dds_fastrtps/vehicle_state__type_support.cpp.o\n'}
+[4.601063] (castor_interfaces) StdoutLine: {'line': b'[ 76%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_c.dir/rosidl_typesupport_fastrtps_c/castor_interfaces/msg/detail/team_command__type_support_c.cpp.o\n'}
+[4.604651] (castor_interfaces) StdoutLine: {'line': b'[ 77%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/castor_interfaces/msg/detail/dds_fastrtps/supervisor_state__type_support.cpp.o\n'}
+[4.609783] (-) TimerEvent: {}
+[4.657842] (castor_interfaces) StdoutLine: {'line': b'[ 77%] Built target castor_interfaces__rosidl_typesupport_introspection_c\n'}
+[4.686206] (castor_interfaces) StdoutLine: {'line': b'[ 78%] Building CXX object CMakeFiles/castor_interfaces__rosidl_typesupport_fastrtps_cpp.dir/rosidl_typesupport_fastrtps_cpp/castor_interfaces/msg/detail/dds_fastrtps/policy_status__type_support.cpp.o\n'}
+[4.709893] (-) TimerEvent: {}
+[4.810072] (-) TimerEvent: {}
+[4.902473] (castor_interfaces) StdoutLine: {'line': b'[ 80%] Linking CXX shared library libcastor_interfaces__rosidl_typesupport_cpp.so\n'}
+[4.910182] (-) TimerEvent: {}
+[4.950722] (castor_interfaces) StdoutLine: {'line': b'[ 80%] Built target castor_interfaces__rosidl_typesupport_cpp\n'}
+[5.010295] (-) TimerEvent: {}
+[5.035835] (castor_interfaces) StdoutLine: {'line': b'[ 81%] Linking CXX shared library libcastor_interfaces__rosidl_typesupport_introspection_cpp.so\n'}
+[5.110401] (-) TimerEvent: {}
+[5.112562] (castor_interfaces) StdoutLine: {'line': b'[ 81%] Built target castor_interfaces__rosidl_typesupport_introspection_cpp\n'}
+[5.210531] (-) TimerEvent: {}
+[5.310678] (-) TimerEvent: {}
+[5.410854] (-) TimerEvent: {}
+[5.462952] (castor_interfaces) StdoutLine: {'line': b'[ 82%] Linking CXX shared library libcastor_interfaces__rosidl_typesupport_fastrtps_c.so\n'}
+[5.511063] (-) TimerEvent: {}
+[5.520856] (castor_interfaces) StdoutLine: {'line': b'[ 82%] Built target castor_interfaces__rosidl_typesupport_fastrtps_c\n'}
+[5.551820] (castor_interfaces) StdoutLine: {'line': b'[ 83%] Linking CXX shared library libcastor_interfaces__rosidl_typesupport_fastrtps_cpp.so\n'}
+[5.611238] (-) TimerEvent: {}
+[5.615340] (castor_interfaces) StdoutLine: {'line': b'[ 83%] Built target castor_interfaces__rosidl_typesupport_fastrtps_cpp\n'}
+[5.631530] (castor_interfaces) StdoutLine: {'line': b'[ 83%] Built target castor_interfaces\n'}
+[5.647770] (castor_interfaces) StdoutLine: {'line': b'[ 84%] Generating Python code for ROS interfaces\n'}
+[5.711350] (-) TimerEvent: {}
+[5.811499] (-) TimerEvent: {}
+[5.911629] (-) TimerEvent: {}
+[6.011853] (-) TimerEvent: {}
+[6.112071] (-) TimerEvent: {}
+[6.212269] (-) TimerEvent: {}
+[6.312478] (-) TimerEvent: {}
+[6.373028] (castor_interfaces) StdoutLine: {'line': b'[ 84%] Built target castor_interfaces__py\n'}
+[6.390111] (castor_interfaces) StdoutLine: {'line': b'[ 85%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_py.dir/rosidl_generator_py/castor_interfaces/msg/_heartbeat_s.c.o\n'}
+[6.391104] (castor_interfaces) StdoutLine: {'line': b'[ 87%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_py.dir/rosidl_generator_py/castor_interfaces/msg/_position_setpoint_s.c.o\n'}
+[6.391763] (castor_interfaces) StdoutLine: {'line': b'[ 88%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_py.dir/rosidl_generator_py/castor_interfaces/msg/_supervisor_state_s.c.o\n'}
+[6.393511] (castor_interfaces) StdoutLine: {'line': b'[ 89%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_py.dir/rosidl_generator_py/castor_interfaces/msg/_vehicle_state_s.c.o\n'}
+[6.394886] (castor_interfaces) StdoutLine: {'line': b'[ 90%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_py.dir/rosidl_generator_py/castor_interfaces/msg/_team_command_s.c.o\n'}
+[6.394974] (castor_interfaces) StdoutLine: {'line': b'[ 91%] Building C object CMakeFiles/castor_interfaces__rosidl_generator_py.dir/rosidl_generator_py/castor_interfaces/msg/_policy_status_s.c.o\n'}
+[6.412572] (-) TimerEvent: {}
+[6.512734] (-) TimerEvent: {}
+[6.544593] (castor_interfaces) StdoutLine: {'line': b'[ 92%] Linking C shared library libcastor_interfaces__rosidl_generator_py.so\n'}
+[6.592806] (castor_interfaces) StdoutLine: {'line': b'[ 92%] Built target castor_interfaces__rosidl_generator_py\n'}
+[6.612821] (-) TimerEvent: {}
+[6.614965] (castor_interfaces) StdoutLine: {'line': b'[ 94%] Building C object CMakeFiles/castor_interfaces_s__rosidl_typesupport_introspection_c.dir/rosidl_generator_py/castor_interfaces/_castor_interfaces_s.ep.rosidl_typesupport_introspection_c.c.o\n'}
+[6.615805] (castor_interfaces) StdoutLine: {'line': b'[ 95%] Building C object CMakeFiles/castor_interfaces_s__rosidl_typesupport_c.dir/rosidl_generator_py/castor_interfaces/_castor_interfaces_s.ep.rosidl_typesupport_c.c.o\n'}
+[6.616007] (castor_interfaces) StdoutLine: {'line': b'[ 96%] Building C object CMakeFiles/castor_interfaces_s__rosidl_typesupport_fastrtps_c.dir/rosidl_generator_py/castor_interfaces/_castor_interfaces_s.ep.rosidl_typesupport_fastrtps_c.c.o\n'}
+[6.713016] (-) TimerEvent: {}
+[6.747996] (castor_interfaces) StdoutLine: {'line': b'[ 98%] Linking C shared module rosidl_generator_py/castor_interfaces/castor_interfaces_s__rosidl_typesupport_c.so\n'}
+[6.748124] (castor_interfaces) StdoutLine: {'line': b'[ 98%] Linking C shared module rosidl_generator_py/castor_interfaces/castor_interfaces_s__rosidl_typesupport_introspection_c.so\n'}
+[6.750330] (castor_interfaces) StdoutLine: {'line': b'[100%] Linking C shared module rosidl_generator_py/castor_interfaces/castor_interfaces_s__rosidl_typesupport_fastrtps_c.so\n'}
+[6.771025] (castor_interfaces) StdoutLine: {'line': b'[100%] Built target castor_interfaces_s__rosidl_typesupport_introspection_c\n'}
+[6.774934] (castor_interfaces) StdoutLine: {'line': b'[100%] Built target castor_interfaces_s__rosidl_typesupport_fastrtps_c\n'}
+[6.775341] (castor_interfaces) StdoutLine: {'line': b'[100%] Built target castor_interfaces_s__rosidl_typesupport_c\n'}
+[6.785143] (castor_interfaces) CommandEnded: {'returncode': 0}
+[6.785602] (castor_interfaces) JobProgress: {'identifier': 'castor_interfaces', 'progress': 'install'}
+[6.792083] (castor_interfaces) Command: {'cmd': ['/usr/bin/cmake', '--install', '/home/ws/.component_workspaces/localization/build/castor_interfaces'], 'cwd': '/home/ws/.component_workspaces/localization/build/castor_interfaces', 'env': OrderedDict({'HOSTNAME': 'radG16', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/opt/castor/common/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/lib', 'HOME': '/home/castor', 'OLDPWD': '/home/ws/components/localization', 'PYTHONUNBUFFERED': '1', 'ROS_PYTHON_VERSION': '3', 'MAKEFLAGS': ' --no-print-directory', 'COLCON_PREFIX_PATH': '/opt/castor/common', 'ROS_DISTRO': 'jazzy', 'CASTOR_ROBOT_CONFIG': '/etc/castor/robot.yaml', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'CASTOR_COMPONENT': 'localization', 'PATH': '/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', 'MAKELEVEL': '2', 'DISPLAY': ':1', 'LANG': 'C.UTF-8', 'RMW_IMPLEMENTATION': 'rmw_fastrtps_cpp', 'ROS_DOMAIN_ID': '20', 'AMENT_PREFIX_PATH': '/opt/castor/common:/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'PWD': '/home/ws/.component_workspaces/localization/build/castor_interfaces', 'LC_ALL': 'C.UTF-8', 'PYTHONPATH': '/opt/castor/common/lib/python3.12/site-packages:/opt/ros/jazzy/lib/python3.12/site-packages', 'MFLAGS': '--no-print-directory', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/opt/castor/common:/opt/ros/jazzy'}), 'shell': False}
+[6.802194] (castor_interfaces) StdoutLine: {'line': b'-- Install configuration: "RelWithDebInfo"\n'}
+[6.803050] (castor_interfaces) StdoutLine: {'line': b'-- Execute custom install script\n'}
+[6.803285] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/ament_index/resource_index/rosidl_interfaces/castor_interfaces\n'}
+[6.812227] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/Heartbeat.json\n'}
+[6.813079] (-) TimerEvent: {}
+[6.822760] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/VehicleState.json\n'}
+[6.830976] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/PositionSetpoint.json\n'}
+[6.838435] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/TeamCommand.json\n'}
+[6.845571] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/SupervisorState.json\n'}
+[6.852761] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/PolicyStatus.json\n'}
+[6.863265] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__functions.h\n'}
+[6.873487] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__struct.h\n'}
+[6.882739] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__type_support.h\n'}
+[6.892291] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__functions.h\n'}
+[6.900409] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__struct.h\n'}
+[6.909372] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__type_support.h\n'}
+[6.913198] (-) TimerEvent: {}
+[6.917761] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__functions.h\n'}
+[6.924421] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__struct.h\n'}
+[6.930015] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__type_support.h\n'}
+[6.936065] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__functions.h\n'}
+[6.943406] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__struct.h\n'}
+[6.949265] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__type_support.h\n'}
+[6.954301] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__functions.h\n'}
+[6.962706] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__struct.h\n'}
+[6.971512] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__type_support.h\n'}
+[6.980282] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__functions.h\n'}
+[6.988770] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__struct.h\n'}
+[6.996803] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__type_support.h\n'}
+[7.004802] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/heartbeat.h\n'}
+[7.012379] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/policy_status.h\n'}
+[7.013384] (-) TimerEvent: {}
+[7.020492] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/position_setpoint.h\n'}
+[7.029005] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/rosidl_generator_c__visibility_control.h\n'}
+[7.037116] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/supervisor_state.h\n'}
+[7.045050] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/team_command.h\n'}
+[7.053703] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/vehicle_state.h\n'}
+[7.064040] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/environment/library_path.sh\n'}
+[7.070760] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/environment/library_path.dsv\n'}
+[7.080098] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__rosidl_typesupport_fastrtps_c.h\n'}
+[7.089020] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__rosidl_typesupport_fastrtps_c.h\n'}
+[7.097507] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__rosidl_typesupport_fastrtps_c.h\n'}
+[7.103376] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__rosidl_typesupport_fastrtps_c.h\n'}
+[7.112393] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__rosidl_typesupport_fastrtps_c.h\n'}
+[7.113495] (-) TimerEvent: {}
+[7.121710] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__rosidl_typesupport_fastrtps_c.h\n'}
+[7.127806] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/rosidl_typesupport_fastrtps_c__visibility_control.h\n'}
+[7.135577] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__rosidl_typesupport_introspection_c.h\n'}
+[7.142856] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__rosidl_typesupport_introspection_c.h\n'}
+[7.149825] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__rosidl_typesupport_introspection_c.h\n'}
+[7.157199] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__rosidl_typesupport_introspection_c.h\n'}
+[7.162436] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__rosidl_typesupport_introspection_c.h\n'}
+[7.169526] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__rosidl_typesupport_introspection_c.h\n'}
+[7.175125] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/rosidl_typesupport_introspection_c__visibility_control.h\n'}
+[7.182800] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__builder.hpp\n'}
+[7.188126] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__struct.hpp\n'}
+[7.194045] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__traits.hpp\n'}
+[7.199301] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__type_support.hpp\n'}
+[7.206368] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__builder.hpp\n'}
+[7.211922] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__struct.hpp\n'}
+[7.213687] (-) TimerEvent: {}
+[7.218305] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__traits.hpp\n'}
+[7.223612] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__type_support.hpp\n'}
+[7.231286] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__builder.hpp\n'}
+[7.236540] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__struct.hpp\n'}
+[7.243139] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__traits.hpp\n'}
+[7.248432] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__type_support.hpp\n'}
+[7.255479] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__builder.hpp\n'}
+[7.260650] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__struct.hpp\n'}
+[7.266123] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__traits.hpp\n'}
+[7.271252] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__type_support.hpp\n'}
+[7.276640] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__builder.hpp\n'}
+[7.281603] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__struct.hpp\n'}
+[7.286839] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__traits.hpp\n'}
+[7.293141] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__type_support.hpp\n'}
+[7.298309] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__builder.hpp\n'}
+[7.304742] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__struct.hpp\n'}
+[7.312076] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__traits.hpp\n'}
+[7.313777] (-) TimerEvent: {}
+[7.320084] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__type_support.hpp\n'}
+[7.329842] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/heartbeat.hpp\n'}
+[7.337882] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/policy_status.hpp\n'}
+[7.346649] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/position_setpoint.hpp\n'}
+[7.355183] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/rosidl_generator_cpp__visibility_control.hpp\n'}
+[7.362197] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/supervisor_state.hpp\n'}
+[7.367464] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/team_command.hpp\n'}
+[7.372860] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/vehicle_state.hpp\n'}
+[7.379551] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__rosidl_typesupport_fastrtps_cpp.hpp\n'}
+[7.384452] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__rosidl_typesupport_fastrtps_cpp.hpp\n'}
+[7.389301] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__rosidl_typesupport_fastrtps_cpp.hpp\n'}
+[7.394632] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__rosidl_typesupport_fastrtps_cpp.hpp\n'}
+[7.399227] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__rosidl_typesupport_fastrtps_cpp.hpp\n'}
+[7.406633] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__rosidl_typesupport_fastrtps_cpp.hpp\n'}
+[7.413844] (-) TimerEvent: {}
+[7.414289] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/rosidl_typesupport_fastrtps_cpp__visibility_control.h\n'}
+[7.419489] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/heartbeat__rosidl_typesupport_introspection_cpp.hpp\n'}
+[7.425267] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/policy_status__rosidl_typesupport_introspection_cpp.hpp\n'}
+[7.431260] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/position_setpoint__rosidl_typesupport_introspection_cpp.hpp\n'}
+[7.436182] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/supervisor_state__rosidl_typesupport_introspection_cpp.hpp\n'}
+[7.441183] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/team_command__rosidl_typesupport_introspection_cpp.hpp\n'}
+[7.446081] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/include/castor_interfaces/castor_interfaces/msg/detail/vehicle_state__rosidl_typesupport_introspection_cpp.hpp\n'}
+[7.452517] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/environment/pythonpath.sh\n'}
+[7.459766] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/environment/pythonpath.dsv\n'}
+[7.466997] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces-0.1.0-py3.12.egg-info/PKG-INFO\n'}
+[7.476667] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces-0.1.0-py3.12.egg-info/SOURCES.txt\n'}
+[7.481987] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces-0.1.0-py3.12.egg-info/dependency_links.txt\n'}
+[7.488356] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces-0.1.0-py3.12.egg-info/top_level.txt\n'}
+[7.494328] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/__init__.py\n'}
+[7.500838] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/_castor_interfaces_s.ep.rosidl_typesupport_c.c\n'}
+[7.508704] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/_castor_interfaces_s.ep.rosidl_typesupport_fastrtps_c.c\n'}
+[7.513926] (-) TimerEvent: {}
+[7.516846] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/_castor_interfaces_s.ep.rosidl_typesupport_introspection_c.c\n'}
+[7.525751] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/castor_interfaces_s__rosidl_typesupport_c.so\n'}
+[7.533850] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/castor_interfaces_s__rosidl_typesupport_fastrtps_c.so\n'}
+[7.541799] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/castor_interfaces_s__rosidl_typesupport_introspection_c.so\n'}
+[7.549753] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/__init__.py\n'}
+[7.556967] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_heartbeat.py\n'}
+[7.562726] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_heartbeat_s.c\n'}
+[7.571690] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_policy_status.py\n'}
+[7.579887] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_policy_status_s.c\n'}
+[7.589695] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_position_setpoint.py\n'}
+[7.597928] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_position_setpoint_s.c\n'}
+[7.605823] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_supervisor_state.py\n'}
+[7.613860] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_supervisor_state_s.c\n'}
+[7.613988] (-) TimerEvent: {}
+[7.621812] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_team_command.py\n'}
+[7.629846] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_team_command_s.c\n'}
+[7.638093] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_vehicle_state.py\n'}
+[7.646683] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_vehicle_state_s.c\n'}
+[7.655168] (castor_interfaces) StdoutLine: {'line': b'-- Up-to-date symlink: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/castor_interfaces_s__rosidl_typesupport_fastrtps_c.so\n'}
+[7.655446] (castor_interfaces) StdoutLine: {'line': b'-- Up-to-date symlink: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/castor_interfaces_s__rosidl_typesupport_introspection_c.so\n'}
+[7.655725] (castor_interfaces) StdoutLine: {'line': b'-- Up-to-date symlink: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/castor_interfaces_s__rosidl_typesupport_c.so\n'}
+[7.655985] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/rust/Cargo.toml\n'}
+[7.664229] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/rust/build.rs\n'}
+[7.674392] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/rust/src/lib.rs\n'}
+[7.682402] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/rust/src/msg.rs\n'}
+[7.689891] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/rust/src/msg/rmw.rs\n'}
+[7.695873] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/Heartbeat.idl\n'}
+[7.704110] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/VehicleState.idl\n'}
+[7.710306] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/PositionSetpoint.idl\n'}
+[7.714062] (-) TimerEvent: {}
+[7.718916] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/TeamCommand.idl\n'}
+[7.725166] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/SupervisorState.idl\n'}
+[7.733369] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/PolicyStatus.idl\n'}
+[7.743100] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/Heartbeat.msg\n'}
+[7.749328] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/VehicleState.msg\n'}
+[7.756054] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/PositionSetpoint.msg\n'}
+[7.764202] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/TeamCommand.msg\n'}
+[7.772844] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/SupervisorState.msg\n'}
+[7.782407] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/msg/PolicyStatus.msg\n'}
+[7.790925] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/ament_index/resource_index/package_run_dependencies/castor_interfaces\n'}
+[7.799557] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/ament_index/resource_index/parent_prefix_path/castor_interfaces\n'}
+[7.808615] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/environment/ament_prefix_path.sh\n'}
+[7.814259] (-) TimerEvent: {}
+[7.819052] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/environment/ament_prefix_path.dsv\n'}
+[7.827685] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/environment/path.sh\n'}
+[7.835964] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/environment/path.dsv\n'}
+[7.844771] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/local_setup.bash\n'}
+[7.853770] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/local_setup.sh\n'}
+[7.861637] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/local_setup.zsh\n'}
+[7.870176] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/local_setup.dsv\n'}
+[7.878970] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/package.dsv\n'}
+[7.886727] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/ament_index/resource_index/packages/castor_interfaces\n'}
+[7.894014] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/rosidl_cmake-extras.cmake\n'}
+[7.902084] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/ament_cmake_export_dependencies-extras.cmake\n'}
+[7.912226] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/ament_cmake_export_include_directories-extras.cmake\n'}
+[7.914445] (-) TimerEvent: {}
+[7.918206] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/ament_cmake_export_libraries-extras.cmake\n'}
+[7.924162] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/ament_cmake_export_targets-extras.cmake\n'}
+[7.931053] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/rosidl_cmake_export_typesupport_targets-extras.cmake\n'}
+[7.938347] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/rosidl_cmake_export_typesupport_libraries-extras.cmake\n'}
+[7.946029] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/rosidl_cmake_aggregate_target-extras.cmake\n'}
+[7.952178] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/castor_interfacesConfig.cmake\n'}
+[7.957445] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/castor_interfacesConfig-version.cmake\n'}
+[7.965081] (castor_interfaces) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/package.xml\n'}
+[7.972677] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_generator_c.so\n'}
+[7.973007] (castor_interfaces) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_generator_c.so" to ""\n'}
+[7.973182] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_fastrtps_c.so\n'}
+[7.973635] (castor_interfaces) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_fastrtps_c.so" to ""\n'}
+[7.973961] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_introspection_c.so\n'}
+[7.974216] (castor_interfaces) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_introspection_c.so" to ""\n'}
+[7.974328] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_c.so\n'}
+[7.974378] (castor_interfaces) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_c.so" to ""\n'}
+[7.974422] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_fastrtps_cpp.so\n'}
+[7.974859] (castor_interfaces) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_fastrtps_cpp.so" to ""\n'}
+[7.974977] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_introspection_cpp.so\n'}
+[7.975325] (castor_interfaces) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_introspection_cpp.so" to ""\n'}
+[7.975442] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_cpp.so\n'}
+[7.975586] (castor_interfaces) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_typesupport_cpp.so" to ""\n'}
+[8.004041] (castor_interfaces) StdoutLine: {'line': b"Listing '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces'...\n"}
+[8.004138] (castor_interfaces) StdoutLine: {'line': b"Compiling '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/__init__.py'...\n"}
+[8.005101] (castor_interfaces) StdoutLine: {'line': b"Listing '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg'...\n"}
+[8.005194] (castor_interfaces) StdoutLine: {'line': b"Compiling '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/__init__.py'...\n"}
+[8.005235] (castor_interfaces) StdoutLine: {'line': b"Compiling '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_heartbeat.py'...\n"}
+[8.006635] (castor_interfaces) StdoutLine: {'line': b"Compiling '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_policy_status.py'...\n"}
+[8.008375] (castor_interfaces) StdoutLine: {'line': b"Compiling '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_position_setpoint.py'...\n"}
+[8.009505] (castor_interfaces) StdoutLine: {'line': b"Compiling '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_supervisor_state.py'...\n"}
+[8.010677] (castor_interfaces) StdoutLine: {'line': b"Compiling '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_team_command.py'...\n"}
+[8.011750] (castor_interfaces) StdoutLine: {'line': b"Compiling '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages/castor_interfaces/msg/_vehicle_state.py'...\n"}
+[8.014595] (-) TimerEvent: {}
+[8.016474] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_generator_py.so\n'}
+[8.016704] (castor_interfaces) StdoutLine: {'line': b'-- Set non-toolchain portion of runtime path of "/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/libcastor_interfaces__rosidl_generator_py.so" to ""\n'}
+[8.016834] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/export_castor_interfaces__rosidl_generator_cExport.cmake\n'}
+[8.016981] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/export_castor_interfaces__rosidl_generator_cExport-relwithdebinfo.cmake\n'}
+[8.017071] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/export_castor_interfaces__rosidl_typesupport_fastrtps_cExport.cmake\n'}
+[8.017112] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/export_castor_interfaces__rosidl_typesupport_fastrtps_cExport-relwithdebinfo.cmake\n'}
+[8.017150] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/castor_interfaces__rosidl_typesupport_introspection_cExport.cmake\n'}
+[8.017268] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/castor_interfaces__rosidl_typesupport_introspection_cExport-relwithdebinfo.cmake\n'}
+[8.017304] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/castor_interfaces__rosidl_typesupport_cExport.cmake\n'}
+[8.017336] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/castor_interfaces__rosidl_typesupport_cExport-relwithdebinfo.cmake\n'}
+[8.017371] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/export_castor_interfaces__rosidl_generator_cppExport.cmake\n'}
+[8.017440] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/export_castor_interfaces__rosidl_typesupport_fastrtps_cppExport.cmake\n'}
+[8.017474] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/export_castor_interfaces__rosidl_typesupport_fastrtps_cppExport-relwithdebinfo.cmake\n'}
+[8.017529] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/castor_interfaces__rosidl_typesupport_introspection_cppExport.cmake\n'}
+[8.017582] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/castor_interfaces__rosidl_typesupport_introspection_cppExport-relwithdebinfo.cmake\n'}
+[8.017656] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/castor_interfaces__rosidl_typesupport_cppExport.cmake\n'}
+[8.017725] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/castor_interfaces__rosidl_typesupport_cppExport-relwithdebinfo.cmake\n'}
+[8.017803] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/export_castor_interfaces__rosidl_generator_pyExport.cmake\n'}
+[8.017874] (castor_interfaces) StdoutLine: {'line': b'-- Installing: /home/ws/.component_workspaces/localization/install/castor_interfaces/share/castor_interfaces/cmake/export_castor_interfaces__rosidl_generator_pyExport-relwithdebinfo.cmake\n'}
+[8.019052] (castor_interfaces) CommandEnded: {'returncode': 0}
+[8.034077] (castor_interfaces) JobEnded: {'identifier': 'castor_interfaces', 'rc': 0}
+[8.034320] (castor_common) JobStarted: {'identifier': 'castor_common'}
+[8.114775] (-) TimerEvent: {}
+[8.214979] (-) TimerEvent: {}
+[8.315127] (-) TimerEvent: {}
+[8.415352] (-) TimerEvent: {}
+[8.515576] (-) TimerEvent: {}
+[8.594643] (castor_common) Command: {'cmd': ['/usr/bin/python3', '-W', 'ignore:setup.py install is deprecated', '-W', 'ignore:easy_install command is deprecated', 'setup.py', 'develop', '--editable', '--build-directory', '/home/ws/.component_workspaces/localization/build/castor_common/build', '--no-deps', 'symlink_data'], 'cwd': '/home/ws/.component_workspaces/localization/build/castor_common', 'env': OrderedDict({'HOSTNAME': 'radG16', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib:/opt/castor/common/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/lib', 'HOME': '/home/castor', 'OLDPWD': '/home/ws/components/localization', 'PYTHONUNBUFFERED': '1', 'ROS_PYTHON_VERSION': '3', 'MAKEFLAGS': ' --no-print-directory', 'COLCON_PREFIX_PATH': '/opt/castor/common', 'ROS_DISTRO': 'jazzy', 'CASTOR_ROBOT_CONFIG': '/etc/castor/robot.yaml', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'CASTOR_COMPONENT': 'localization', 'PATH': '/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', 'MAKELEVEL': '2', 'DISPLAY': ':1', 'LANG': 'C.UTF-8', 'RMW_IMPLEMENTATION': 'rmw_fastrtps_cpp', 'ROS_DOMAIN_ID': '20', 'AMENT_PREFIX_PATH': '/home/ws/.component_workspaces/localization/install/castor_interfaces:/opt/castor/common:/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'PWD': '/home/ws/.component_workspaces/localization/build/castor_common', 'LC_ALL': 'C.UTF-8', 'PYTHONPATH': '/home/ws/.component_workspaces/localization/build/castor_common/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/ws/.component_workspaces/localization/install/castor_common/lib/python3.12/site-packages:/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages:/opt/castor/common/lib/python3.12/site-packages:/opt/ros/jazzy/lib/python3.12/site-packages', 'MFLAGS': '--no-print-directory', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/home/ws/.component_workspaces/localization/install/castor_interfaces:/opt/castor/common'}), 'shell': False}
+[8.615725] (-) TimerEvent: {}
+[8.715844] (-) TimerEvent: {}
+[8.751221] (castor_common) StdoutLine: {'line': b'running develop\n'}
+[8.815959] (-) TimerEvent: {}
+[8.818911] (castor_common) StdoutLine: {'line': b'running egg_info\n'}
+[8.819004] (castor_common) StdoutLine: {'line': b'creating castor_common.egg-info\n'}
+[8.825451] (castor_common) StdoutLine: {'line': b'writing castor_common.egg-info/PKG-INFO\n'}
+[8.825539] (castor_common) StdoutLine: {'line': b'writing dependency_links to castor_common.egg-info/dependency_links.txt\n'}
+[8.825715] (castor_common) StdoutLine: {'line': b'writing entry points to castor_common.egg-info/entry_points.txt\n'}
+[8.825799] (castor_common) StdoutLine: {'line': b'writing requirements to castor_common.egg-info/requires.txt\n'}
+[8.825839] (castor_common) StdoutLine: {'line': b'writing top-level names to castor_common.egg-info/top_level.txt\n'}
+[8.825875] (castor_common) StdoutLine: {'line': b"writing manifest file 'castor_common.egg-info/SOURCES.txt'\n"}
+[8.839483] (castor_common) StdoutLine: {'line': b"reading manifest file 'castor_common.egg-info/SOURCES.txt'\n"}
+[8.839793] (castor_common) StdoutLine: {'line': b"writing manifest file 'castor_common.egg-info/SOURCES.txt'\n"}
+[8.847301] (castor_common) StdoutLine: {'line': b'running build_ext\n'}
+[8.847386] (castor_common) StdoutLine: {'line': b'Creating /home/ws/.component_workspaces/localization/install/castor_common/lib/python3.12/site-packages/castor-common.egg-link (link to .)\n'}
+[8.847731] (castor_common) StdoutLine: {'line': b'Installing castor-config script to /home/ws/.component_workspaces/localization/install/castor_common/lib/castor_common\n'}
+[8.847834] (castor_common) StdoutLine: {'line': b'Installing heartbeat script to /home/ws/.component_workspaces/localization/install/castor_common/lib/castor_common\n'}
+[8.848008] (castor_common) StdoutLine: {'line': b'\n'}
+[8.848094] (castor_common) StdoutLine: {'line': b'Installed /home/ws/.component_workspaces/localization/build/castor_common\n'}
+[8.848140] (castor_common) StdoutLine: {'line': b'running symlink_data\n'}
+[8.848296] (castor_common) StdoutLine: {'line': b'creating /home/ws/.component_workspaces/localization/install/castor_common/share/ament_index\n'}
+[8.848351] (castor_common) StdoutLine: {'line': b'creating /home/ws/.component_workspaces/localization/install/castor_common/share/ament_index/resource_index\n'}
+[8.848388] (castor_common) StdoutLine: {'line': b'creating /home/ws/.component_workspaces/localization/install/castor_common/share/ament_index/resource_index/packages\n'}
+[8.848420] (castor_common) StdoutLine: {'line': b'symbolically linking /home/ws/.component_workspaces/localization/build/castor_common/resource/castor_common -> /home/ws/.component_workspaces/localization/install/castor_common/share/ament_index/resource_index/packages\n'}
+[8.848456] (castor_common) StdoutLine: {'line': b'symbolically linking /home/ws/.component_workspaces/localization/build/castor_common/package.xml -> /home/ws/.component_workspaces/localization/install/castor_common/share/castor_common\n'}
+[8.864935] (castor_common) CommandEnded: {'returncode': 0}
+[8.869484] (castor_common) JobEnded: {'identifier': 'castor_common', 'rc': 0}
+[8.869824] (localization_launch) JobStarted: {'identifier': 'localization_launch'}
+[8.878717] (localization_launch) JobProgress: {'identifier': 'localization_launch', 'progress': 'cmake'}
+[8.879081] (localization_launch) Command: {'cmd': ['/usr/bin/cmake', '/home/ws/components/localization/localization_launch', '-DCMAKE_BUILD_TYPE=RelWithDebInfo', '-DCMAKE_EXPORT_COMPILE_COMMANDS=ON', '-DAMENT_CMAKE_SYMLINK_INSTALL=1', '-DCMAKE_INSTALL_PREFIX=/home/ws/.component_workspaces/localization/install/localization_launch'], 'cwd': '/home/ws/.component_workspaces/localization/build/localization_launch', 'env': OrderedDict({'HOSTNAME': 'radG16', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib:/opt/castor/common/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/lib', 'HOME': '/home/castor', 'OLDPWD': '/home/ws/components/localization', 'PYTHONUNBUFFERED': '1', 'ROS_PYTHON_VERSION': '3', 'MAKEFLAGS': ' --no-print-directory', 'COLCON_PREFIX_PATH': '/opt/castor/common', 'ROS_DISTRO': 'jazzy', 'CASTOR_ROBOT_CONFIG': '/etc/castor/robot.yaml', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'CASTOR_COMPONENT': 'localization', 'PATH': '/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', 'MAKELEVEL': '2', 'DISPLAY': ':1', 'LANG': 'C.UTF-8', 'RMW_IMPLEMENTATION': 'rmw_fastrtps_cpp', 'ROS_DOMAIN_ID': '20', 'AMENT_PREFIX_PATH': '/home/ws/.component_workspaces/localization/install/castor_common:/home/ws/.component_workspaces/localization/install/castor_interfaces:/opt/castor/common:/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'PWD': '/home/ws/.component_workspaces/localization/build/localization_launch', 'LC_ALL': 'C.UTF-8', 'PYTHONPATH': '/home/ws/.component_workspaces/localization/build/castor_common:/home/ws/.component_workspaces/localization/install/castor_common/lib/python3.12/site-packages:/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages:/opt/castor/common/lib/python3.12/site-packages:/opt/ros/jazzy/lib/python3.12/site-packages', 'MFLAGS': '--no-print-directory', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/home/ws/.component_workspaces/localization/install/castor_interfaces:/opt/castor/common:/opt/ros/jazzy'}), 'shell': False}
+[8.916050] (-) TimerEvent: {}
+[8.919021] (localization_launch) StdoutLine: {'line': b'-- The C compiler identification is GNU 13.3.0\n'}
+[8.958929] (localization_launch) StdoutLine: {'line': b'-- The CXX compiler identification is GNU 13.3.0\n'}
+[8.974015] (localization_launch) StdoutLine: {'line': b'-- Detecting C compiler ABI info\n'}
+[9.016219] (-) TimerEvent: {}
+[9.066275] (localization_launch) StdoutLine: {'line': b'-- Detecting C compiler ABI info - done\n'}
+[9.074189] (localization_launch) StdoutLine: {'line': b'-- Check for working C compiler: /usr/bin/cc - skipped\n'}
+[9.074446] (localization_launch) StdoutLine: {'line': b'-- Detecting C compile features\n'}
+[9.074651] (localization_launch) StdoutLine: {'line': b'-- Detecting C compile features - done\n'}
+[9.085538] (localization_launch) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info\n'}
+[9.116384] (-) TimerEvent: {}
+[9.192465] (localization_launch) StdoutLine: {'line': b'-- Detecting CXX compiler ABI info - done\n'}
+[9.203774] (localization_launch) StdoutLine: {'line': b'-- Check for working CXX compiler: /usr/bin/c++ - skipped\n'}
+[9.204064] (localization_launch) StdoutLine: {'line': b'-- Detecting CXX compile features\n'}
+[9.204275] (localization_launch) StdoutLine: {'line': b'-- Detecting CXX compile features - done\n'}
+[9.205761] (localization_launch) StdoutLine: {'line': b'-- Found ament_cmake: 2.5.6 (/opt/ros/jazzy/share/ament_cmake/cmake)\n'}
+[9.216494] (-) TimerEvent: {}
+[9.312192] (localization_launch) StdoutLine: {'line': b'-- Found Python3: /usr/bin/python3 (found version "3.12.3") found components: Interpreter \n'}
+[9.316826] (-) TimerEvent: {}
+[9.372091] (localization_launch) StdoutLine: {'line': b'-- Override CMake install command with custom implementation using symlinks instead of copying resources\n'}
+[9.416886] (-) TimerEvent: {}
+[9.453324] (localization_launch) StdoutLine: {'line': b'-- Configuring done (0.6s)\n'}
+[9.455030] (localization_launch) StdoutLine: {'line': b'-- Generating done (0.0s)\n'}
+[9.455319] (localization_launch) StderrLine: {'line': b'CMake Warning:\n'}
+[9.455424] (localization_launch) StderrLine: {'line': b'  Manually-specified variables were not used by the project:\n'}
+[9.455469] (localization_launch) StderrLine: {'line': b'\n'}
+[9.455506] (localization_launch) StderrLine: {'line': b'    CMAKE_EXPORT_COMPILE_COMMANDS\n'}
+[9.455546] (localization_launch) StderrLine: {'line': b'\n'}
+[9.455580] (localization_launch) StderrLine: {'line': b'\n'}
+[9.455900] (localization_launch) StdoutLine: {'line': b'-- Build files have been written to: /home/ws/.component_workspaces/localization/build/localization_launch\n'}
+[9.458793] (localization_launch) CommandEnded: {'returncode': 0}
+[9.458985] (localization_launch) JobProgress: {'identifier': 'localization_launch', 'progress': 'build'}
+[9.459190] (localization_launch) Command: {'cmd': ['/usr/bin/cmake', '--build', '/home/ws/.component_workspaces/localization/build/localization_launch', '--', '-j24', '-l24'], 'cwd': '/home/ws/.component_workspaces/localization/build/localization_launch', 'env': OrderedDict({'HOSTNAME': 'radG16', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib:/opt/castor/common/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/lib', 'HOME': '/home/castor', 'OLDPWD': '/home/ws/components/localization', 'PYTHONUNBUFFERED': '1', 'ROS_PYTHON_VERSION': '3', 'MAKEFLAGS': ' --no-print-directory', 'COLCON_PREFIX_PATH': '/opt/castor/common', 'ROS_DISTRO': 'jazzy', 'CASTOR_ROBOT_CONFIG': '/etc/castor/robot.yaml', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'CASTOR_COMPONENT': 'localization', 'PATH': '/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', 'MAKELEVEL': '2', 'DISPLAY': ':1', 'LANG': 'C.UTF-8', 'RMW_IMPLEMENTATION': 'rmw_fastrtps_cpp', 'ROS_DOMAIN_ID': '20', 'AMENT_PREFIX_PATH': '/home/ws/.component_workspaces/localization/install/castor_common:/home/ws/.component_workspaces/localization/install/castor_interfaces:/opt/castor/common:/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'PWD': '/home/ws/.component_workspaces/localization/build/localization_launch', 'LC_ALL': 'C.UTF-8', 'PYTHONPATH': '/home/ws/.component_workspaces/localization/build/castor_common:/home/ws/.component_workspaces/localization/install/castor_common/lib/python3.12/site-packages:/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages:/opt/castor/common/lib/python3.12/site-packages:/opt/ros/jazzy/lib/python3.12/site-packages', 'MFLAGS': '--no-print-directory', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/home/ws/.component_workspaces/localization/install/castor_interfaces:/opt/castor/common:/opt/ros/jazzy'}), 'shell': False}
+[9.489090] (localization_launch) CommandEnded: {'returncode': 0}
+[9.489529] (localization_launch) JobProgress: {'identifier': 'localization_launch', 'progress': 'install'}
+[9.489784] (localization_launch) Command: {'cmd': ['/usr/bin/cmake', '--install', '/home/ws/.component_workspaces/localization/build/localization_launch'], 'cwd': '/home/ws/.component_workspaces/localization/build/localization_launch', 'env': OrderedDict({'HOSTNAME': 'radG16', 'SHLVL': '1', 'LD_LIBRARY_PATH': '/home/ws/.component_workspaces/localization/install/castor_interfaces/lib:/opt/castor/common/lib:/opt/ros/jazzy/lib/x86_64-linux-gnu:/opt/ros/jazzy/lib', 'HOME': '/home/castor', 'OLDPWD': '/home/ws/components/localization', 'PYTHONUNBUFFERED': '1', 'ROS_PYTHON_VERSION': '3', 'MAKEFLAGS': ' --no-print-directory', 'COLCON_PREFIX_PATH': '/opt/castor/common', 'ROS_DISTRO': 'jazzy', 'CASTOR_ROBOT_CONFIG': '/etc/castor/robot.yaml', '_': '/usr/bin/colcon', 'ROS_VERSION': '2', 'CASTOR_COMPONENT': 'localization', 'PATH': '/opt/ros/jazzy/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin', 'MAKELEVEL': '2', 'DISPLAY': ':1', 'LANG': 'C.UTF-8', 'RMW_IMPLEMENTATION': 'rmw_fastrtps_cpp', 'ROS_DOMAIN_ID': '20', 'AMENT_PREFIX_PATH': '/home/ws/.component_workspaces/localization/install/castor_common:/home/ws/.component_workspaces/localization/install/castor_interfaces:/opt/castor/common:/opt/ros/jazzy', 'ROS_AUTOMATIC_DISCOVERY_RANGE': 'LOCALHOST', 'PWD': '/home/ws/.component_workspaces/localization/build/localization_launch', 'LC_ALL': 'C.UTF-8', 'PYTHONPATH': '/home/ws/.component_workspaces/localization/build/castor_common:/home/ws/.component_workspaces/localization/install/castor_common/lib/python3.12/site-packages:/home/ws/.component_workspaces/localization/install/castor_interfaces/lib/python3.12/site-packages:/opt/castor/common/lib/python3.12/site-packages:/opt/ros/jazzy/lib/python3.12/site-packages', 'MFLAGS': '--no-print-directory', 'COLCON': '1', 'CMAKE_PREFIX_PATH': '/home/ws/.component_workspaces/localization/install/castor_interfaces:/opt/castor/common:/opt/ros/jazzy'}), 'shell': False}
+[9.499202] (localization_launch) StdoutLine: {'line': b'-- Install configuration: "RelWithDebInfo"\n'}
+[9.499673] (localization_launch) StdoutLine: {'line': b'-- Execute custom install script\n'}
+[9.500112] (localization_launch) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/launch/localization.launch.py\n'}
+[9.507345] (localization_launch) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/ament_index/resource_index/package_run_dependencies/localization_launch\n'}
+[9.514343] (localization_launch) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/ament_index/resource_index/parent_prefix_path/localization_launch\n'}
+[9.516968] (-) TimerEvent: {}
+[9.523967] (localization_launch) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/environment/ament_prefix_path.sh\n'}
+[9.532088] (localization_launch) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/environment/ament_prefix_path.dsv\n'}
+[9.539922] (localization_launch) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/environment/path.sh\n'}
+[9.549227] (localization_launch) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/environment/path.dsv\n'}
+[9.558451] (localization_launch) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/local_setup.bash\n'}
+[9.567668] (localization_launch) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/local_setup.sh\n'}
+[9.574948] (localization_launch) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/local_setup.zsh\n'}
+[9.584813] (localization_launch) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/local_setup.dsv\n'}
+[9.593025] (localization_launch) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/package.dsv\n'}
+[9.599241] (localization_launch) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/ament_index/resource_index/packages/localization_launch\n'}
+[9.608289] (localization_launch) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/cmake/localization_launchConfig.cmake\n'}
+[9.616889] (localization_launch) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/cmake/localization_launchConfig-version.cmake\n'}
+[9.616974] (-) TimerEvent: {}
+[9.623183] (localization_launch) StdoutLine: {'line': b'-- Symlinking: /home/ws/.component_workspaces/localization/install/localization_launch/share/localization_launch/package.xml\n'}
+[9.632903] (localization_launch) CommandEnded: {'returncode': 0}
+[9.641460] (localization_launch) JobEnded: {'identifier': 'localization_launch', 'rc': 0}
+[9.641749] (-) EventReactorShutdown: {}
