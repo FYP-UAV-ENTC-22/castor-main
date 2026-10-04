@@ -37,7 +37,9 @@ done
 
 printf '\n\033[1mRunning revisions\033[0m\n'
 for h in "${hosts[@]}"; do
-    rev=$(ssh -o BatchMode=yes -o ConnectTimeout=8 "$h" \
-        "docker inspect --format '{{index .Config.Labels \"org.opencontainers.image.revision\"}}' castor-system-1" 2>/dev/null || echo "not running")
+    # per component: an update restarts only what changed, so they can differ
+    rev=$(ssh -o BatchMode=yes -o ConnectTimeout=8 "$h" 'for c in vehicle localization planning system; do
+            printf "%s=%s " "$c" "$(docker inspect --format "{{index .Config.Labels \"org.opencontainers.image.revision\"}}" "castor-$c-1" 2>/dev/null || echo down)"
+        done' 2>/dev/null || echo "not reachable")
     printf '    %-32s %s\n' "$h" "$rev"
 done
