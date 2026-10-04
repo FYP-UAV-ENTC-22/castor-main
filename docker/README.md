@@ -11,10 +11,24 @@ topics.
 
 Don't set `ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST` in these containers. In that
 mode Fast DDS and the bridge each advertise a non-loopback address, and the
-bridge never discovers a node that starts after it (the XML has the detail). For
-the ROS CLI use `docker compose exec <service> bash` or a `docker run` of any
-CASTOR image; a ROS install on the host itself (another distro, other DDS
-settings) is not guaranteed to see the containers' graph.
+bridge never discovers a node that starts after it (the XML has the detail).
+
+For the ROS CLI use `docker compose exec <service> bash`, a `docker run` of any
+CASTOR image, or a ROS 2 install on the host itself (Humble or Jazzy, Fast DDS)
+after `source docker/host_ros_env.sh`. Measured 2026-10-04, host Humble against
+the Jazzy containers and the simulator:
+
+| Host settings | Discovery | Data |
+|---|---|---|
+| ROS defaults | no | no |
+| `fastdds_localhost.xml` (the containers' profile) | yes | no: Fast DDS picks shared memory, and the root-owned segments are closed to you |
+| `fastdds_host.xml` (what `host_ros_env.sh` sets) | yes | yes, both ways |
+
+With host networking the host and every container share the `ros2` daemon's
+port, so a daemon started by another distro or other settings answers with
+`!rclpy.ok()` faults; `host_ros_env.sh` stops it. Containers that are killed
+rather than stopped leave their shared-memory segments in `/dev/shm` (277 had
+piled up by 2026-10-04); `make dds-shm-clean` removes the ones nothing uses.
 
 Restarts need care because of how the bridge works. It tracks the publishers on
 its host by node name, so a node that comes back under the same name before its
@@ -146,6 +160,7 @@ make sim-up                     # headless container, repo at /home/ws, GPU, hos
 make sim-shell
 make sim-train-smoke            # 3 MAPPO iterations on the flycrane hover task
 make sim-px4                    # builds px4_sitl_default and px4_sitl_raptor into the PX4 checkout
+make sim-pegasus-ros2 DRONES=2  # Pegasus S500s publishing drone<i>/state/*, /sensors/* into the graph
 make sim-gui                    # Isaac Sim on your display
 make sim-own                    # give files the container wrote into the repo back to you
 make sim-down

@@ -33,7 +33,7 @@ help:
 	@echo "  make vehicle-px4-msgs         copy PX4's msg/srv into components/vehicle/px4_msgs"
 	@echo "  make vehicle-qgc              open QGroundControl from the running vehicle container"
 	@echo "  make sim-image                build castor-simulation:local (Isaac Sim, Isaac Lab, Pegasus, PX4, ROS 2, training)"
-	@echo "  make sim-up | sim-shell | sim-down | sim-gui | sim-px4 | sim-train-smoke | sim-own"
+	@echo "  make sim-up | sim-shell | sim-down | sim-gui | sim-px4 | sim-train-smoke | sim-pegasus-ros2 | sim-own"
 	@echo ""
 	@echo "Components: $(COMPONENTS)"
 
@@ -92,7 +92,7 @@ vehicle-qgc:
 SIM_COMPOSE := docker compose -f docker/docker-compose.sim.yml
 SIM_EXEC := $(SIM_COMPOSE) exec simulation
 MARL_DIR := components/planning/MARL_cooperative_aerial_manipulation_ext
-.PHONY: sim-image sim-up sim-shell sim-down sim-gui sim-px4 sim-train-smoke sim-own
+.PHONY: sim-image sim-up sim-shell sim-down sim-gui sim-px4 sim-train-smoke sim-pegasus-ros2 sim-own dds-shm-clean
 sim-image:
 	docker/build_simulation.sh
 sim-up:
@@ -114,6 +114,13 @@ sim-train-smoke: sim-up
 	$(SIM_COMPOSE) exec -w /home/ws/$(MARL_DIR) simulation /isaac-sim/python.sh scripts/skrl/train.py \
 	  --task=Isaac-flycrane-payload-decentralized-hovering-v0 --headless --num_envs=8 --max_iterations=3 --seed=42 --algorithm=MAPPO; \
 	  s=$$?; $(MAKE) --no-print-directory sim-own; exit $$s
+# Pegasus S500s publishing drone<i>/state/* and drone<i>/sensors/* into the ROS graph (DRONES=1, 60 s).
+# From the host: source /opt/ros/<distro>/setup.bash && source docker/host_ros_env.sh && ros2 topic list
+sim-pegasus-ros2: sim-up
+	$(SIM_EXEC) /isaac-sim/python.sh components/simulation/tests/pegasus_ros2.py --headless --drones $(or $(DRONES),1)
+# Fast DDS shared-memory segments left in /dev/shm by killed containers (root-owned); only unused ones go.
+dds-shm-clean:
+	docker run --rm --ipc host --entrypoint bash ghcr.io/fyp-uav-entc-22/castor-system:$(or $(CASTOR_TAG),local) -c 'source /opt/ros/jazzy/setup.bash && fastdds shm clean'
 # The container runs as root: give whatever it wrote into the checkout back to you.
 sim-own:
 	$(SIM_COMPOSE) exec -T simulation find /home/ws -xdev -user 0 -exec chown -h $(shell id -u):$(shell id -g) {} +

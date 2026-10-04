@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Fast DDS profile for a ROS 2 install on the host itself (outside the CASTOR
+  containers), so it joins the containers' graph: source docker/host_ros_env.sh.
+  Same as fastdds_localhost.xml minus shared memory. The containers run as root
+  and their shared-memory segments in /dev/shm are root-only (rw-r--r--), so a
+  host process running as you discovers every topic over SHM but never receives
+  a sample. UDP on 127.0.0.1 has no such problem. Measured 2026-10-04 with host
+  Humble (Fast DDS 2.6) against Jazzy containers and Isaac's bundled Jazzy, both
+  ways: the default host profile sees nothing, this one gets every message
+  (Pegasus pose at ~216 Hz). Humble prints "sequence size exceeds remaining
+  buffer" on Jazzy's discovery info; harmless.
+-->
+<dds xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+  <profiles>
+    <transport_descriptors>
+      <transport_descriptor>
+        <transport_id>castor_udp_loopback</transport_id>
+        <type>UDPv4</type>
+        <interfaceWhiteList>
+          <address>127.0.0.1</address>
+        </interfaceWhiteList>
+      </transport_descriptor>
+    </transport_descriptors>
+    <participant profile_name="castor_host" is_default_profile="true">
+      <rtps>
+        <builtin>
+          <discovery_config>
+            <leaseDuration><sec>5</sec></leaseDuration>
+            <leaseAnnouncement><sec>1</sec></leaseAnnouncement>
+          </discovery_config>
+        </builtin>
+        <userTransports>
+          <transport_id>castor_udp_loopback</transport_id>
+        </userTransports>
+        <useBuiltinTransports>false</useBuiltinTransports>
+      </rtps>
+    </participant>
+  </profiles>
+</dds>
