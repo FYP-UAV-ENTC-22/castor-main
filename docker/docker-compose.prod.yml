@@ -53,7 +53,10 @@ services:
     depends_on:
       zenoh-config:
         condition: service_completed_successfully
-    command: ["-c", "/run/castor/zenoh-bridge.json5"]
+    # Wait for the rendered config instead of crash-looping: after a reboot Docker's restart
+    # policy starts this before castor-stack.service has re-rendered /run/castor (measured on a
+    # Pi 5: 6 restarts at every boot). An ordinary restart finds the file and starts at once.
+    entrypoint: ["/bin/sh", "-c", "until [ -f /run/castor/zenoh-bridge.json5 ]; do sleep 1; done; exec /zenoh-bridge-ros2dds -c /run/castor/zenoh-bridge.json5"]
     environment:
       ROS_DISTRO: jazzy    # the bridge assumes iron when unset (ros_discovery_info format)
       # Its Cyclone DDS on loopback only, matching docker/fastdds_localhost.xml in the
