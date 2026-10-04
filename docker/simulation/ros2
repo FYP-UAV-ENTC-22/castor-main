@@ -1,0 +1,8 @@
+#!/bin/bash
+# The ROS 2 CLI from system Jazzy (Python 3.12). Sourced here, in this process
+# only: Isaac Sim's own processes keep the bridge's bundled Jazzy (Python 3.11).
+unset PYTHONPATH
+export LD_LIBRARY_PATH=
+# shellcheck disable=SC1091
+source /opt/ros/jazzy/setup.bash
+exec /opt/ros/jazzy/bin/ros2 "$@"

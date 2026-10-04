@@ -148,8 +148,14 @@ private:
 #if CASTOR_HAVE_ORT
     if (run_inference_ && model_loaded_ && obs_ok_) {
       const auto t0 = Clock::now();
-      infer();
+      try {
+        infer();
+      } catch (const Ort::Exception &e) {
+        RCLCPP_ERROR_THROTTLE(get_logger(), *get_clock(), 5000, "inference failed: %s", e.what());
+        return;
+      }
       last_inference_ms_ = std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
+      window_ms_.push_back(last_inference_ms_);
     }
 #endif
   }
@@ -169,6 +175,27 @@ private:
     s.loop_rate_hz = window > 0 ? steps_ / window : 0.0;
     s.max_jitter_ms = std::max(0.0, max_late_ms_);
     s.last_inference_ms = last_inference_ms_;
+    s.inference_samples = static_cast<uint32_t>(window_ms_.size());
+    s.inference_mean_ms = s.inference_p50_ms = s.inference_p99_ms = s.inference_max_ms = -1.0;
+    if (!window_ms_.empty()) {
+      std::sort(window_ms_.begin(), window_ms_.end());
+      const auto pct = [this](double q) {
+        return window_ms_[std::min(window_ms_.size() - 1, static_cast<std::size_t>(q * window_ms_.size()))];
+      };
+      double sum = 0.0;
+      for (double x : window_ms_) sum += x;
+      s.inference_mean_ms = sum / window_ms_.size();
+      s.inference_p50_ms = pct(0.50);
+      s.inference_p99_ms = pct(0.99);
+      s.inference_max_ms = window_ms_.back();
+      if (++windows_since_log_ >= 10) {
+        RCLCPP_INFO(get_logger(), "inference over 1 s: n=%u mean %.3f p50 %.3f p99 %.3f max %.3f ms, loop %.1f Hz",
+                    s.inference_samples, s.inference_mean_ms, s.inference_p50_ms, s.inference_p99_ms,
+                    s.inference_max_ms, s.loop_rate_hz);
+        windows_since_log_ = 0;
+      }
+      window_ms_.clear();
+    }
     status_pub_->publish(s);
     steps_ = 0;
     max_late_ms_ = 0.0;
@@ -188,6 +215,8 @@ private:
   Clock::time_point next_due_, window_start_;
   double max_late_ms_{0.0};
   uint64_t steps_{0};
+  std::vector<double> window_ms_;
+  int windows_since_log_{0};
 
 #if CASTOR_HAVE_ORT
   std::unique_ptr<Ort::Env> env_;

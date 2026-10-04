@@ -12,6 +12,9 @@
 #   CASTOR_REGISTRY      default ghcr.io/fyp-uav-entc-22
 #   CASTOR_TAG           default main; use sha-<rev> to freeze a fleet, local for your own builds
 #   CASTOR_ROBOT_CONFIG  default /etc/castor/robot.yaml
+#   CASTOR_RUN_DIR, CASTOR_LOG_DIR, CASTOR_MODELS_DIR
+#                        default /run/castor, /var/log/castor, /var/lib/castor/models;
+#                        SIL gives each simulated robot its own (one project per robot, -p)
 #   ZENOH_BRIDGE_IMAGE   default ghcr.io/fyp-uav-entc-22/zenoh-bridge-ros2dds:1.10.1, CI's tagged
 #                        mirror of eclipse/zenoh-bridge-ros2dds:1.10.1 (digest pinned in images.yml)
 #
@@ -41,7 +44,7 @@ services:
     environment: *ros-env
     volumes:
       - ${CASTOR_ROBOT_CONFIG:-/etc/castor/robot.yaml}:/etc/castor/robot.yaml:ro
-      - /run/castor:/run/castor
+      - ${CASTOR_RUN_DIR:-/run/castor}:/run/castor
 
   zenoh-bridge:
     image: ${ZENOH_BRIDGE_IMAGE:-ghcr.io/fyp-uav-entc-22/zenoh-bridge-ros2dds:1.10.1}
@@ -57,7 +60,7 @@ services:
       # other containers. Without this it joins DDS on the Wi-Fi.
       CYCLONEDDS_URI: '<CycloneDDS><Domain><General><Interfaces><NetworkInterface address="127.0.0.1" multicast="true"/></Interfaces><DontRoute>true</DontRoute></General></Domain></CycloneDDS>'
     volumes:
-      - /run/castor:/run/castor:ro
+      - ${CASTOR_RUN_DIR:-/run/castor}:/run/castor:ro
 
   vehicle:
     <<: *ros-service
@@ -67,8 +70,8 @@ services:
       DISPLAY: ${DISPLAY:-}
     volumes:
       - ${CASTOR_ROBOT_CONFIG:-/etc/castor/robot.yaml}:/etc/castor/robot.yaml:ro
-      - /run/castor:/run/castor
-      - /var/log/castor:/var/log/castor
+      - ${CASTOR_RUN_DIR:-/run/castor}:/run/castor
+      - ${CASTOR_LOG_DIR:-/var/log/castor}:/var/log/castor
       # Whole /dev plus cgroup rules instead of `devices:`, so the container
       # starts with the FC or UWB board unplugged and sees them when they appear.
       - /dev:/dev
@@ -87,7 +90,7 @@ services:
     image: ${CASTOR_REGISTRY:-ghcr.io/fyp-uav-entc-22}/castor-localization:${CASTOR_TAG:-main}
     volumes:
       - ${CASTOR_ROBOT_CONFIG:-/etc/castor/robot.yaml}:/etc/castor/robot.yaml:ro
-      - /var/log/castor:/var/log/castor
+      - ${CASTOR_LOG_DIR:-/var/log/castor}:/var/log/castor
 
   planning:
     <<: *ros-service
@@ -99,16 +102,16 @@ services:
       memlock: -1
     volumes:
       - ${CASTOR_ROBOT_CONFIG:-/etc/castor/robot.yaml}:/etc/castor/robot.yaml:ro
-      - /var/log/castor:/var/log/castor
-      - /var/lib/castor/models:/var/lib/castor/models:ro
+      - ${CASTOR_LOG_DIR:-/var/log/castor}:/var/log/castor
+      - ${CASTOR_MODELS_DIR:-/var/lib/castor/models}:/var/lib/castor/models:ro
 
   system:
     <<: *ros-service
     image: ${CASTOR_REGISTRY:-ghcr.io/fyp-uav-entc-22}/castor-system:${CASTOR_TAG:-main}
     volumes:
       - ${CASTOR_ROBOT_CONFIG:-/etc/castor/robot.yaml}:/etc/castor/robot.yaml:ro
-      - /run/castor:/run/castor           # the update gate castor-update.sh reads
-      - /var/log/castor:/var/log/castor   # MCAP recordings (record:=true)
+      - ${CASTOR_RUN_DIR:-/run/castor}:/run/castor   # the update gate castor-update.sh reads
+      - ${CASTOR_LOG_DIR:-/var/log/castor}:/var/log/castor   # MCAP recordings (record:=true)
 
 volumes:
   qgc-home:

@@ -17,6 +17,7 @@ Generated USD assets for CASTOR's own hardware, built from YAML so every dimensi
 | [`castor_assets/config.py`](castor_assets/config.py) | Typed loading and validation. Unknown keys are errors. |
 | [`castor_assets/geometry.py`](castor_assets/geometry.py) | Frame geometry, mass budget to inertia, formation layout and clearance checks (numpy only). |
 | [`castor_assets/usd_build.py`](castor_assets/usd_build.py) | USD authoring: the S500 asset, the rig (into a live stage or a standalone file). |
+| [`castor_assets/flycrane.py`](castor_assets/flycrane.py) | The MARL training asset (flycrane) for the S500 and this rig, as URDF; S500 numbers for the training controllers. |
 | [`castor_assets/runtime.py`](castor_assets/runtime.py) | The rig in a running sim: state log, cable tension, distance-cable drawing, release API. |
 | [`build_assets.py`](build_assets.py) | CLI that writes `generated/s500.usd` and a standalone rig file. |
 | `generated/` | Build output, gitignored. Rebuilt on every run of `build_assets.py` or `raptor_payload.py`. |
@@ -72,3 +73,29 @@ The layout check rejects formations whose neighbouring rotor discs come closer t
   airborne). The spring-formula value logged for the distance model reads 2-3 % low and is only a cross-check.
 - The S500's mass budget (1.500 kg all-up) and several dimensions are estimates from photos; the YAML marks which.
   Measure the real airframe and put the numbers in `s500.yaml`.
+
+## Training asset (flycrane)
+
+```bash
+make sim-up
+docker compose -f docker/docker-compose.sim.yml exec -w /home/ws/components/simulation/assets simulation \
+  /isaac-sim/python.sh build_assets.py --flycrane --set num_drones=3 --set payload.mass=1.4
+```
+
+writes `generated/flycrane_s500_n<N>/`: `flycrane.urdf`, `flycrane.usd` (Isaac Lab's URDF converter, fixed joints
+kept) and `params.json` (layout, masses, sources, and `drone_params`). The MARL ext's flycrane envs look their bodies
+up by name (`Falcon<k>/base_link_inertia`, `Falcon<k>/rotor_<j>`, `rope_<k>_link`, `load/odometry_sensor_link`), so
+the URDF is cloned from the ext's one-rod `flycrane_rod` template, names and joint structure unchanged (for N = 3 the
+set of links and joints is identical), with every hardware number replaced from `s500.yaml` and the rig: S500 body
+mass, CoM and inertia, rotor positions in the Falcon's rotor order, the payload cylinder, anchors, cable length, mass
+and damping, the cable angle and drone yaw. All joints at zero is the spawn formation, drones level.
+
+Not done by this: the ext's controllers (`controllers/geometric.py`, `indi.py`, `motor_model.py`) and the env cfg's
+`max_thrust_pp` hardcode the Falcon (0.6017 kg, arm 0.106 m, 6.25 N per rotor, its thrust map and gains).
+`drone_params` in `params.json` has the S500 values in the same terms; wiring them in, and retuning the gains for an
+S500, is a change to the training setup.
+
+The template's `base_link` has no `<inertial>`, and the URDF importer gives such a link 1 kg. In the shipped
+`flycrane_rod.usd` every Falcon is therefore 1.617 kg in PhysX, not 0.6017 kg (measured in Isaac Sim 5.1); the
+generated asset gives `base_link` a sensor-sized mass instead.
+

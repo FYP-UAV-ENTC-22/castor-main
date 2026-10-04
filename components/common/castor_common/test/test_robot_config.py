@@ -100,13 +100,48 @@ def test_bridge_config(tmp_path):
     ros = doc["plugins"]["ros2dds"]
     assert doc["mode"] == "router"
     assert doc["connect"]["endpoints"] == ["tcp/10.0.0.5:7447"]
-    assert ros["domain"] == int(os.environ.get("ROS_DOMAIN_ID", "20"))
+    assert ros["domain"] == 20            # robot.yaml's ros.domain_id, default 20
+    assert doc["listen"]["endpoints"] == ["tcp/0.0.0.0:7447"]
     # LOCALHOST mode breaks discovery of late-starting Fast DDS nodes (see bridge_config.py)
     assert ros["ros_automatic_discovery_range"] == "SUBNET"
     assert all(p.startswith("/drone2/") for p in ros["allow"]["publishers"])
     assert not any("fmu" in p for p in ros["allow"]["publishers"] + ros["allow"]["subscribers"])
     assert ros["allow"]["service_servers"] == [] and ros["allow"]["action_clients"] == []
-    assert ros["allow"]["subscribers"] == ["/team/.*"]
+    # team commands, and the payload FC's state (drones ignore each other)
+    assert ros["allow"]["subscribers"] == ["/team/.*", "/payload[a-z0-9_]*/vehicle/(odom|state)"]
+    # routers only connect to what multicast finds if told to
+    assert doc["scouting"]["multicast"]["autoconnect"] == {"router": ["router"]}
+
+
+def test_sil_keys():
+    cfg = cfg_from("robot: {id: 2, namespace: drone2, hardware: sim}\nteam: {size: 3, index: 1}\n"
+                   "ros: {domain_id: 22}\nzenoh: {listen_address: 127.0.0.1, listen_port: 7449,"
+                   " multicast_scouting: false, connect: ['tcp/127.0.0.1:7447']}")
+    doc = bridge_config.render(cfg)
+    assert doc["plugins"]["ros2dds"]["domain"] == 22
+    assert doc["listen"]["endpoints"] == ["tcp/127.0.0.1:7449"]
+    assert "autoconnect" not in doc["scouting"]["multicast"]
+    assert cfg.env()["ROS_DOMAIN_ID"] == "22"
+
+
+def test_payload_role_and_bad_values():
+    cfg = cfg_from("robot: {id: 4, namespace: payload, hardware: sim}\nteam: {size: 1, index: 0}\n"
+                   "zenoh: {role: payload}")
+    assert bridge_config.allowed_subscribers(cfg) == ["/team/.*"]
+    with pytest.raises(ConfigError, match="must start with 'payload'"):
+        cfg_from("robot: {id: 4, namespace: box, hardware: sim}\nteam: {size: 1, index: 0}\n"
+                 "zenoh: {role: payload}")
+    with pytest.raises(ConfigError, match="ros.domain_id"):
+        cfg_from("robot: {id: 1, namespace: drone1, hardware: rpi5}\nteam: {size: 3, index: 0}\n"
+                 "ros: {domain_id: 150}")
+    with pytest.raises(ConfigError, match="fc.baud"):
+        cfg_from("robot: {id: 1, namespace: drone1, hardware: rpi5}\nteam: {size: 3, index: 0}\n"
+                 "fc: {baud: -5}")
+    with pytest.raises(ConfigError, match="port out of range"):
+        cfg_from("robot: {id: 1, namespace: drone1, hardware: rpi5}\nteam: {size: 3, index: 0}\n"
+                 "zenoh: {connect: ['tcp/h:99999']}")
+    with pytest.raises(ConfigError, match="section 'robot' is empty"):
+        cfg_from("robot:\nteam: {size: 3, index: 0}\n")
 
 
 def test_ground_station_bridge_mirrors_drones():

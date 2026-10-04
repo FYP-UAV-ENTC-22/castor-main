@@ -29,6 +29,7 @@ _DRONE_TOPICS = [
     "planning/status",
 ]
 _ANY_DRONE = "[a-z][a-z0-9_]*"   # any robot namespace (robot_config enforces this shape)
+_PAYLOAD_TOPICS = "/payload[a-z0-9_]*/vehicle/(odom|state)"   # what drones take from the payload's FC
 
 
 def allowed_publishers(cfg: RobotConfig) -> list[str]:
@@ -46,18 +47,26 @@ def allowed_subscribers(cfg: RobotConfig) -> list[str]:
     """
     if cfg.zenoh.role == "ground_station":
         return [f"/{_ANY_DRONE}/{t}" for t in _DRONE_TOPICS]
+    if cfg.zenoh.role == "drone":
+        return ["/team/.*", _PAYLOAD_TOPICS]
     return ["/team/.*"]
 
 
 def render(cfg: RobotConfig, domain_id: int | None = None) -> dict:
     if domain_id is None:
-        domain_id = int(os.environ.get("ROS_DOMAIN_ID", "20"))
+        domain_id = cfg.ros.domain_id
     ns = cfg.namespace
+    multicast: dict = {"enabled": cfg.zenoh.multicast_scouting}
+    if cfg.zenoh.multicast_scouting:
+        # zenoh routers never connect to what they discover unless told to
+        # (default autoconnect.router is []); without this, two drones on one
+        # Wi-Fi find each other and still don't talk.
+        multicast["autoconnect"] = {"router": ["router"]}
     return {
         "mode": "router",
         "connect": {"endpoints": list(cfg.zenoh.connect)},
-        "listen": {"endpoints": [f"tcp/0.0.0.0:{cfg.zenoh.listen_port}"]},
-        "scouting": {"multicast": {"enabled": cfg.zenoh.multicast_scouting}},
+        "listen": {"endpoints": [f"tcp/{cfg.zenoh.listen_address}:{cfg.zenoh.listen_port}"]},
+        "scouting": {"multicast": multicast},
         "plugins": {
             "ros2dds": {
                 "nodename": "zenoh_bridge",

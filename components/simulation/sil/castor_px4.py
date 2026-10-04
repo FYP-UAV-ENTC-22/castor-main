@@ -1,0 +1,90 @@
+"""PX4 SITL launching for SIL, without patching the Pegasus fork.
+
+Pegasus' PX4LaunchTool runs every PX4 instance with Isaac Sim's own environment
+(it even mutates os.environ), from build/px4_sitl_default, in a throwaway temp
+directory. For SIL each instance needs its own environment (ROS_DOMAIN_ID,
+PX4_UXRCE_DDS_PORT, PX4_UXRCE_DDS_NS: see sil.sh), may need the RAPTOR build,
+and RAPTOR loads ./raptor/policy.tar from the working directory. This module
+swaps in a launch tool that does that:
+
+    import castor_px4
+    castor_px4.install(px4_env_file=".sil/px4.env", build="px4_sitl_raptor")
+    # ...then create Pegasus vehicles with PX4MavlinkBackend as usual
+"""
+
+from __future__ import annotations
+
+import os
+import shutil
+import subprocess
+from pathlib import Path
+
+_instances: dict[int, dict[str, str]] = {}
+_build = "px4_sitl_default"
+_workdir_root = Path("/tmp/castor-px4")
+_extra: dict[str, str] = {}
+
+
+def read_env_file(path: str) -> dict[int, dict[str, str]]:
+    """sil.sh's px4.env: '<instance> KEY=value KEY=value ...' per line."""
+    out: dict[int, dict[str, str]] = {}
+    for line in Path(path).read_text().splitlines():
+        if not line.strip():
+            continue
+        idx, *pairs = line.split()
+        out[int(idx)] = dict(p.split("=", 1) for p in pairs)
+    return out
+
+
+class CastorPX4LaunchTool:
+    """Drop-in for pegasus' PX4LaunchTool (same constructor and methods)."""
+
+    def __init__(self, px4_dir, vehicle_id: int = 0, px4_model: str = "gazebo-classic_iris"):
+        self.px4_dir = px4_dir
+        self.vehicle_id = vehicle_id
+        self.rc_script = f"{px4_dir}/ROMFS/px4fmu_common/init.d-posix/rcS"
+        self.px4_process = None
+        # A copy: never touch Isaac Sim's own environment.
+        self.environment = dict(os.environ)
+        self.environment["PX4_SIM_MODEL"] = px4_model
+        self.environment.update(_extra)
+        self.environment.update(_instances.get(vehicle_id, {}))
+        # Persistent per-instance working dir (parameters survive, RAPTOR finds its policy).
+        self.workdir = _workdir_root / f"instance_{vehicle_id}"
+        self.workdir.mkdir(parents=True, exist_ok=True)
+        policy = Path(px4_dir) / "src/modules/mc_raptor/blob/policy.tar"
+        if _build == "px4_sitl_raptor" and policy.exists():
+            (self.workdir / "raptor").mkdir(exist_ok=True)
+            shutil.copy2(policy, self.workdir / "raptor" / "policy.tar")
+
+    def launch_px4(self):
+        binary = f"{self.px4_dir}/build/{_build}/bin/px4"
+        if not os.path.exists(binary):
+            raise FileNotFoundError(f"{binary} not found: build it with `make sim-px4`")
+        log = open(self.workdir / "px4.log", "ab")
+        self.px4_process = subprocess.Popen(
+            [binary, f"{self.px4_dir}/ROMFS/px4fmu_common/", "-s", self.rc_script, "-i", str(self.vehicle_id), "-d"],
+            cwd=self.workdir, env=self.environment, stdout=log, stderr=subprocess.STDOUT)
+
+    def kill_px4(self):
+        if self.px4_process is not None:
+            self.px4_process.kill()
+            self.px4_process.wait(timeout=10)
+            self.px4_process = None
+
+    def __del__(self):
+        self.kill_px4()
+
+
+def install(px4_env_file: str | None = None, build: str = "px4_sitl_default",
+            workdir_root: str | None = None, extra_env: dict[str, str] | None = None) -> None:
+    """Make Pegasus' PX4 backend use CastorPX4LaunchTool. Call before vehicles start."""
+    global _instances, _build, _workdir_root, _extra
+    from pegasus.simulator.logic.backends import px4_mavlink_backend
+
+    _instances = read_env_file(px4_env_file) if px4_env_file else {}
+    _build = build
+    _extra = dict(extra_env or {})
+    if workdir_root:
+        _workdir_root = Path(workdir_root)
+    px4_mavlink_backend.PX4LaunchTool = CastorPX4LaunchTool

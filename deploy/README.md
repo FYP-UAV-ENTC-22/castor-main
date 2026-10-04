@@ -50,16 +50,16 @@ On the Pi:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/FYP-UAV-ENTC-22/castor-main/main/deploy/pi/install.sh -o install.sh
-sudo bash install.sh
-sudo nano /etc/castor/robot.yaml     # robot.id, robot.namespace, robot.hardware, team.index, fc.*
+sudo bash install.sh --id 1 --namespace drone1 --hardware rpi5 --team-size 3 --team-index 0
+#   add --no-fc on a bench Pi without a flight controller,
+#   --debs <dir> to install Docker from downloaded .deb files (no internet)
 exit                                  # log out and back in so the docker group applies
 ```
 
 Then, with internet on the Pi (on FFT, see [network-gateway/](network-gateway/)):
 
 ```bash
-castor-update                         # first pull; no gate check while nothing is running
-sudo systemctl start castor-stack     # also starts at every boot
+castor-update                         # first pull and start; no gate check while nothing runs
 docker compose -f /opt/castor/src/docker/docker-compose.prod.yml ps
 ```
 
@@ -93,8 +93,17 @@ each host's zenoh bridge carries only what its allow-lists name, chosen by
 | `ground_station` | `/team/*` | the same topics from every drone |
 
 Raw PX4 topics (`/fmu/*`) and all services and actions stay on the drone.
-Bridges on one network find each other by multicast; list peers in
-`zenoh.connect` when multicast is blocked. The ground station config is
+Bridges on one network find each other by multicast and connect (zenoh routers
+don't connect to what they discover by default; the rendered config turns that
+on). List peers in `zenoh.connect` when multicast is blocked.
+
+Test a drone against this laptop as the ground station (all checks, including
+restarts):
+
+```bash
+deploy/tests/zenoh_bridge_test.sh --remote drone1@<pi> [--multicast]
+deploy/tests/zenoh_bridge_test.sh --local     # both ends on one machine
+``` The ground station config is
 [robot.ground-station.yaml](robot.ground-station.yaml). To widen what crosses,
 edit `components/common/castor_common/castor_common/bridge_config.py`.
 
@@ -122,7 +131,11 @@ images that produced it.
 deploy/fleet/update_all.sh --tag sha-<12-char git revision>
 ```
 
-or set `CASTOR_TAG=sha-...` in each Pi's `/etc/castor/stack.env`.
+or `castor-update --tag sha-...` on one Pi. The tag is remembered in
+`/var/lib/castor/stack-tag.env`, so the Pi comes back on it after a reboot;
+`castor-update --tag main` returns to main. Every push to main tags all four
+images with its `sha-<rev>`, rebuilt or not, so one tag always names a whole
+fleet build.
 
 ## Flight controller settings (not applied by anything here)
 

@@ -11,7 +11,7 @@ from launch.actions import DeclareLaunchArgument
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
-from castor_common.launch_helpers import component_group, robot
+from castor_common.launch_helpers import RESPAWN_DELAY_S, component_group, robot
 
 
 def generate_launch_description():
@@ -26,13 +26,18 @@ def generate_launch_description():
             "model_path": LaunchConfiguration("model_path"),
             "rate_hz": LaunchConfiguration("rate_hz"),
             "sched_fifo_priority": LaunchConfiguration("sched_fifo_priority"),
+            "run_inference_every_step": LaunchConfiguration("run_inference_every_step"),
         }],
         output="screen",
+        respawn=True,
+        respawn_delay=RESPAWN_DELAY_S,
     )
     return LaunchDescription([
         DeclareLaunchArgument("model_path", default_value="/var/lib/castor/models/policy.onnx"),
         DeclareLaunchArgument("rate_hz", default_value="100.0"),
         DeclareLaunchArgument("sched_fifo_priority", default_value="0",
                               description="SCHED_FIFO priority for the control loop; 0 = normal scheduling"),
+        DeclareLaunchArgument("run_inference_every_step", default_value="false",
+                              description="run the model every step on a zero observation (timing)"),
         component_group("planning", [runner]),
     ])

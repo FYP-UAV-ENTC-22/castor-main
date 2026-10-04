@@ -17,6 +17,7 @@
 # its default on purpose: the XML explains why LOCALHOST breaks the bridge.
 
 ARG RUNTIME_IMAGE=ros:jazzy-ros-core-noble@sha256:8bbec5839a5258d43c8ff8d44c79c87a5c5a929ad419b22d0fa6cd5f196c7818
+ARG SIM_BASE_IMAGE=nvcr.io/nvidia/isaac-sim:5.1.0
 ARG BUILD_IMAGE=ros:jazzy-ros-base-noble@sha256:066420e07f60aa18262f2479981def87ebcfcec42eefb0c0c57c4a46098348ca
 
 # ===================================================================== runtime-base
@@ -204,3 +205,96 @@ CMD ["ros2", "launch", "planning_launch", "planning.launch.py"]
 FROM component-runtime AS system-final
 RUN [ "${CASTOR_COMPONENT}" = system ] || { echo "system-final needs --build-arg COMPONENT=system" >&2; exit 1; }
 CMD ["ros2", "launch", "system_launch", "system.launch.py"]
+
+# ===================================================================== simulation
+# One image for everything that needs the GPU: Isaac Sim 5.1, Isaac Lab, Pegasus,
+# PX4 SITL (toolchain; built inside the container from the mounted checkout),
+# ROS 2 Jazzy, and the MARL training stack (skrl, MARL ext). Never pushed: NVIDIA's
+# licence forbids redistributing the base, so every machine builds it locally
+# with docker/build_simulation.sh. The repo is mounted at /home/ws at run time.
+#
+# Layers go from slowest-changing to fastest: OS packages, torch, Python
+# dependencies (resolved from package metadata only), small config files, and
+# last the editable installs, which only point at the mounted repo. Editing
+# code needs no rebuild at all.
+#
+# ROS 2: Isaac processes (python.sh, isaac-sim.sh) load the ROS 2 Jazzy build
+# bundled with the Isaac ROS 2 bridge (Python 3.11 rclpy, Fast DDS 2.14), via
+# docker/simulation/isaac_ros_env.sh hooked into Isaac's setup_python_env.sh.
+# System Jazzy (Python 3.12) is installed for the CLI and
+# colcon; the `ros2` wrapper sources it for itself, so it never leaks into Isaac.
+FROM ${SIM_BASE_IMAGE} AS simulation
+USER root
+ENV ISAACSIM_PATH=/isaac-sim \
+    OMNI_KIT_ALLOW_ROOT=1 \
+    ROS_DOMAIN_ID=20 \
+    RMW_IMPLEMENTATION=rmw_fastrtps_cpp \
+    FASTRTPS_DEFAULT_PROFILES_FILE=/opt/castor/fastdds_localhost.xml \
+    FASTDDS_DEFAULT_PROFILES_FILE=/opt/castor/fastdds_localhost.xml \
+    PIP_ROOT_USER_ACTION=ignore \
+    PYTHONUNBUFFERED=1 \
+    LANG=C.UTF-8
+
+# OS packages: ROS 2 Jazzy, Isaac Lab's build deps, PX4 SITL toolchain, X11 auth.
+RUN apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends curl ca-certificates \
+    && curl -fsSL -o /tmp/ros2-apt-source.deb \
+         https://github.com/ros-infrastructure/ros-apt-source/releases/download/1.2.0/ros2-apt-source_1.2.0.noble_all.deb \
+    && apt-get install -y /tmp/ros2-apt-source.deb && rm /tmp/ros2-apt-source.deb \
+    && apt-get update \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+         ros-jazzy-ros-base ros-jazzy-rmw-fastrtps-cpp \
+         build-essential cmake ninja-build ccache git gdb make file rsync unzip zip \
+         libglib2.0-0 ncurses-term wget xauth less vim-tiny \
+         python3-dev python3-pip python3-venv libxml2-utils \
+    && rm -rf /var/lib/apt/lists/*
+
+# torch for Isaac Sim's Python (it ships none); same pins as the castor conda env.
+RUN /isaac-sim/python.sh -m pip install --no-cache-dir \
+        torch==2.7.0 torchvision==0.22.0 --index-url https://download.pytorch.org/whl/cu128 \
+    && /isaac-sim/python.sh -m pip freeze | grep -E '^torch(vision)?==' > /opt/torch-constraints.txt
+
+# PX4's build-time Python packages, in their own venv (PX4 pins versions that
+# would replace Debian's numpy and friends under ROS 2's system Python).
+# `make sim-px4` activates it.
+COPY --from=simmeta px4-requirements.txt /tmp/px4-requirements.txt
+RUN python3 -m venv /opt/px4-venv \
+    && /opt/px4-venv/bin/pip install --no-cache-dir -r /tmp/px4-requirements.txt \
+    && rm /tmp/px4-requirements.txt
+
+# Python dependencies of Isaac Lab, Pegasus, skrl and the MARL ext, resolved from
+# their metadata only (setup.py, extension.toml, stub packages): this layer only
+# rebuilds when a dependency list changes, never for a code edit.
+COPY --from=simmeta pkgs /opt/castor/sim-meta
+RUN cd /opt/castor/sim-meta \
+    && export PIP_CONSTRAINT=/opt/torch-constraints.txt \
+    && /isaac-sim/python.sh -m pip install --no-cache-dir toml "setuptools<81" \
+    && /isaac-sim/python.sh -m pip install --no-cache-dir --no-build-isolation flatdict==4.0.1 \
+    && for p in isaaclab isaaclab_assets isaaclab_tasks isaaclab_rl isaaclab_mimic; do \
+         /isaac-sim/python.sh -m pip install --no-cache-dir "./IsaacLab/source/$p" || exit 1; done \
+    && /isaac-sim/python.sh -m pip install --no-cache-dir "./IsaacLab/source/isaaclab_rl[none]" \
+         ./skrl ./MARL_mav_carry_ext numpy scipy pyyaml pymavlink \
+    && /isaac-sim/python.sh -m pip uninstall -y isaaclab isaaclab_assets isaaclab_tasks isaaclab_rl \
+         isaaclab_mimic skrl MARL_mav_carry_ext \
+    && /isaac-sim/python.sh -m pip uninstall -y quadprog || true
+
+# Small config files and helpers.
+COPY docker/fastdds_localhost.xml /opt/castor/fastdds_localhost.xml
+COPY docker/simulation/ /opt/castor/simulation/
+RUN install -m 755 /opt/castor/simulation/ros2 /usr/local/bin/ros2 \
+    && echo 'source /opt/castor/simulation/isaac_ros_env.sh' >> /isaac-sim/setup_python_env.sh \
+    && install -m 755 /opt/castor/simulation/entrypoint.sh /opt/castor/entrypoint.sh
+
+# Last: editable installs that point into the mounted repo (/home/ws). They are
+# path entries, so the code is whatever the mount holds; no rebuild on edits.
+RUN site=$(/isaac-sim/python.sh -c 'import site; print(site.getsitepackages()[0])') \
+    && { for p in isaaclab isaaclab_assets isaaclab_tasks isaaclab_rl isaaclab_mimic; do \
+           echo "/home/ws/components/simulation/IsaacLab/source/$p"; done; \
+         echo /home/ws/components/simulation/pegasus_simulator/extensions/pegasus.simulator; \
+         echo /home/ws/components/planning/skrl; \
+         echo /home/ws/components/planning/MARL_cooperative_aerial_manipulation_ext/exts/MARL_mav_carry_ext; \
+       } > "$site/castor-workspace.pth" \
+    && mkdir -p /home/ws
+WORKDIR /home/ws
+ENTRYPOINT ["/opt/castor/entrypoint.sh"]
+CMD ["bash"]

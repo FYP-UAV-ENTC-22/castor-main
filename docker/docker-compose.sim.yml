@@ -1,0 +1,52 @@
+# The simulation container: Isaac Sim + Isaac Lab + Pegasus + PX4 SITL + ROS 2
+# Jazzy + training, one image (castor-simulation:local, docker/build_simulation.sh).
+# Laptop or GPU workstation only, never a Pi.
+#
+#   make sim-up / sim-shell / sim-down        headless; the repo is at /home/ws
+#   make sim-gui                              same container, with your X display
+#
+# It joins the host's ROS graph like the onboard containers do: host network,
+# host IPC (Fast DDS shared memory), domain 20, docker/fastdds_localhost.xml.
+name: castor-sim
+
+services:
+  simulation:
+    image: castor-simulation:local
+    network_mode: host
+    ipc: host
+    gpus: all
+    stdin_open: true
+    tty: true
+    command: ["sleep", "infinity"]
+    environment:
+      # Running Isaac Sim means accepting NVIDIA's EULA; this says you have.
+      # PRIVACY_CONSENT is deliberately not set (it opts in to data collection).
+      ACCEPT_EULA: "Y"
+      NVIDIA_DRIVER_CAPABILITIES: all
+      CASTOR_ROOT: /home/ws
+      CASTOR_ASSET_ROOT: ${CASTOR_ASSET_ROOT:-/mnt/isaac/isaacsim_assets/Assets/Isaac/5.1}
+      DISPLAY: ${DISPLAY:-}
+      ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-20}
+    volumes:
+      - ..:/home/ws
+      - ${CASTOR_ASSET_PACK:-/mnt/isaac/isaacsim_assets}:/mnt/isaac/isaacsim_assets:ro
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      # Shader, Kit, compute and pip caches survive container restarts.
+      - sim-kit-cache:/isaac-sim/kit/cache
+      - sim-ov-cache:/root/.cache/ov
+      - sim-pip-cache:/root/.cache/pip
+      - sim-gl-cache:/root/.cache/nvidia/GLCache
+      - sim-compute-cache:/root/.nv/ComputeCache
+      - sim-ov-data:/root/.local/share/ov/data
+      - sim-kit-data:/isaac-sim/kit/data
+      - sim-ccache:/root/.ccache
+
+volumes:
+  sim-kit-cache:
+  sim-ov-cache:
+  sim-pip-cache:
+  sim-gl-cache:
+  sim-compute-cache:
+  sim-ov-data:
+  sim-kit-data:
+  sim-ccache:

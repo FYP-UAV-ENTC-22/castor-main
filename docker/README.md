@@ -111,6 +111,84 @@ slower than native.
 docker/build_runtime.sh --platform linux/arm64 --push --tag test-mine vehicle   # after docker login ghcr.io
 ```
 
+## Images are always tagged
+
+No build leaves an untagged image behind. Onboard images are built by the
+`castor` buildx builder, so base images stay in its cache, not in Docker's image
+list; a rebuilt `:local` or `:dev` removes the image it replaced, by ID, once
+that image is dangling; `castor-update` on a Pi does the same for what it
+replaced. The zenoh bridge comes from our mirror,
+`ghcr.io/fyp-uav-entc-22/zenoh-bridge-ros2dds:1.10.1` (the upstream image,
+unchanged, under a tag). CI pushes per-arch `sha-<rev>-<arch>` tags and the
+multi-arch `main` / `sha-<rev>`, with no attestations; its build cache lives in
+the GitHub Actions cache, not on GHCR.
+
+Containers share the host's PID namespace (`pid: host`), so `pkill -f` on the
+host matches processes in every container. Stop things by exact PID.
+
+The runtime images still carry about 135 MB of `-dev` packages. They don't come
+from our rosdep keys: `ros-core` itself depends on 19 of them, and the system
+image adds 18 through upstream Debian `Depends` of behaviortree-cpp, yasmin and
+the rosbag2 vendor packages (libzmq3-dev pulls libicu-dev, 49 MB). Removing them
+means force-removing packages apt considers required, so they stay.
+
+## Simulation image
+
+One image for everything that needs the GPU: Isaac Sim 5.1, Isaac Lab, Pegasus,
+PX4 SITL, ROS 2 Jazzy and training (`simulation` target, `castor-simulation:local`).
+It is built locally and never pushed: it contains NVIDIA's Isaac Sim layers, and
+NVIDIA's licence does not allow redistributing them. Each machine pulls
+`nvcr.io/nvidia/isaac-sim:5.1.0` itself (the build script checks its digest).
+
+```bash
+make sim-image                  # docker/build_simulation.sh; 27.4 GB
+make sim-up                     # headless container, repo at /home/ws, GPU, host network
+make sim-shell
+make sim-train-smoke            # 3 MAPPO iterations on the flycrane hover task
+make sim-px4                    # builds px4_sitl_default and px4_sitl_raptor into the PX4 checkout
+make sim-gui                    # Isaac Sim on your display
+make sim-own                    # give files the container wrote into the repo back to you
+make sim-down
+```
+
+- The container runs as root, like the onboard ones (Fast DDS shared memory
+  between them needs the same uid). The `sim-*` targets that write into the
+  repo (training logs, PX4 builds) end with `sim-own`.
+- Python packages from the repo (Isaac Lab, Pegasus, skrl, the MARL ext) are not
+  in the image: a `.pth` file points Isaac's Python at `/home/ws`, so a code
+  change needs no rebuild. Their dependencies are baked in, resolved from their
+  metadata files only, so a source edit doesn't invalidate those layers either.
+- Isaac's own processes (`/isaac-sim/python.sh`, `isaac-sim.sh`) use the ROS 2
+  Jazzy that ships with the Isaac ROS bridge (Python 3.11). It is added to
+  `LD_LIBRARY_PATH` only for them, by `setup_python_env.sh`; set globally, its
+  libcrypto breaks apt and curl. `ros2` in the container is the system Jazzy
+  (Python 3.12). Both are Fast DDS 2.14 on domain 20 with the localhost profile,
+  so the simulator and the onboard containers share one graph.
+- Assets come from the local pack (`CASTOR_ASSET_PACK`, default
+  `/mnt/isaac/isaacsim_assets`), mounted read-only; the entrypoint points Kit's
+  asset root at it.
+- `ACCEPT_EULA=Y` is set in the compose file, so starting the container means
+  you accept NVIDIA's EULA. `PRIVACY_CONSENT` is not set.
+
+### Software in the loop
+
+```bash
+components/simulation/sil/sil.sh up --drones 3      # one onboard stack per drone + a ground-station bridge
+docker compose -f docker/docker-compose.sim.yml exec simulation \
+  /isaac-sim/python.sh components/simulation/sil/sil_pegasus.py --headless --drones 3
+components/simulation/sil/sil.sh status | down
+```
+
+Each drone's stack is the Pi's compose file under its own project
+(`castor-sil-drone<i>`), on its own ROS domain (20 + i), with its own XRCE agent
+port (8887 + i) and zenoh bridge (127.0.0.1:7447 + i) connected to the ground
+station's (domain 20). Robots never share a DDS domain, so everything between
+them crosses zenoh with the flight allow-lists. `sil_pegasus.py` flies one S500
+per stack, each with its own PX4 SITL instance pointed at that stack's domain and
+agent port (`castor_px4.py`), and holds the simulation to real time. The XRCE
+agent binds UDP on all interfaces (v2.4.3 has no bind option), so on a shared
+network firewall ports 8888-8899.
+
 ## Adding things
 
 - **A ROS package:** put it under `components/<component>/` with a

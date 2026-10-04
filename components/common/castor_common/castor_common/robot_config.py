@@ -21,9 +21,12 @@ import yaml
 DEFAULT_PATH = "/etc/castor/robot.yaml"
 ENV_PATH = "CASTOR_ROBOT_CONFIG"
 
-HARDWARE = ("rpi4", "rpi5", "laptop", "workstation")
+HARDWARE = ("rpi4", "rpi5", "laptop", "workstation", "sim")
 FC_TRANSPORTS = ("serial", "udp")
-ZENOH_ROLES = ("drone", "ground_station")
+ZENOH_ROLES = ("drone", "payload", "ground_station")
+# ROS 2 domain IDs that are safe on Linux (higher ones collide with ephemeral ports).
+_DOMAIN_OK = tuple(range(0, 102)) + tuple(range(215, 233))
+_IPV4 = re.compile(r"^(\d{1,3}\.){3}\d{1,3}$")
 
 _ROS_NAME = re.compile(r"^[a-z][a-z0-9_]*$")
 _ZENOH_ENDPOINT = re.compile(r"^(tcp|udp|tls|quic)/[^\s/]+:\d{1,5}$")
@@ -32,6 +35,11 @@ _UDP_TARGET = re.compile(r"^[^\s:]+:\d{1,5}$")
 
 class ConfigError(ValueError):
     """robot.yaml is missing or invalid. The message lists every problem found."""
+
+
+@dataclass(frozen=True)
+class RosConfig:
+    domain_id: int = 20              # one per host on a Pi; one per simulated robot in SIL
 
 
 @dataclass(frozen=True)
@@ -60,8 +68,9 @@ class UwbConfig:
 
 @dataclass(frozen=True)
 class ZenohConfig:
-    role: str = "drone"              # drone | ground_station: decides the bridge allow-lists
+    role: str = "drone"              # drone | payload | ground_station: decides the bridge allow-lists
     connect: tuple[str, ...] = ()    # other bridges / the ground station, e.g. tcp/10.0.0.5:7447
+    listen_address: str = "0.0.0.0"  # 127.0.0.1 in SIL, where all bridges share one host
     listen_port: int = 7447
     multicast_scouting: bool = True  # find other bridges on the same network automatically
 
@@ -73,6 +82,7 @@ class RobotConfig:
     hardware: str
     team_size: int
     team_index: int
+    ros: RosConfig = field(default_factory=RosConfig)
     fc: FcConfig = field(default_factory=FcConfig)
     mavlink: MavlinkConfig = field(default_factory=MavlinkConfig)
     uwb: UwbConfig = field(default_factory=UwbConfig)
@@ -91,6 +101,7 @@ class RobotConfig:
             "CASTOR_HARDWARE": self.hardware,
             "CASTOR_TEAM_SIZE": str(self.team_size),
             "CASTOR_TEAM_INDEX": str(self.team_index),
+            "ROS_DOMAIN_ID": str(self.ros.domain_id),
         }
 
 
@@ -98,6 +109,7 @@ class RobotConfig:
 _SCHEMA: dict[str, dict[str, tuple[type, bool]]] = {
     "robot": {"id": (int, True), "namespace": (str, True), "hardware": (str, True)},
     "team": {"size": (int, True), "index": (int, True)},
+    "ros": {"domain_id": (int, False)},
     "fc": {
         "enabled": (bool, False), "transport": (str, False), "device": (str, False),
         "baud": (int, False), "udp_port": (int, False), "px4_namespace": (str, False),
@@ -108,7 +120,8 @@ _SCHEMA: dict[str, dict[str, tuple[type, bool]]] = {
     },
     "uwb": {"enabled": (bool, False), "device": (str, False)},
     "zenoh": {
-        "role": (str, False), "connect": (list, False), "listen_port": (int, False),
+        "role": (str, False), "connect": (list, False), "listen_address": (str, False),
+        "listen_port": (int, False),
         "multicast_scouting": (bool, False),
     },
 }
@@ -129,6 +142,8 @@ def _check_types(data: dict[str, Any], errors: list[str]) -> None:
     for section, keys in _SCHEMA.items():
         value = data.get(section)
         if value is None:
+            if section in data and section in _REQUIRED_SECTIONS:
+                errors.append(f"section '{section}' is empty")
             continue
         if not isinstance(value, dict):
             errors.append(f"'{section}' must be a mapping")
@@ -158,6 +173,7 @@ def parse(data: Any, source: str = "<string>") -> RobotConfig:
         raise ConfigError(f"{source} is invalid:\n  - " + "\n  - ".join(errors))
 
     robot, team = data["robot"], data["team"]
+    ros_d = data.get("ros") or {}
     fc_d, mav_d = data.get("fc") or {}, data.get("mavlink") or {}
     uwb_d, zen_d = data.get("uwb") or {}, data.get("zenoh") or {}
 
@@ -174,7 +190,13 @@ def parse(data: Any, source: str = "<string>") -> RobotConfig:
     elif not 0 <= team["index"] < team["size"]:
         errors.append(f"'team.index' must be in 0..{team['size'] - 1} for team.size {team['size']}, got {team['index']}")
 
+    ros = RosConfig(**ros_d)
+    if ros.domain_id not in _DOMAIN_OK:
+        errors.append(f"'ros.domain_id' must be 0-101 or 215-232, got {ros.domain_id}")
+
     fc = FcConfig(**fc_d)
+    if fc.baud <= 0:
+        errors.append(f"'fc.baud' must be positive, got {fc.baud}")
     if fc.transport not in FC_TRANSPORTS:
         errors.append(f"'fc.transport' must be one of {', '.join(FC_TRANSPORTS)}; got {fc.transport!r}")
     if fc.px4_namespace and not _ROS_NAME.match(fc.px4_namespace):
@@ -196,9 +218,16 @@ def parse(data: Any, source: str = "<string>") -> RobotConfig:
     for ep in connect:
         if not isinstance(ep, str) or not _ZENOH_ENDPOINT.match(ep):
             errors.append(f"'zenoh.connect' entries must look like 'tcp/<host>:<port>'; got {ep!r}")
+        elif not 1 <= int(ep.rsplit(":", 1)[1]) <= 65535:
+            errors.append(f"'zenoh.connect' port out of range in {ep!r}")
     zenoh = ZenohConfig(connect=connect, **zen_d)
     if zenoh.role not in ZENOH_ROLES:
         errors.append(f"'zenoh.role' must be one of {', '.join(ZENOH_ROLES)}; got {zenoh.role!r}")
+    if zenoh.role == "payload" and not robot["namespace"].startswith("payload"):
+        errors.append(f"a payload's 'robot.namespace' must start with 'payload' (drones subscribe to "
+                      f"/payload*/vehicle/...); got {robot['namespace']!r}")
+    if not _IPV4.match(zenoh.listen_address):
+        errors.append(f"'zenoh.listen_address' must be an IPv4 address; got {zenoh.listen_address!r}")
 
     for name, port in (("fc.udp_port", fc.udp_port), ("zenoh.listen_port", zenoh.listen_port)):
         if not 1 <= port <= 65535:
@@ -210,7 +239,7 @@ def parse(data: Any, source: str = "<string>") -> RobotConfig:
     return RobotConfig(
         robot_id=robot["id"], namespace=robot["namespace"], hardware=robot["hardware"],
         team_size=team["size"], team_index=team["index"],
-        fc=fc, mavlink=mavlink, uwb=uwb, zenoh=zenoh, source=source,
+        ros=ros, fc=fc, mavlink=mavlink, uwb=uwb, zenoh=zenoh, source=source,
     )
 
 

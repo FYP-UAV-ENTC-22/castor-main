@@ -8,11 +8,14 @@
 robot:
   id: 1                  # unique in the fleet, >= 1. Should match the FC's MAV_SYS_ID.
   namespace: drone1      # ROS namespace for every node: /drone1/vehicle/..., /drone1/system/...
-  hardware: rpi5         # rpi4 | rpi5 | laptop | workstation
+  hardware: rpi5         # rpi4 | rpi5 | laptop | workstation | sim
 
 team:
   size: 3                # number of agents the deployed policy was trained for
   index: 0               # this robot's slot, 0..size-1 -> one-hot [1, 0, 0]
+
+ros:
+  domain_id: 20          # every container on this host; SIL gives each simulated robot its own
 
 fc:
   enabled: true          # false on a bench Pi with no flight controller
@@ -36,7 +39,9 @@ uwb:
   device: /dev/ttyACM0
 
 zenoh:
-  role: drone            # drone: share own state, accept /team/*; ground_station: the reverse
+  role: drone            # drone: share own state, accept /team/* and the payload's state
+                         # payload: the payload's FC (namespace payload*); ground_station: the reverse
   connect: []            # other bridges / the ground station, e.g. ["tcp/192.168.1.10:7447"]
+  listen_address: 0.0.0.0
   listen_port: 7447
-  multicast_scouting: true   # find other bridges on the same network without listing them
+  multicast_scouting: true   # find and connect to other bridges on the same network

@@ -21,3 +21,5 @@ temp
 /log/
 /build/
 /install/
+/.docker/
+/.sil/
