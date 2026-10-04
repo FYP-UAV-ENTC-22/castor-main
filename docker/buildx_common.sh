@@ -18,10 +18,14 @@ castor_image() { echo "$CASTOR_REGISTRY/castor-$1"; }
 castor_revision() {
     local rev
     rev=$(git -C "$CASTOR_ROOT" rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
-    # Only what goes into an image counts (not submodule pointers or components/simulation).
+    # Only what goes into an onboard image counts (not submodule pointers, components/simulation, or
+    # the docker/ files listed below; the CI plan job skips the same ones).
     if ! git -C "$CASTOR_ROOT" diff --quiet --ignore-submodules=all HEAD -- \
             components/common components/vehicle components/localization components/planning \
-            components/system docker .devcontainer 2>/dev/null; then
+            components/system docker .devcontainer \
+            ':(exclude,glob)docker/docker-compose*.yml' ':(exclude,glob)docker/*.md' \
+            ':(exclude)docker/host_ros_env.sh' ':(exclude)docker/fastdds_host.xml' \
+            ':(exclude)docker/build_simulation.sh' ':(exclude)docker/simulation' 2>/dev/null; then
         rev="$rev-dirty"
     fi
     echo "$rev"

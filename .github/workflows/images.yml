@@ -98,6 +98,11 @@ jobs:
               picked="$all"          # first push of a branch, or history not available
             else
               changed=$(git diff --name-only "$base" "$GITHUB_SHA")
+              # Files under docker/ that never go into an onboard image (compose files, docs, the
+              # host-side ROS setup, the simulation image) rebuild nothing: a rebuild only gives every
+              # image a new revision label, and every Pi a pointless update. Keep in step with
+              # castor_revision in docker/buildx_common.sh.
+              changed=$(echo "$changed" | grep -vE '^docker/(docker-compose[^/]*\.yml|[^/]*\.md|host_ros_env\.sh|fastdds_host\.xml|build_simulation\.sh|simulation/)' || true)
               if echo "$changed" | grep -qE '^(components/common/|docker/|\.devcontainer/common/|\.dockerignore|\.gitmodules|\.github/workflows/images\.yml)'; then
                 picked="$all"
               else
