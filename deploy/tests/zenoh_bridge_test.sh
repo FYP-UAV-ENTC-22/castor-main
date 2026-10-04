@@ -53,7 +53,7 @@ if [ "$MODE" = local ]; then
     NS=drone2 D_SYS=zt-drone2-system D_BRIDGE=zt-drone2-bridge
     on_drone() { bash -c "$1"; }
 else
-    NS="$(ssh "$HOST" 'docker exec castor-system-1 castor-config env' | sed -n 's/^export CASTOR_NS=//p')"
+    NS="$(ssh "$HOST" "docker exec castor-system-1 bash -c 'source /opt/ros/jazzy/setup.bash && source /opt/castor/common/setup.bash && castor-config env'" | sed -n 's/^export CASTOR_NS=//p')"
     D_SYS=castor-system-1 D_BRIDGE=castor-zenoh-bridge-1
     # shellcheck disable=SC2029  # the command is built here on purpose and runs on the drone
     on_drone() { ssh "$HOST" "$1"; }
@@ -151,21 +151,25 @@ else bad "4 odom rate across: '${hz:-none}'"; fi
 drone_ros "kill \$(cat /tmp/zt-pub.pid) 2>/dev/null; rm -f /tmp/zt-pub.pid" >/dev/null 2>&1
 
 # 5. team command reaches the drone
-drone_ros "timeout 25 ros2 topic echo --once /team/command castor_interfaces/msg/TeamCommand > /tmp/zt-cmd.txt 2>&1 &"
+# Detached listener; 16 messages at 2 Hz, so the drone side has time to match the new route (5 at 1 Hz was
+# measured to miss on a real Pi).
+on_drone "docker exec -d $D_SYS bash -c 'source /opt/castor/castor_env.sh; timeout 40 ros2 topic echo --once /team/command castor_interfaces/msg/TeamCommand > /tmp/zt-cmd.txt 2>&1'"
 sleep 4
-gcs_ros "timeout 10 ros2 topic pub -t 5 -w 1 /team/command castor_interfaces/msg/TeamCommand '{command: status, robot_ids: []}'" >/dev/null 2>&1
-if wait_for 10 drone_ros "grep -q 'command: status' /tmp/zt-cmd.txt"; then ok "5 /team/command reaches the drone"
+gcs_ros "timeout 20 ros2 topic pub -r 2 -t 16 -w 1 /team/command castor_interfaces/msg/TeamCommand '{command: status, robot_ids: []}'" >/dev/null 2>&1
+if wait_for 10 drone_ros "grep -q \"command: status\" /tmp/zt-cmd.txt"; then ok "5 /team/command reaches the drone"
 else bad "5 the drone did not get /team/command"; fi
 
 # 6. restarts and a crash, past the old participants' lease
 docker_on_drone() { on_drone "docker $*"; }
 docker_on_drone restart "$D_SYS" >/dev/null; sleep 1; docker_on_drone restart "$D_SYS" >/dev/null
 sleep 15
-# The exact ros2 launch process: the child of the container's docker-init (pid: host
-# means a pattern match could hit other processes, so never pkill -f).
+# The exact ros2 launch process (pid: host means a pattern match could hit other processes, so never
+# pkill -f): the topmost "ros2 launch" in the container, i.e. one whose parent isn't another one. Whether
+# docker top lists docker-init above it differs between Docker versions (it does on the laptop's, not on
+# the Pi's 29.8), so don't rely on it.
 launch_pid=$(on_drone "docker top $D_SYS -o pid,ppid,args" | awk '
-    NR > 1 && $3 ~ /docker-init/ {init = $1}
-    NR > 1 && init != "" && $2 == init && /ros2 launch/ {print $1; exit}')
+    NR > 1 && /bin\/ros2 launch / {pid[NR] = $1; ppid[NR] = $2; is[$1] = 1}
+    END {for (r in pid) if (!(ppid[r] in is)) {print pid[r]; exit}}')
 restarts=$(on_drone "docker inspect -f '{{.RestartCount}}' $D_SYS")
 if [ -n "$launch_pid" ]; then
     on_drone "docker exec $D_SYS kill -KILL $launch_pid" >/dev/null 2>&1
