@@ -4,7 +4,7 @@
 # loads flycrane_rod/flycrane_rod.usd (one 1.0 m rod per drone); flycrane_offset/flycrane.usd has the 7-segment rope.
 # Override any key on the command line with --set key=value, e.g. --set num_drones=4 --set cable.length=1.2
 
-num_drones: 4                   # >= 1. Anchors sit at equal spacing around the payload (circumference / N) and
+num_drones: 3                   # >= 1. Anchors sit at equal spacing around the payload (circumference / N) and
                                 # each drone lines up with its anchor
 vehicle: s500                   # s500 | iris (Pegasus' Iris: no landing-gear rod, the cable ties under the body)
 vehicle_config: s500.yaml

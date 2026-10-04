@@ -192,6 +192,8 @@ def main():
     stage = omni.usd.get_context().get_stage()
     UsdLux.DistantLight.Define(stage, "/World/Sun").CreateIntensityAttr(2500.0)
     UsdLux.DomeLight.Define(stage, "/World/Sky").CreateIntensityAttr(600.0)
+    # GUI drag-and-drop parents new prims under the default prim, else at "/"
+    stage.SetDefaultPrim(stage.GetPrimAtPath("/World"))
 
     backends, drone_paths = [], []
     for i in range(rig.num_drones):
