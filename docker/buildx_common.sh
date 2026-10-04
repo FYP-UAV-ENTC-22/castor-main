@@ -18,10 +18,23 @@ castor_image() { echo "$CASTOR_REGISTRY/castor-$1"; }
 castor_revision() {
     local rev
     rev=$(git -C "$CASTOR_ROOT" rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
-    if ! git -C "$CASTOR_ROOT" diff --quiet --ignore-submodules=dirty HEAD -- components docker .devcontainer 2>/dev/null; then
+    # Only what goes into an image counts (not submodule pointers or components/simulation).
+    if ! git -C "$CASTOR_ROOT" diff --quiet --ignore-submodules=all HEAD -- \
+            components/common components/vehicle components/localization components/planning \
+            components/system docker .devcontainer 2>/dev/null; then
         rev="$rev-dirty"
     fi
     echo "$rev"
+}
+
+# After a rebuild re-tags an image, remove the one it replaced if nothing else
+# refers to it. By ID only: never a blanket prune on a shared machine.
+castor_remove_if_dangling() {
+    local old="$1"
+    [ -n "$old" ] || return 0
+    [ -z "$(docker image inspect --format '{{join .RepoTags " "}}' "$old" 2>/dev/null)" ] || return 0
+    [ -z "$(docker ps -aq --filter "ancestor=$old")" ] || return 0
+    docker image rm "$old" >/dev/null 2>&1 && echo "    removed the replaced image ${old:7:12}" || true
 }
 
 castor_check_component() {

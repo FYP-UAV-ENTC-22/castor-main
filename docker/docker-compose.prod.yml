@@ -12,7 +12,8 @@
 #   CASTOR_REGISTRY      default ghcr.io/fyp-uav-entc-22
 #   CASTOR_TAG           default main; use sha-<rev> to freeze a fleet, local for your own builds
 #   CASTOR_ROBOT_CONFIG  default /etc/castor/robot.yaml
-#   ZENOH_BRIDGE_IMAGE   default eclipse/zenoh-bridge-ros2dds:1.10.1, pinned by digest
+#   ZENOH_BRIDGE_IMAGE   default ghcr.io/fyp-uav-entc-22/zenoh-bridge-ros2dds:1.10.1, CI's tagged
+#                        mirror of eclipse/zenoh-bridge-ros2dds:1.10.1 (digest pinned in images.yml)
 #
 # Nothing here pulls on its own: images change only when someone runs
 # deploy/pi/castor-update.sh (or `docker compose pull`).
@@ -43,7 +44,7 @@ services:
       - /run/castor:/run/castor
 
   zenoh-bridge:
-    image: ${ZENOH_BRIDGE_IMAGE:-eclipse/zenoh-bridge-ros2dds:1.10.1@sha256:74fae6a9d4f449c53d1ee6f0faaca97d01c1e68dfcafd785b657f01907157d22}
+    image: ${ZENOH_BRIDGE_IMAGE:-ghcr.io/fyp-uav-entc-22/zenoh-bridge-ros2dds:1.10.1}
     network_mode: host
     restart: unless-stopped
     depends_on:

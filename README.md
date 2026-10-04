@@ -3,9 +3,10 @@
 **C**ooperative **A**erial **S**uspended-load **T**ransport with **O**nboard
 **R**einforcement learning.
 
-Three quadrotors cooperatively carry a cable-suspended payload — a *flycrane* —
-using a multi-agent reinforcement learning policy that runs **on the flight
-controller** rather than on a companion computer. Inter-UAV localisation is done
+Three quadrotors cooperatively carry a cable-suspended payload, a *flycrane*.
+Each drone runs the multi-agent reinforcement learning policy on its onboard
+computer, a Raspberry Pi, and sends setpoints to RAPTOR, a neural inner-loop
+controller running on the PX4 flight controller. Inter-UAV localisation is done
 with UWB ranging, so the system needs no external motion-capture rig.
 
 ENTC Batch 22, Group 25 final year project.

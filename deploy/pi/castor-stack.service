@@ -9,6 +9,8 @@ Wants=network-online.target
 Type=oneshot
 RemainAfterExit=yes
 EnvironmentFile=-/etc/castor/stack.env
+# The tag castor-update --tag last deployed; overrides stack.env so a pin survives reboots.
+EnvironmentFile=-/var/lib/castor/stack-tag.env
 WorkingDirectory=/opt/castor/src
 # --pull never: boot must not wait on, or be changed by, the network. Images
 # only change when someone runs castor-update.

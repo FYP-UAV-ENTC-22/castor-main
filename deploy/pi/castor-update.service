@@ -9,4 +9,6 @@ After=docker.service network-online.target
 [Service]
 Type=oneshot
 EnvironmentFile=-/etc/castor/stack.env
+# The tag castor-update --tag last deployed; overrides stack.env so a pin survives reboots.
+EnvironmentFile=-/var/lib/castor/stack-tag.env
 ExecStart=/opt/castor/src/deploy/pi/castor-update.sh

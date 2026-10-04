@@ -7,8 +7,9 @@
 #
 #   --check    show what would change; pulls nothing, restarts nothing
 #   --force    skip the update gate (recovering a broken stack over SSH)
-#   --tag TAG  use this image tag for this run (default: CASTOR_TAG from
-#              /etc/castor/stack.env, else main)
+#   --tag TAG  deploy this image tag (e.g. sha-<rev> for a flight day). It is
+#              remembered in /var/lib/castor/stack-tag.env, so the stack comes
+#              back on the same tag after a reboot; --tag main returns to main.
 #   --no-git   don't refresh the deploy files (compose file, these scripts)
 #
 # Refuses while the vehicle may be flying. The system container writes
@@ -19,16 +20,20 @@ set -euo pipefail
 
 SRC="${CASTOR_SRC:-/opt/castor/src}"
 ENV_FILE=/etc/castor/stack.env
+TAG_FILE=/var/lib/castor/stack-tag.env
 GATE=/run/castor/update_gate
 LOG=/var/log/castor/deployments.log
 GATE_MAX_AGE_S=10
 SERVICES=(vehicle localization planning system)
+ZENOH_DEFAULT=ghcr.io/fyp-uav-entc-22/zenoh-bridge-ros2dds:1.10.1   # keep in step with docker-compose.prod.yml
 
 die()  { printf '\033[31mcastor-update: %s\033[0m\n' "$*" >&2; exit 1; }
 say()  { printf '\033[1m==> %s\033[0m\n' "$*"; }
 
 # shellcheck disable=SC1090
 [ -f "$ENV_FILE" ] && { set -a; source "$ENV_FILE"; set +a; }
+# shellcheck disable=SC1090
+[ -f "$TAG_FILE" ] && { set -a; source "$TAG_FILE"; set +a; }
 CASTOR_REGISTRY="${CASTOR_REGISTRY:-ghcr.io/fyp-uav-entc-22}"
 CASTOR_TAG="${CASTOR_TAG:-main}"
 
@@ -45,9 +50,13 @@ while [ $# -gt 0 ]; do
         *) die "unknown option '$1' (try --help)" ;;
     esac
 done
-export CASTOR_REGISTRY CASTOR_TAG CASTOR_ROBOT_CONFIG
+ZENOH_BRIDGE_IMAGE="${ZENOH_BRIDGE_IMAGE:-$ZENOH_DEFAULT}"
+export CASTOR_REGISTRY CASTOR_TAG CASTOR_ROBOT_CONFIG ZENOH_BRIDGE_IMAGE
 compose=(docker compose -f "$SRC/docker/docker-compose.prod.yml")
-image() { echo "$CASTOR_REGISTRY/castor-$1:$CASTOR_TAG"; }
+image() {
+    if [ "$1" = zenoh-bridge ]; then echo "$ZENOH_BRIDGE_IMAGE"; else echo "$CASTOR_REGISTRY/castor-$1:$CASTOR_TAG"; fi
+}
+ALL=("${SERVICES[@]}" zenoh-bridge)
 
 [ -f "$SRC/docker/docker-compose.prod.yml" ] || die "no checkout at $SRC (run deploy/pi/install.sh first)"
 docker info >/dev/null 2>&1 || die "cannot talk to Docker (are you in the docker group, or root?)"
@@ -77,8 +86,8 @@ remote_digest() { docker buildx imagetools inspect "$1" --format '{{.Manifest.Di
 local_digests() { docker image inspect --format '{{join .RepoDigests " "}}' "$1" 2>/dev/null || true; }
 
 if [ "$check" -eq 1 ]; then
-    say "Checking $CASTOR_REGISTRY/castor-*:$CASTOR_TAG"
-    for svc in "${SERVICES[@]}"; do
+    say "Checking $CASTOR_REGISTRY/castor-*:$CASTOR_TAG and the zenoh bridge"
+    for svc in "${ALL[@]}"; do
         img=$(image "$svc"); remote=$(remote_digest "$img"); have=$(local_digests "$img")
         if [ -z "$remote" ]; then status="not found in the registry"
         elif [ -z "$have" ]; then status="not pulled yet"
@@ -100,7 +109,7 @@ if [ "$git_pull" -eq 1 ]; then
 fi
 
 declare -A before
-for svc in "${SERVICES[@]}"; do
+for svc in "${ALL[@]}"; do
     before[$svc]=$(docker inspect --format '{{.Image}}' "castor-$svc-1" 2>/dev/null || true)
 done
 
@@ -119,7 +128,7 @@ say "Restarting changed containers"
 
 mkdir -p "$(dirname "$LOG")"
 deploy_rev=$(git -c safe.directory="$SRC" -C "$SRC" rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
-for svc in "${SERVICES[@]}"; do
+for svc in "${ALL[@]}"; do
     img=$(image "$svc")
     digest=$(docker image inspect --format '{{index .RepoDigests 0}}' "$img" 2>/dev/null || echo "?")
     rev=$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$img" 2>/dev/null || echo "?")
@@ -130,5 +139,15 @@ for svc in "${SERVICES[@]}"; do
         "$svc" "$changed" "$rev" "$digest" >> "$LOG"
 done
 
-docker image prune -f >/dev/null
+# Remember the tag, so castor-stack.service starts the same images after a reboot.
+printf 'CASTOR_TAG=%s\n' "$CASTOR_TAG" > "$TAG_FILE"
+
+# Remove the images this update replaced, by ID: never a blanket prune.
+for svc in "${ALL[@]}"; do
+    old=${before[$svc]}
+    now=$(docker inspect --format '{{.Image}}' "castor-$svc-1" 2>/dev/null || true)
+    if [ -n "$old" ] && [ "$old" != "$now" ] && [ -z "$(docker ps -aq --filter "ancestor=$old")" ]; then
+        docker image rm "$old" >/dev/null 2>&1 && echo "    removed old $svc image ${old:7:12}" || true
+    fi
+done
 echo "    logged to $LOG"

@@ -9,14 +9,18 @@ set -euo pipefail
 source "$(dirname "${BASH_SOURCE[0]}")/buildx_common.sh"
 
 components=("$@")
+builder="$("$CASTOR_ROOT/docker/ensure_builder.sh")"
 [ ${#components[@]} -gt 0 ] || components=("${CASTOR_COMPONENTS[@]}")
 
 for c in "${components[@]}"; do
     castor_check_component "$c"
     castor_prepare_component "$c"
     say "Building castor-$c:dev"
+    old="$(docker image inspect --format '{{.Id}}' "castor-$c:dev" 2>/dev/null || true)"
     docker buildx build -f "$CASTOR_ROOT/docker/Dockerfile" --target "$c-dev" \
+        --builder "$builder" --provenance=false \
         --build-arg "COMPONENT=$c" \
         --build-arg "USER_UID=$(id -u)" --build-arg "USER_GID=$(id -g)" \
         -t "castor-$c:dev" --load "$CASTOR_ROOT"
+    castor_remove_if_dangling "$old"
 done

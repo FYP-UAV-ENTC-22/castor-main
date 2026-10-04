@@ -29,7 +29,6 @@ ENV ROS_DOMAIN_ID=20 \
     CASTOR_ROBOT_CONFIG=/etc/castor/robot.yaml \
     LANG=C.UTF-8 \
     PYTHONUNBUFFERED=1
-COPY docker/fastdds_localhost.xml /opt/castor/fastdds_localhost.xml
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
          python3-yaml ros-jazzy-rmw-fastrtps-cpp \
@@ -45,8 +44,10 @@ ENV ROS_DOMAIN_ID=20 \
     CASTOR_ROBOT_CONFIG=/etc/castor/robot.yaml \
     LANG=C.UTF-8 \
     PYTHONUNBUFFERED=1
-COPY docker/fastdds_localhost.xml /opt/castor/fastdds_localhost.xml
-COPY docker/install_component_deps.sh docker/resolve_runtime_deps.sh /opt/castor/docker/
+# Layer order everywhere below: slow and rarely changing first (apt, toolchains,
+# third-party builds), then dependency lists, then CASTOR sources, then small
+# config files. An edit rebuilds, and a Pi re-downloads, only the layers after it.
+COPY docker/install_component_deps.sh /opt/castor/docker/
 COPY .devcontainer/common/deps /opt/castor/deps/common
 RUN /opt/castor/docker/install_component_deps.sh common
 
@@ -78,15 +79,18 @@ FROM base AS component-deps
 ARG COMPONENT
 ARG TARGETARCH
 RUN test -n "${COMPONENT}" || { echo "build with --build-arg COMPONENT=<vehicle|localization|planning|system>" >&2; exit 1; }
-COPY .devcontainer/${COMPONENT}/deps /opt/castor/deps/${COMPONENT}
+# Only the build-time inputs of the expensive step (XRCE agent, mavlink-router,
+# QGC, ONNX Runtime); the runtime apt list is read later, by component-runtime.
+COPY .devcontainer/${COMPONENT}/deps/apt-dependencies.txt .devcontainer/${COMPONENT}/deps/pip-requirements.txt \
+     .devcontainer/${COMPONENT}/deps/install-source-deps.sh /opt/castor/deps/${COMPONENT}/
 RUN TARGETARCH="${TARGETARCH}" /opt/castor/docker/install_component_deps.sh "${COMPONENT}"
-COPY --from=common-build /opt/castor/common /opt/castor/common
 COPY --from=manifests /manifests/${COMPONENT} /opt/castor/manifests/${COMPONENT}
 RUN apt-get update \
     && rosdep install --rosdistro jazzy --from-paths /opt/castor/manifests/${COMPONENT} --ignore-src -y \
          --skip-keys "castor_interfaces castor_common" \
-    && rm -rf /var/lib/apt/lists/* \
-    && ln -sf /opt/castor/common/lib/castor_common/castor-config /usr/local/bin/castor-config
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=common-build /opt/castor/common /opt/castor/common
+RUN ln -sf /opt/castor/common/lib/castor_common/castor-config /usr/local/bin/castor-config
 
 # ===================================================================== component-dev
 FROM component-deps AS component-dev
@@ -105,7 +109,7 @@ RUN apt-get update \
     && echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/castor-dev \
     && chmod 0440 /etc/sudoers.d/castor-dev \
     && usermod -aG dialout "${USERNAME}"
-COPY docker/castor_env.sh docker/dev_entrypoint.sh /opt/castor/
+COPY docker/fastdds_localhost.xml docker/castor_env.sh docker/dev_entrypoint.sh /opt/castor/
 RUN echo 'CASTOR_ENV_LENIENT=1 source /opt/castor/castor_env.sh; ws=/home/ws/.component_workspaces/$CASTOR_COMPONENT/install; [ -f "$ws/setup.bash" ] && source "$ws/setup.bash"' \
       >> "/home/${USERNAME}/.bashrc"
 ENV CASTOR_COMPONENT=${COMPONENT}
@@ -122,6 +126,7 @@ FROM component-dev AS system-dev
 # ===================================================================== component-build
 FROM component-deps AS component-build
 ARG COMPONENT
+COPY docker/resolve_runtime_deps.sh /opt/castor/docker/
 COPY components/common /opt/castor/src/common
 COPY components/${COMPONENT} /opt/castor/src/${COMPONENT}
 RUN . /opt/ros/jazzy/setup.sh \
@@ -141,6 +146,7 @@ RUN . /opt/ros/jazzy/setup.sh \
 # ===================================================================== component-test
 FROM component-deps AS component-test
 ARG COMPONENT
+COPY docker/fastdds_localhost.xml /opt/castor/fastdds_localhost.xml
 COPY components/common /opt/castor/src/common
 COPY components/${COMPONENT} /opt/castor/src/${COMPONENT}
 RUN . /opt/ros/jazzy/setup.sh \
@@ -162,10 +168,10 @@ RUN pkgs=$(cat /tmp/apt-runtime.txt /tmp/ros-runtime.txt | grep -vE '^[[:space:]
     && apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends ${pkgs} \
     && rm -rf /var/lib/apt/lists/* /tmp/*.txt
+COPY --from=component-deps /opt/castor/third_party /opt/castor/third_party
 COPY --from=component-build /opt/castor/common /opt/castor/common
 COPY --from=component-build /opt/castor/${COMPONENT} /opt/castor/${COMPONENT}
-COPY --from=component-deps /opt/castor/third_party /opt/castor/third_party
-COPY docker/castor_env.sh /opt/castor/castor_env.sh
+COPY docker/fastdds_localhost.xml docker/castor_env.sh /opt/castor/
 RUN ln -sf /opt/castor/common/lib/castor_common/castor-config /usr/local/bin/castor-config \
     && ln -sf /opt/castor/${COMPONENT}/entrypoint.sh /opt/castor/entrypoint.sh \
     && if [ -d /opt/castor/${COMPONENT}/bin ]; then ln -sf /opt/castor/${COMPONENT}/bin/* /usr/local/bin/; fi \

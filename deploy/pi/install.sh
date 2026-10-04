@@ -3,14 +3,21 @@
 # Run it on the Pi, with sudo:
 #
 #   curl -fsSL https://raw.githubusercontent.com/FYP-UAV-ENTC-22/castor-main/main/deploy/pi/install.sh -o install.sh
-#   sudo bash install.sh
+#   sudo bash install.sh --id 1 --namespace drone1 --hardware rpi5 --team-size 3 --team-index 0
+#
+# Options (they only seed a new /etc/castor/robot.yaml; an existing one is kept):
+#   --id N --namespace NS --hardware rpi4|rpi5 --team-size N --team-index I
+#   --no-fc          fc.enabled: false (a bench Pi with no flight controller)
+#   --debs DIR       install Docker from .deb files in DIR (no internet needed)
 #
 # What it does (each step is skipped if already done):
 #   1. installs Docker Engine + the compose and buildx plugins from Docker's apt repo
 #   2. adds you to the docker group, so castor-update runs without sudo
 #   3. clones castor-main, without submodules, to /opt/castor/src
 #   4. creates /etc/castor/robot.yaml and stack.env from the examples (never overwrites)
-#   5. creates /run/castor (tmpfiles), /var/log/castor and /var/lib/castor/models
+#   5. creates /run/castor (tmpfiles), /var/log/castor and /var/lib/castor{,/models}
+#      (group docker, so models and the update state need no sudo), and sets
+#      Docker's log rotation in /etc/docker/daemon.json if that file doesn't exist
 #   6. installs castor-stack.service (enabled: starts local images at boot)
 #      and castor-update.service (manual only; there is no timer)
 #
@@ -21,6 +28,24 @@ BRANCH="${CASTOR_BRANCH:-main}"
 REPO="${CASTOR_REPO:-https://github.com/FYP-UAV-ENTC-22/castor-main.git}"
 SRC=/opt/castor/src
 USER_NAME="${SUDO_USER:-}"
+DEBS=""
+NO_FC=0
+SEED=()   # sed expressions applied to a new robot.yaml
+
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --id)         SEED+=("s/^  id: [0-9]*/  id: $2/"); shift 2 ;;
+        --namespace)  SEED+=("s/^  namespace: [a-z0-9_]*/  namespace: $2/"); shift 2 ;;
+        --hardware)   SEED+=("s/^  hardware: [a-z0-9]*/  hardware: $2/"); shift 2 ;;
+        --team-size)  SEED+=("s/^  size: [0-9]*/  size: $2/"); shift 2 ;;
+        --team-index) SEED+=("s/^  index: [0-9]*/  index: $2/"); shift 2 ;;
+        --no-fc)      NO_FC=1; shift ;;
+        --debs)       DEBS="$(cd "$2" && pwd)"; shift 2 ;;
+        -h|--help)    sed -n '2,24p' "$0" | sed 's/^# \?//'; exit 0 ;;
+        *) echo "install: unknown option '$1' (try --help)" >&2; exit 1 ;;
+    esac
+done
+[ "$NO_FC" -eq 0 ] || SEED+=("s/^  enabled: true          # false on a bench Pi/  enabled: false         # false on a bench Pi/")
 
 die()  { printf '\033[31minstall: %s\033[0m\n' "$*" >&2; exit 1; }
 say()  { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
@@ -36,6 +61,10 @@ say()  { printf '\n\033[1m==> %s\033[0m\n' "$*"; }
 say "Docker Engine"
 if command -v docker >/dev/null && docker compose version >/dev/null 2>&1; then
     echo "    already installed: $(docker --version)"
+elif [ -n "$DEBS" ]; then
+    echo "    from $DEBS"
+    apt-get install -y "$DEBS"/*.deb
+    systemctl enable --now docker
 else
     case "$ID" in
         ubuntu|debian) ;;
@@ -53,6 +82,12 @@ else
     systemctl enable --now docker
 fi
 command -v git >/dev/null || apt-get install -y git
+if [ ! -f /etc/docker/daemon.json ]; then
+    # Container logs on an SD card: the local driver, rotated (20 MB x 5 per container).
+    printf '{\n  "log-driver": "local"\n}\n' > /etc/docker/daemon.json
+    systemctl restart docker
+    echo "    /etc/docker/daemon.json: local log driver (rotated)"
+fi
 
 say "docker group"
 if id -nG "$USER_NAME" | tr ' ' '\n' | grep -qx docker; then
@@ -78,7 +113,12 @@ if [ -f /etc/castor/robot.yaml ]; then
     echo "    robot.yaml exists, left as is"
 else
     install -m 0644 "$SRC/deploy/robot.example.yaml" /etc/castor/robot.yaml
-    echo "    created robot.yaml from the example: EDIT robot.id, robot.namespace, robot.hardware and team.index"
+    for e in "${SEED[@]}"; do sed -i "$e" /etc/castor/robot.yaml; done
+    if [ ${#SEED[@]} -gt 0 ]; then
+        echo "    created robot.yaml:"; grep -E '^  (id|namespace|hardware|size|index|enabled):' /etc/castor/robot.yaml | head -6 | sed 's/^/     /'
+    else
+        echo "    created robot.yaml from the example: EDIT robot.id, robot.namespace, robot.hardware and team.index"
+    fi
 fi
 if [ -f /etc/castor/stack.env ]; then
     echo "    stack.env exists, left as is"
@@ -91,12 +131,15 @@ say "Runtime directories"
 echo "d /run/castor 0775 root docker -" > /etc/tmpfiles.d/castor.conf
 systemd-tmpfiles --create /etc/tmpfiles.d/castor.conf
 install -d -m 2775 -g docker /var/log/castor
-install -d -m 0755 /var/lib/castor/models
-echo "    /run/castor, /var/log/castor, /var/lib/castor/models (put policy.onnx here)"
+install -d -m 2775 -g docker /var/lib/castor /var/lib/castor/models
+echo "    /run/castor, /var/log/castor, /var/lib/castor (update state), /var/lib/castor/models (put policy.onnx here)"
 
 say "systemd units"
 install -m 0644 "$SRC/deploy/pi/castor-stack.service" /etc/systemd/system/castor-stack.service
 install -m 0644 "$SRC/deploy/pi/castor-update.service" /etc/systemd/system/castor-update.service
+# castor-update owns the checkout and the deployment log, so the unit runs as you too.
+install -d /etc/systemd/system/castor-update.service.d
+printf '[Service]\nUser=%s\nGroup=docker\n' "$USER_NAME" > /etc/systemd/system/castor-update.service.d/user.conf
 ln -sf "$SRC/deploy/pi/castor-update.sh" /usr/local/bin/castor-update
 systemctl daemon-reload
 systemctl enable castor-stack.service >/dev/null
@@ -105,8 +148,9 @@ echo "    castor-update installed, not enabled (run it by hand)"
 
 say "Done. Next:"
 cat <<EOF
-    1. sudo nano /etc/castor/robot.yaml        set this drone's id, namespace, hardware, team.index
-    2. castor-update                           first pull (needs internet; see deploy/network-gateway/)
-    3. sudo systemctl start castor-stack       start it; it also starts at every boot
+    1. log out and back in (docker group)
+    2. check /etc/castor/robot.yaml            id, namespace, hardware, team.index, fc.enabled
+    3. castor-update                           first pull and start (needs internet; see deploy/network-gateway/)
     4. docker compose -f $SRC/docker/docker-compose.prod.yml ps
+    The stack starts by itself at every boot (castor-stack.service, local images only).
 EOF

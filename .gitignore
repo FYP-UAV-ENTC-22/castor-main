@@ -16,3 +16,8 @@ temp
 # Local fleet list and fetched logs.
 /deploy/fleet/hosts.txt
 /castor-logs/
+
+# colcon output when run from the repo root
+/log/
+/build/
+/install/
