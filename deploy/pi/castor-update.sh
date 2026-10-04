@@ -128,16 +128,27 @@ say "Restarting changed containers"
 
 mkdir -p "$(dirname "$LOG")"
 deploy_rev=$(git -c safe.directory="$SRC" -C "$SRC" rev-parse --short=12 HEAD 2>/dev/null || echo unknown)
+ros_restarted=0
 for svc in "${ALL[@]}"; do
     img=$(image "$svc")
     digest=$(docker image inspect --format '{{index .RepoDigests 0}}' "$img" 2>/dev/null || echo "?")
     rev=$(docker image inspect --format '{{index .Config.Labels "org.opencontainers.image.revision"}}' "$img" 2>/dev/null || echo "?")
     now_id=$(docker inspect --format '{{.Image}}' "castor-$svc-1" 2>/dev/null || true)
     changed=$([ "${before[$svc]}" != "$now_id" ] && echo restarted || echo unchanged)
+    [ "$changed" = restarted ] && [ "$svc" != zenoh-bridge ] && ros_restarted=1
     printf '    %-13s %-10s %s\n' "$svc" "$changed" "$rev"
     printf '%s %s tag=%s deploy=%s %s %s %s %s\n' "$(date -Is)" "$(hostname)" "$CASTOR_TAG" "$deploy_rev" \
         "$svc" "$changed" "$rev" "$digest" >> "$LOG"
 done
+
+# zenoh-plugin-ros2dds 1.10.1 (#722, fix in PR #738): when a restart removes a route, the route's matching
+# listener lives on and re-creates its DDS reader at the next ground-station (re)connect, so from then on
+# every sample of that topic crosses twice. Restarting the bridge drops those listeners; it costs a few
+# seconds of cross-host traffic. Drop this once the bridge image carries the fix.
+if [ "$ros_restarted" -eq 1 ] && [ "${before[zenoh-bridge]}" = "$(docker inspect --format '{{.Image}}' castor-zenoh-bridge-1 2>/dev/null)" ]; then
+    "${compose[@]}" restart zenoh-bridge >/dev/null 2>&1 \
+        && echo "    restarted zenoh-bridge to drop stale routes (zenoh-plugin-ros2dds #722)"
+fi
 
 # Remember the tag, so castor-stack.service starts the same images after a reboot.
 printf 'CASTOR_TAG=%s\n' "$CASTOR_TAG" > "$TAG_FILE"

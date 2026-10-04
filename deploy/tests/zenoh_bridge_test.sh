@@ -15,9 +15,12 @@
 #
 # Checks: 0 isolation; 1 allow-listed state crosses; 2 a non-listed topic is seen
 # by the bridge but not routed; 3 a near-miss of an allowed name doesn't cross
-# (anchoring); 4 odometry is capped at 20 Hz across; 5 /team/command reaches the
-# drone; 6 state still crosses after two restarts and a crash of the ros2 launch
-# process (the bridge keys routes by node name: zenoh-plugin-ros2dds #702).
+# (anchoring); 4 odometry is capped at 20 Hz across, each sample once; 5 /team/command
+# reaches the drone; 6 state still crosses after two restarts and a crash of the ros2
+# launch process (the bridge keys routes by node name: zenoh-plugin-ros2dds #702);
+# 7 after those restarts and a ground-station reconnect, each state sample still
+# crosses once (KNOWN, not a failure, with bridge 1.10.1: zenoh-plugin-ros2dds #722).
+# --remote restarts the drone's bridge at the end to drop the stale routes 6 leaves.
 #
 # Environment: CASTOR_TAG (default local for --local, main for --remote),
 # CASTOR_REGISTRY, ZENOH_BRIDGE_IMAGE. Uses only the system image and the bridge.
@@ -42,9 +45,10 @@ BRIDGE="${ZENOH_BRIDGE_IMAGE:-ghcr.io/fyp-uav-entc-22/zenoh-bridge-ros2dds:1.10.
 CY='<CycloneDDS><Domain><General><Interfaces><NetworkInterface address="127.0.0.1" multicast="true"/></Interfaces><DontRoute>true</DontRoute></General></Domain></CycloneDDS>'
 S="$(mktemp -d "${TMPDIR:-/tmp}/castor-zenoh-test.XXXXXX")"
 mkdir -p "$S/gcs-run" "$S/run"
-pass=0 fail=0
+pass=0 fail=0 known=""
 ok()  { echo "PASS: $*"; pass=$((pass+1)); }
 bad() { echo "FAIL: $*"; fail=$((fail+1)); }
+known() { echo "KNOWN: $*"; known=$((known+1)); }   # an upstream defect, reported but not failed
 strip() { sed 's/\x1b\[[0-9;]*m//g'; }
 # wait_for <seconds> <command...>: poll until the command succeeds
 wait_for() { local t=$1; shift; for _ in $(seq 1 "$t"); do "$@" && return 0; sleep 1; done; return 1; }
@@ -67,6 +71,8 @@ cleanup() {
     docker rm -f zt-gcs-bridge >/dev/null 2>&1 || true
     [ "$MODE" = local ] && docker rm -f "$D_SYS" "$D_BRIDGE" >/dev/null 2>&1
     on_drone "docker exec $D_SYS bash -c 'kill \$(cat /tmp/zt-pub.pid 2>/dev/null) 2>/dev/null'" >/dev/null 2>&1 || true
+    # the restarts in 6 leave stale routes on the drone's bridge (#722, see 7); a bridge restart drops them
+    [ "$MODE" = remote ] && on_drone "docker restart $D_BRIDGE" >/dev/null 2>&1
     rm -rf "$S"
 }
 trap cleanup EXIT
@@ -142,12 +148,24 @@ if [ "$MODE" = local ]; then
         && echo "    (bridge log: /$NS/secret/data Denied per config)"
 fi
 
-# 4. odometry rate cap
-drone_ros "ros2 topic pub -r 50 /$NS/vehicle/odom nav_msgs/msg/Odometry \"{}\" >/dev/null 2>&1 & echo \$! >> /tmp/zt-pub.pid"
+# stamps <topic> <type> <seconds>: header stamps received at the ground station, one "sec,nanosec" per line
+stamps() { gcs_ros "timeout $3 ros2 topic echo --csv --field header.stamp $1 $2" 2>/dev/null | grep ','; }
+# rate_dups <file>: "<Hz of distinct samples> <copies per sample>"
+rate_dups() {
+    sort -u "$1" | awk -F, -v all="$(grep -c , "$1")" '
+        NR == 1 {t0 = $1 + $2 / 1e9} {t = $1 + $2 / 1e9; n++}
+        END {printf "%.1f %.2f\n", (n > 1 && t > t0) ? (n - 1) / (t - t0) : 0, n ? all / n : 0}'
+}
+
+# 4. odometry rate cap, every sample once (stamped, so a sample arriving twice is visible)
+drone_ros "ros2 topic pub -r 50 /$NS/vehicle/odom nav_msgs/msg/Odometry \"{header: auto}\" >/dev/null 2>&1 & echo \$! >> /tmp/zt-pub.pid"
 sleep 4
-hz=$(gcs_ros "timeout 12 ros2 topic hz -w 40 /$NS/vehicle/odom" 2>/dev/null | sed -n 's/^average rate: //p' | tail -1)
-if [ -n "$hz" ] && awk -v h="$hz" 'BEGIN{exit !(h > 5 && h <= 21)}'; then ok "4 odom crosses at ${hz} Hz (published at 50, cap 20)"
-else bad "4 odom rate across: '${hz:-none}'"; fi
+stamps "/$NS/vehicle/odom" nav_msgs/msg/Odometry 12 > "$S/odom.csv"
+read -r hz copies < <(rate_dups "$S/odom.csv")
+if awk -v h="$hz" -v c="$copies" 'BEGIN{exit !(h > 5 && h <= 21 && c == 1)}'; then ok "4 odom crosses at ${hz} Hz (published at 50, cap 20), each sample once"
+elif awk -v c="$copies" 'BEGIN{exit !(c > 1.05)}'; then
+    bad "4 odom: each sample arrives ${copies}x (${hz} Hz distinct): stale routes on the drone's bridge, zenoh-plugin-ros2dds #722"
+else bad "4 odom rate across: '${hz}' Hz"; fi
 drone_ros "kill \$(cat /tmp/zt-pub.pid) 2>/dev/null; rm -f /tmp/zt-pub.pid" >/dev/null 2>&1
 
 # 5. team command reaches the drone
@@ -182,5 +200,18 @@ sleep 15
 if wait_for 20 state_arrives; then ok "6 /$NS/system/state still crosses after 2 restarts and a crash"
 else bad "6 /$NS/system/state stopped crossing after the restarts"; fi
 
-echo "passed $pass, failed $fail"
+# 7. the restarts removed and re-created the state route on the drone's bridge. In zenoh-plugin-ros2dds
+# 1.10.1 the removed route's matching listener survives (#722, fix in PR #738) and re-creates a DDS reader
+# when the ground station reconnects, so each sample then crosses more than once. KNOWN while the bridge
+# image lacks the fix; it turns into a PASS once it has it.
+docker restart zt-gcs-bridge >/dev/null
+wait_for 20 state_arrives
+stamps "/$NS/system/state" castor_interfaces/msg/SupervisorState 10 > "$S/state.csv"
+read -r hz copies < <(rate_dups "$S/state.csv")
+if awk -v h="$hz" -v c="$copies" 'BEGIN{exit !(h > 0 && c == 1)}'; then ok "7 after a ground-station reconnect each state sample crosses once"
+elif awk -v c="$copies" 'BEGIN{exit !(c > 1.05)}'; then
+    known "7 after a ground-station reconnect each state sample crosses ${copies}x (zenoh-plugin-ros2dds #722, bridge 1.10.1)"
+else bad "7 no /$NS/system/state after the ground station reconnected"; fi
+
+echo "passed $pass, failed $fail${known:+, known $known}"
 [ "$fail" -eq 0 ]
