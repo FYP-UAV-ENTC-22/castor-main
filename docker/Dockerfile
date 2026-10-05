@@ -200,6 +200,9 @@ CMD ["ros2", "launch", "localization_launch", "localization.launch.py"]
 
 FROM component-runtime AS planning-final
 RUN [ "${CASTOR_COMPONENT}" = planning ] || { echo "planning-final needs --build-arg COMPONENT=planning" >&2; exit 1; }
+# The policy model packages (models/README.md), last: a new model rebuilds only this layer, and a code change leaves
+# it byte-identical. /var/lib/castor/models, mounted at run time, overrides them.
+COPY models/ /opt/castor/models/
 CMD ["ros2", "launch", "planning_launch", "planning.launch.py"]
 
 FROM component-runtime AS system-final

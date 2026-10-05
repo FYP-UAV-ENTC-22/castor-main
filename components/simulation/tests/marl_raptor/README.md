@@ -19,7 +19,7 @@ position setpoints to the policy and send it goals.
 | `marl_policy.py` | The policy's side of the chain in NumPy: the 135-value observation, the exported actor (ONNX), the setpoint integrator. Run it on its own to check all three against a trace from the training environment. |
 | `marl_payload.py` | The run without PX4: scripted take-off, tension and lift, the hand-over check, then the policy and its goals. |
 | `marl_scene.py` | The goal marker both runs draw. |
-| `models/` | The policy flown here last: the Falcon-trained one (`Isaac-castor-payload-decentralized-hovering-v0`), as three exported actors and the reference trace. Exporting another policy replaces it, see below. |
+| [`models/`](../../../../models) (repo root) | The policies, as versioned packages; `models/DEFAULT` is flown unless `--models` names another package directory. The default is the Falcon-trained one (`Isaac-castor-payload-decentralized-hovering-v0`), as three exported actors and the reference trace. |
 
 RAPTOR is the unchanged `RaptorBackend` of [`../raptor`](../raptor).
 
@@ -57,11 +57,12 @@ python -m pip install --target .deps-py312 --no-deps --python-version 3.12 --onl
 `--target .deps --no-deps` keeps these out of the `castor` env on purpose: pip inside that env can see, and remove,
 packages that belong to the Isaac Sim install.
 
-`models/` holds the Falcon-trained policy. To put another one there, in the MARL repo, with the Python that trained it:
+The policies live in [`models/`](../../../../models) at the repo root, one directory per version; see its README.
+To add one, in the MARL repo, with the Python that trained it:
 
 ```bash
 RUN=logs/skrl/mappo_castor_hover/<run>
-OUT=<castor-main>/components/simulation/tests/marl_raptor/models
+OUT=<castor-main>/models/<name>/<version>
 python scripts/tools/export_policy_onnx.py $RUN/checkpoints/best_agent.pt --out $OUT
 python scripts/tools/capture_policy_trace.py --checkpoint $RUN/checkpoints/best_agent.pt --out $OUT/policy_trace.npz
 ```

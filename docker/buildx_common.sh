@@ -22,7 +22,7 @@ castor_revision() {
     # the docker/ files listed below; the CI plan job skips the same ones).
     if ! git -C "$CASTOR_ROOT" diff --quiet --ignore-submodules=all HEAD -- \
             components/common components/vehicle components/localization components/planning \
-            components/system docker .devcontainer \
+            components/system models docker .devcontainer \
             ':(exclude,glob)docker/docker-compose*.yml' ':(exclude,glob)docker/*.md' \
             ':(exclude)docker/host_ros_env.sh' ':(exclude)docker/fastdds_host.xml' \
             ':(exclude)docker/build_simulation.sh' ':(exclude)docker/simulation' 2>/dev/null; then

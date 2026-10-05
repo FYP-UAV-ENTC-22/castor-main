@@ -82,12 +82,13 @@ parser.add_argument("--payload_filter", type=float, default=0.0, metavar="SECOND
 parser.add_argument("--velocity_filter", type=float, default=None, metavar="SECONDS",
                     help="time constant of a low-pass filter on the velocity feedforward; 0 = none. Default: 0.1 for "
                          "a Falcon policy, 0 for an S500 policy, which was trained with the feedforward as it is")
-parser.add_argument("--models", default=os.path.join(HERE, "models"))
+parser.add_argument("--models", default=None, help="model package directory; default: models/DEFAULT")
 parser.add_argument("--payload_port", type=int, default=14600)
 parser.add_argument("--goal_port", type=int, default=14601)
 parser.add_argument("--num_drones", type=int, default=3)
 args = parser.parse_args()
 
+args.models = args.models or MP.default_models()
 trained = MP.TRAINED_ON[args.trained_on]
 if args.step_scale is None:
     args.step_scale = 0.015 if args.trained_on == "falcon" else trained["step_scale"]

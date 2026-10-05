@@ -21,7 +21,8 @@ frame, the angular one too: that is what the training environment feeds the poli
 Run it on its own to check all three pieces against a trace recorded in the training environment
 (scripts/tools/capture_policy_trace.py in the MARL repo); exits 1 on a mismatch:
 
-    python marl_policy.py                       # uses models/policy_trace.npz and models/policy_falcon<i>.onnx
+    python marl_policy.py                       # the package in models/DEFAULT at the repo root
+    python marl_policy.py --models ../../../../models/<name>/<version>
 """
 
 import argparse
@@ -34,6 +35,16 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 # onnxruntime, see README: .deps for the castor env (Python 3.11), .deps-py312 for the ROS containers
 sys.path.insert(0, os.path.join(HERE, ".deps" if sys.version_info[:2] == (3, 11) else ".deps-py%d%d" % sys.version_info[:2]))
+
+# Policy model packages (models/README.md at the repo root); the containers mount them and set CASTOR_MODELS_ROOT.
+MODELS_ROOT = os.environ.get("CASTOR_MODELS_ROOT") or os.path.normpath(os.path.join(HERE, "../../../../models"))
+
+
+def default_models():
+    """The package directory models/DEFAULT names."""
+    with open(os.path.join(MODELS_ROOT, "DEFAULT")) as f:
+        return os.path.join(MODELS_ROOT, f.read().strip())
+
 
 FRAME_DIM = 45
 HISTORY = 3
@@ -198,7 +209,8 @@ def check(trace_path, model_dir):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--models", default=os.path.join(HERE, "models"))
+    parser.add_argument("--models", default=None, help="model package directory; default: models/DEFAULT")
     parser.add_argument("--trace", default=None)
     args = parser.parse_args()
+    args.models = args.models or default_models()
     sys.exit(0 if check(args.trace or os.path.join(args.models, "policy_trace.npz"), args.models) else 1)

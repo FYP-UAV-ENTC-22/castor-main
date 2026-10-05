@@ -2,7 +2,7 @@
 # Software in the loop on one machine: one onboard stack per simulated flight
 # controller, exactly as each drone's Pi would run it, plus a ground station.
 #
-#   components/simulation/sil/sil.sh up [--drones N] [--payload] [--tag TAG] [--model policy.onnx]
+#   components/simulation/sil/sil.sh up [--drones N] [--payload] [--tag TAG] [--model NAME/VERSION|DIR|FILE.onnx]
 #   components/simulation/sil/sil.sh status | down
 #
 # Mission (the system layer's mission node, from the ground station's domain 20):
@@ -23,6 +23,9 @@
 #     <state>/px4.env for the simulator to use);
 #   - the same images and docker-compose.prod.yml as a Pi, one compose project
 #     per robot (castor-sil-<namespace>), each with its own run/log/model dirs;
+#   - the policy is a model package (models/README.md): --model, default
+#     models/DEFAULT, copied into every drone's models dir (mounted at
+#     /var/lib/castor/models, so it overrides the image's copy, no rebuild);
 #     docker-compose.sil.yml only lets the vehicle component forward setpoints
 #     and commands to its PX4 SITL (off on a Pi). CASTOR_TAKEOFF_HEIGHT (2.0 m).
 #
@@ -30,6 +33,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+MODELS="$ROOT/models"
 STATE="${CASTOR_SIL_DIR:-$ROOT/.sil}"
 COMPOSE=(docker compose -f "$ROOT/docker/docker-compose.prod.yml" -f "$ROOT/docker/docker-compose.sil.yml")
 DRONES=3 PAYLOAD=0 TAG="${CASTOR_TAG:-local}" MODEL=""
@@ -41,7 +45,7 @@ if [ "$cmd" != goal ]; then
             --drones) DRONES="$2"; shift 2 ;;
             --payload) PAYLOAD=1; shift ;;
             --tag) TAG="$2"; shift 2 ;;
-            --model) MODEL="$(realpath "$2")"; shift 2 ;;
+            --model) MODEL="$2"; shift 2 ;;
             *) echo "unknown option '$1'" >&2; exit 2 ;;
         esac
     done
@@ -82,15 +86,39 @@ EOF
     printf '%s ROS_DOMAIN_ID=%s PX4_UXRCE_DDS_PORT=%s PX4_UXRCE_DDS_NS=\n' "$((id - 1))" "$dom" "$aport" >> "$STATE/px4.env"
 }
 
+# The model package to fly: --model as <name>/<version> under models/ or a package directory, else models/DEFAULT.
+# Prints "<id> <dir>".
+model_package() {
+    local m="${MODEL:-$(cat "$MODELS/DEFAULT")}"
+    if [ -f "$MODELS/$m/model.yaml" ]; then
+        echo "$m $MODELS/$m"
+    elif [ -f "$m/model.yaml" ]; then
+        echo "sil/$(basename "$(realpath "$m")") $(realpath "$m")"
+    else
+        echo "model '$m' not found: give <name>/<version> under models/, a package directory or a .onnx" >&2
+        return 1
+    fi
+}
+
 robots() { find "$STATE" -mindepth 2 -maxdepth 2 -name stack.env -printf '%h\n' 2>/dev/null | sort; }
 
 case "$cmd" in
 up)
+    if [[ "$MODEL" != *.onnx ]]; then
+        read -r MODEL_ID MODEL_DIR < <(model_package) || exit 2
+        echo "==> model $MODEL_ID ($MODEL_DIR)"
+    fi
     rm -rf "$STATE"; mkdir -p "$STATE/gcs/run"
     : > "$STATE/px4.env"
     for i in $(seq 1 "$DRONES"); do
         write_robot "drone$i" "$i" $((20 + i)) $((7447 + i)) $((8887 + i)) drone $((i - 1))
-        [ -z "$MODEL" ] || cp "$MODEL" "$STATE/drone$i/models/policy.onnx"
+        if [[ "$MODEL" == *.onnx ]]; then
+            cp "$MODEL" "$STATE/drone$i/models/policy.onnx"   # bare, no manifest: the runner's defaults
+        else
+            mkdir -p "$STATE/drone$i/models/$MODEL_ID"
+            cp -r "$MODEL_DIR/." "$STATE/drone$i/models/$MODEL_ID/"
+            echo "$MODEL_ID" > "$STATE/drone$i/models/DEFAULT"
+        fi
     done
     if [ "$PAYLOAD" -eq 1 ]; then
         p=$((DRONES + 1))
@@ -138,5 +166,5 @@ down)
     for d in $(robots); do "${COMPOSE[@]}" --env-file "$d/stack.env" down; done
     "${COMPOSE[@]}" -p castor-sil-gcs down
     ;;
-*) sed -n '2,29p' "$0" | sed 's/^# \?//'; exit 2 ;;
+*) sed -n '2,32p' "$0" | sed 's/^# \?//'; exit 2 ;;
 esac

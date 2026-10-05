@@ -30,5 +30,9 @@ It flies only while the system layer enables it on `<ns>/planning/command` and
 every input is fresh; otherwise it publishes nothing and RAPTOR holds position.
 World-frame state comes from `own_state_prefix` / `payload_state_prefix`, for now
 the simulator's ground truth. `<ns>/planning/status` reports whether it is active,
-why not, and the goal errors. Export a checkpoint with
-`tools/export_policy.py` and mount it at `/var/lib/castor/models/policy.onnx`.
+why not, and the goal errors.
+
+The policy is a versioned model package from [`models/`](../../models) at the
+repo root, baked into the planning image and overridable by mounting
+`/var/lib/castor/models`; its manifest sets the runner's parameters. See
+[`models/README.md`](../../models/README.md).

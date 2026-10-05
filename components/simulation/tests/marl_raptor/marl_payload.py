@@ -10,7 +10,7 @@ flight will follow, with RAPTOR flying every drone throughout:
   5. goals         the payload is sent to each goal pose in turn; the goal is drawn as a green disc with axes
 
 Phases 1 to 3 are scripted setpoints, standing in for the operator. From phase 4 on each drone runs its own copy of
-the exported policy (models/policy_falcon<slot + 1>.onnx) through marl_policy.py, which is checked against the
+the exported policy (policy_falcon<slot + 1>.onnx of a package in models/ at the repo root) through marl_policy.py, which is checked against the
 training environment. RAPTOR is the unchanged RaptorBackend of ../raptor.
 
     source env/env.sh
@@ -22,7 +22,7 @@ training environment. RAPTOR is the unchanged RaptorBackend of ../raptor.
 A goal is x,y,z in metres in the world frame, optionally followed by roll,pitch,yaw in degrees. With the window and
 no --goal, keys move the goal: I/K x, J/L y, U/O z (0.25 m a press), H back to where the policy took over.
 
---trained_on says which task the policy in models/ comes from (marl_policy.TRAINED_ON). A policy trained with Falcon
+--trained_on says which task the policy in --models comes from (marl_policy.TRAINED_ON). A policy trained with Falcon
 drones (the default) calls a point 0.03 m above the cable tie point the drone's position, so on the S500 it is given
 that point and RAPTOR's target is shifted back by the same offset. A policy trained on the S500 task is given the
 body's centre of mass, on that task's rig, with its step scale and setpoint speed cap:
@@ -70,7 +70,7 @@ parser.add_argument("--max_speed", type=float, default=None,
                     help="m/s, cap on how fast a policy setpoint moves. Default: none for a Falcon policy, training's "
                          "1.0 for an S500 policy")
 parser.add_argument("--no_rl", action="store_true", help="stop after the hold: RAPTOR alone, no policy")
-parser.add_argument("--models", default=os.path.join(HERE, "models"), help="folder with policy_falcon<i>.onnx")
+parser.add_argument("--models", default=None, help="model package with policy_falcon<i>.onnx; default: models/DEFAULT")
 parser.add_argument("--raptor", default=DEFAULT_RAPTOR, help="RAPTOR checkpoint (policy.tar)")
 parser.add_argument("--rig", default=None,
                     help="rig config (path, or a name in assets/config/); default: the one --trained_on was trained on")
@@ -93,6 +93,7 @@ args = parser.parse_args()
 sys.path.insert(0, HERE)
 import marl_policy as MP  # noqa: E402
 
+args.models = args.models or MP.default_models()
 trained = MP.TRAINED_ON[args.trained_on]
 if args.rig is None:
     args.rig = trained["rig"]

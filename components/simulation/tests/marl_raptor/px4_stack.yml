@@ -39,8 +39,13 @@ services:
     profiles: ["flight"]          # started on demand with `run`, not by `up`
     stdin_open: true
     tty: true
+    environment:
+      ROS_DOMAIN_ID: "20"
+      CASTOR_ROBOT_CONFIG: /etc/castor/robot.yaml
+      CASTOR_MODELS_ROOT: /models
     volumes:
       - ./robots/drone1.yaml:/etc/castor/robot.yaml:ro
       - .:/work
+      - ../../../../models:/models:ro
     working_dir: /work
     command: ["python3", "px4_flight.py"]

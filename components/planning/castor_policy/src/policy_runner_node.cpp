@@ -67,6 +67,8 @@ public:
     team_size_ = static_cast<int>(declare_parameter<int64_t>("team_size", 0));
     team_index_ = static_cast<int>(declare_parameter<int64_t>("team_index", -1));
     const auto ns = declare_parameter<std::string>("robot_namespace", "");
+    // The launch file resolves a model package (models/README.md) into these parameters.
+    model_id_ = declare_parameter<std::string>("model_id", "");
     model_path_ = declare_parameter<std::string>("model_path", "/var/lib/castor/models/policy.onnx");
     rate_hz_ = declare_parameter<double>("rate_hz", 50.0);  // raptor_v1.1 trains the policy at 50 Hz
     const int frame_base = static_cast<int>(declare_parameter<int64_t>("obs_frame_base", 42));
@@ -170,7 +172,8 @@ private:
       const auto t0 = Clock::now();
       infer();
       last_inference_ms_ = std::chrono::duration<double, std::milli>(Clock::now() - t0).count();
-      RCLCPP_INFO(get_logger(), "loaded %s (%zu inputs, %zu outputs), first inference %.3f ms", model_path_.c_str(),
+      const std::string name = model_id_.empty() ? model_path_ : model_id_ + " (" + model_path_ + ")";
+      RCLCPP_INFO(get_logger(), "loaded %s: %zu inputs, %zu outputs, first inference %.3f ms", name.c_str(),
                   model_dim_, action_dim_, last_inference_ms_);
     } catch (const Ort::Exception &e) {
       RCLCPP_ERROR(get_logger(), "failed to load %s: %s", model_path_.c_str(), e.what());
@@ -394,7 +397,7 @@ private:
   }
 
   int team_size_{0}, team_index_{-1}, history_len_{3};
-  std::string model_path_, setpoint_frame_;
+  std::string model_id_, model_path_, setpoint_frame_;
   double rate_hz_{50.0}, step_scale_{0.05}, leash_{1.5}, goal_pos_tol_{0.3}, goal_ori_tol_{0.4};
   double command_timeout_s_{0.5}, state_timeout_s_{0.2};
   bool run_inference_{false};
