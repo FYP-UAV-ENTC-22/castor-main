@@ -3,6 +3,9 @@
 // src/mission_node.cpp feeds it inputs at a fixed rate and carries out its outputs.
 //
 //   WAIT_VEHICLE -> IDLE -takeoff-> ARMING -> TAKING_OFF (PX4 Takeoff) -> HANDOVER (-> RAPTOR)
+//     ARMING switches PX4 to Takeoff first and arms there: PX4 boots in Position mode, which needs stick input,
+//     so without RC it refuses to arm in it (and reports its preflight checks failing for it); armed in Takeoff
+//     it climbs at once.
 //     -> HOVER -goal + team ready-> MARL -goal reached-> HOLD -new goal-> MARL
 //   land: any airborne state -> LANDING (PX4 Land) -> IDLE once PX4 disarms
 //   PX4 failsafe, or PX4 leaving RAPTOR while we fly it -> FC_OVERRIDE (planning off, PX4 in charge)
@@ -26,7 +29,7 @@ struct Config {
   double takeoff_height{2.0};   // m above home
   double height_tolerance{0.2};
   int raptor_nav_state{23};     // NAVIGATION_STATE_EXTERNAL1
-  double arming_timeout_s{10.0};
+  double arming_timeout_s{15.0};
   double takeoff_timeout_s{60.0};
   double handover_timeout_s{10.0};
   double goal_reached_holdoff_s{1.5};  // planning status is 1 Hz: ignore goal_reached from before the new goal
@@ -81,11 +84,9 @@ inline Outputs step(const std::string &state, const Inputs &in, const Config &cf
     if (in.takeoff_cmd) {
       if (in.armed || !in.landed) {
         out.note = "takeoff refused: vehicle is armed or not landed";
-      } else if (!in.preflight_ok) {
-        out.note = "takeoff refused: PX4 preflight checks fail";
       } else {
-        go(ARMING, "takeoff requested");
-        out.command = Command::ARM;
+        go(ARMING, "takeoff requested: PX4 Takeoff mode, then arm");
+        out.command = Command::TAKEOFF;
       }
     }
     return out;
@@ -116,10 +117,13 @@ inline Outputs step(const std::string &state, const Inputs &in, const Config &cf
   if (state == ARMING) {
     if (in.armed) {
       go(TAKING_OFF, "armed");
-      out.command = Command::TAKEOFF;
     } else if (in.time_in_state > cfg.arming_timeout_s) {
-      go(IDLE, "arming timed out");
-    } else {
+      go(IDLE, in.nav_state != NAV_AUTO_TAKEOFF ? "arming timed out: PX4 did not switch to Takeoff"
+                                                : (in.preflight_ok ? "arming timed out: PX4 refused to arm"
+                                                                   : "arming timed out: PX4 preflight checks fail"));
+    } else if (in.nav_state != NAV_AUTO_TAKEOFF) {
+      out.command = Command::TAKEOFF;
+    } else if (in.preflight_ok) {
       out.command = Command::ARM;
     }
   } else if (state == TAKING_OFF) {

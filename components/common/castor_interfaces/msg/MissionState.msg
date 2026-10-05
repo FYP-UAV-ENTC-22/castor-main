@@ -3,7 +3,7 @@
 
 string WAIT_VEHICLE=WAIT_VEHICLE   # no fresh FC link yet
 string IDLE=IDLE                   # on the ground, disarmed, waiting for /team/command "takeoff"
-string ARMING=ARMING
+string ARMING=ARMING               # PX4 Takeoff mode first, then arm (PX4 climbs once armed)
 string TAKING_OFF=TAKING_OFF       # PX4 Takeoff mode
 string HANDOVER=HANDOVER           # switching PX4 to RAPTOR at take-off height
 string HOVER=HOVER                 # RAPTOR holding position; waiting for the team and a goal on /team/goal

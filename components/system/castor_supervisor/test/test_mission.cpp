@@ -31,25 +31,48 @@ TEST(Mission, WaitsForTheVehicle) {
   EXPECT_EQ(step(WAIT_VEHICLE, ok(), cfg).state, IDLE);
 }
 
-TEST(Mission, TakeoffArmsOnlyWhenPreflightPasses) {
+TEST(Mission, TakeoffSwitchesToTakeoffModeBeforeArming) {
+  // PX4 boots in Position mode; without sticks it fails preflight there, which must not block the request.
   Inputs in = ok();
+  in.preflight_ok = false;
   in.takeoff_cmd = true;
   auto out = step(IDLE, in, cfg);
   EXPECT_EQ(out.state, ARMING);
+  EXPECT_EQ(out.command, Command::TAKEOFF);
+
+  in.takeoff_cmd = false;
+  out = step(ARMING, in, cfg);  // still in Position: ask for Takeoff again, never arm here
+  EXPECT_EQ(out.command, Command::TAKEOFF);
+
+  in.nav_state = NAV_AUTO_TAKEOFF;  // in Takeoff, but its checks have not passed yet
+  out = step(ARMING, in, cfg);
+  EXPECT_EQ(out.state, ARMING);
+  EXPECT_EQ(out.command, Command::NONE);
+
+  in.preflight_ok = true;
+  out = step(ARMING, in, cfg);
   EXPECT_EQ(out.command, Command::ARM);
 
-  in.preflight_ok = false;
-  out = step(IDLE, in, cfg);
+  in.time_in_state = cfg.arming_timeout_s + 1.0;
+  out = step(ARMING, in, cfg);
   EXPECT_EQ(out.state, IDLE);
-  EXPECT_EQ(out.command, Command::NONE);
+  EXPECT_NE(out.note.find("refused to arm"), std::string::npos);
+}
+
+TEST(Mission, TakeoffRefusedWhenArmedOrAirborne) {
+  Inputs in = ok();
+  in.takeoff_cmd = true;
+  in.landed = false;
+  EXPECT_EQ(step(IDLE, in, cfg).state, IDLE);
 }
 
 TEST(Mission, ArmedStartsTakeoffThenHandsOverAtHeight) {
   Inputs in = ok();
   in.armed = true;
+  in.nav_state = NAV_AUTO_TAKEOFF;
   auto out = step(ARMING, in, cfg);
   EXPECT_EQ(out.state, TAKING_OFF);
-  EXPECT_EQ(out.command, Command::TAKEOFF);
+  EXPECT_EQ(out.command, Command::NONE);  // armed in Takeoff, PX4 is already climbing
 
   in = flying(NAV_AUTO_TAKEOFF);
   in.altitude = 1.0;

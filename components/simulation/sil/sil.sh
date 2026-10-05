@@ -6,7 +6,7 @@
 #   components/simulation/sil/sil.sh status | down
 #
 # Mission (the system layer's mission node, from the ground station's domain 20):
-#   sil.sh takeoff                    arm, PX4 take-off to the take-off height, hand over to RAPTOR
+#   sil.sh takeoff                    PX4 Takeoff mode, arm, climb to the take-off height, hand over to RAPTOR
 #   sil.sh goal X Y Z [YAW_DEG]       payload goal, world frame (ENU, m); taken once the team is at height
 #   sil.sh land                       stop the policy, PX4 Land
 #   sil.sh mission                    print every drone's mission state
