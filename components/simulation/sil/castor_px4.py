@@ -23,6 +23,7 @@ _instances: dict[int, dict[str, str]] = {}
 _build = "px4_sitl_default"
 _workdir_root = Path("/tmp/castor-px4")
 _extra: dict[str, str] = {}
+_fresh_params = True
 
 
 def read_env_file(path: str) -> dict[int, dict[str, str]]:
@@ -49,7 +50,9 @@ class CastorPX4LaunchTool:
         self.environment["PX4_SIM_MODEL"] = px4_model
         self.environment.update(_extra)
         self.environment.update(_instances.get(vehicle_id, {}))
-        # Persistent per-instance working dir (parameters survive, RAPTOR finds its policy).
+        # Persistent per-instance working dir (RAPTOR finds its policy there). Saved parameters are dropped at
+        # launch unless install(fresh_params=False): PX4_PARAM_* is applied after they load, but anything changed
+        # by hand in an earlier run (QGC, pxh) would otherwise carry over.
         self.workdir = _workdir_root / f"instance_{vehicle_id}"
         self.workdir.mkdir(parents=True, exist_ok=True)
         policy = Path(px4_dir) / "src/modules/mc_raptor/blob/policy.tar"
@@ -62,6 +65,9 @@ class CastorPX4LaunchTool:
         if not os.path.exists(binary):
             raise FileNotFoundError(f"{binary} not found: build it with `make sim-px4`")
         self._kill_stale()
+        if _fresh_params:
+            for saved in ("parameters.bson", "parameters_backup.bson"):
+                (self.workdir / saved).unlink(missing_ok=True)
         log = open(self.workdir / "px4.log", "ab")
         self.px4_process = subprocess.Popen(
             [binary, f"{self.px4_dir}/ROMFS/px4fmu_common/", "-s", self.rc_script, "-i", str(self.vehicle_id), "-d"],
@@ -97,11 +103,12 @@ def sil_env(instance: int) -> dict[str, str]:
 
 def install(px4_env_file: str | None = None, build: str = "px4_sitl_default",
             workdir_root: str | None = None, extra_env: dict[str, str] | None = None,
-            instances: dict[int, dict[str, str]] | None = None) -> None:
+            instances: dict[int, dict[str, str]] | None = None, fresh_params: bool = True) -> None:
     """Make Pegasus' PX4 backend use CastorPX4LaunchTool. Call before vehicles start.
 
-    instances: per-instance environment, used instead of px4_env_file."""
-    global _instances, _build, _workdir_root, _extra
+    instances: per-instance environment, used instead of px4_env_file.
+    fresh_params: start every instance from its airframe defaults plus extra_env, dropping saved parameters."""
+    global _instances, _build, _workdir_root, _extra, _fresh_params
     from pegasus.simulator.logic.backends import px4_mavlink_backend
 
     if instances is not None:
@@ -110,6 +117,7 @@ def install(px4_env_file: str | None = None, build: str = "px4_sitl_default",
         _instances = read_env_file(px4_env_file) if px4_env_file else {}
     _build = build
     _extra = dict(extra_env or {})
+    _fresh_params = fresh_params
     if workdir_root:
         _workdir_root = Path(workdir_root)
     px4_mavlink_backend.PX4LaunchTool = CastorPX4LaunchTool

@@ -118,14 +118,16 @@ sim-train-smoke: sim-up
 	$(SIM_COMPOSE) exec -w /home/ws/$(MARL_DIR) simulation /isaac-sim/python.sh scripts/skrl/train.py \
 	  --task=Isaac-flycrane-payload-decentralized-hovering-v0 --headless --num_envs=8 --max_iterations=3 --seed=42 --algorithm=MAPPO; \
 	  s=$$?; $(MAKE) --no-print-directory sim-own; exit $$s
-# The configured rig (components/simulation/assets/config) on the ground, one disarmed PX4 SITL per drone, until the
-# window closes. PX4 i waits for robot i+1's stack (components/simulation/sil/sil.sh up). Ground truth on sim/*.
-# Options: DRONES=N (default: the rig's), HEADLESS=1, DURATION=s, PX4_BUILD=px4_sitl_default (default: the RAPTOR
-# build). Needs make sim-px4 once.
+# The rig (components/simulation/assets/config, default payload_rig_marl.yaml: the default model's) on the ground,
+# one disarmed PX4 SITL per drone, until the window closes. PX4 i waits for robot i+1's stack
+# (components/simulation/sil/sil.sh up). Ground truth on sim/*.
+# Options: RIG=<file>, DRONES=N (default: the rig's), HEADLESS=1, DURATION=s, PX4_BUILD=px4_sitl_default (default:
+# the RAPTOR build). Needs make sim-px4 once.
 sim-pegasus-ros2: sim-up
 	@[ -n "$(HEADLESS)" ] || { command -v xhost >/dev/null && xhost +local: >/dev/null || echo "xhost not found; the GUI may not be allowed on the display"; }
 	$(SIM_EXEC) /isaac-sim/python.sh components/simulation/sil/sil_pegasus.py --duration $(or $(DURATION),0) \
-	  $(if $(DRONES),--drones $(DRONES)) $(if $(HEADLESS),--headless) $(if $(PX4_BUILD),--build $(PX4_BUILD)); \
+	  $(if $(RIG),--rig $(RIG)) $(if $(DRONES),--drones $(DRONES)) $(if $(HEADLESS),--headless) \
+	  $(if $(PX4_BUILD),--build $(PX4_BUILD)); \
 	  s=$$?; $(MAKE) --no-print-directory sim-own; exit $$s
 # Fast DDS shared-memory segments left in /dev/shm by killed containers (root-owned); only unused ones go.
 dds-shm-clean:

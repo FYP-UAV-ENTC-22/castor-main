@@ -3,8 +3,9 @@
     make sim-pegasus-ros2                     # GUI, until the window closes; HEADLESS=1, DRONES=N, DURATION=s
     /isaac-sim/python.sh components/simulation/sil/sil_pegasus.py --headless --duration 60
 
-The rig comes from components/simulation/assets/config/payload_rig.yaml (number of drones, payload, cables, formation)
-and its vehicle config (s500.yaml); override keys with --set / --vset. Everything starts on the ground, as PX4 expects
+The rig comes from components/simulation/assets/config/payload_rig_marl.yaml by default (the rig the default policy
+in models/ was trained for: three drones, 0.4 kg disc, 2 m cables, drones facing outward) and its vehicle config
+(s500.yaml); --rig picks another, --set / --vset override keys. Everything starts on the ground, as PX4 expects
 at boot: each drone on its skids at its formation x, y and yaw, the payload resting on the ground, the cables slack.
 Nothing arms or takes off; the drones wait for commands from their stacks.
 
@@ -17,9 +18,14 @@ at --ground-truth-hz (50) of simulated time. Robot i+1's domain gets its own dro
 (/sim/drone<i+1>/state/{pose,twist,twist_inertial}, /sim/payload/state/pose): until localization exists, the planning
 policy reads the world frame from there.
 
-PX4 runs the RAPTOR build by default (--build px4_sitl_default for stock PX4), with MC_RAPTOR_ENABLE=1, MC_RAPTOR_OFFB=0
-(a separate external mode that holds position by itself and follows trajectory_setpoint while it is fresh),
-MC_RAPTOR_INTREF=0, IMU_GYRO_RATEMAX=250 and NAV_DLL_ACT=0, set through PX4_PARAM_* for SITL only.
+PX4 runs the RAPTOR build by default (--build px4_sitl_default for stock PX4) on the none_iris airframe, every instance
+from fresh parameters, set through PX4_PARAM_* for SITL only (px4_parameters): RAPTOR as a separate external mode
+that holds position by itself and follows trajectory_setpoint while it is fresh (MC_RAPTOR_ENABLE=1, MC_RAPTOR_OFFB=0,
+MC_RAPTOR_INTREF=0, IMU_GYRO_RATEMAX=250); no RC and no ground station expected (COM_RC_IN_MODE=4, NAV_RCL_ACT=0,
+NAV_DLL_ACT=0); no auto-disarm, since a drone hanging on a cable can look landed; the S500's rotor geometry and
+hover thrust with its share of the payload; GNSS height with an RTK-grade receiver (--gps rtk), so the three
+estimates agree to centimetres and RAPTOR holds the formation; no uXRCE-DDS time sync (PX4 runs on simulated time,
+the agents on the host's). These are the settings of the PX4 run in components/simulation/tests/marl_raptor.
 
 The loop is held to real time unless --fast: in lockstep the simulator sets PX4's pace, and the onboard stacks run on
 wall time. The real-time factor is printed every 2500 steps; below 1 the simulator cannot keep up.
@@ -43,7 +49,7 @@ from castor_assets import config as C  # noqa: E402
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument("--headless", action="store_true")
 parser.add_argument("--drones", type=int, default=None, help="default: the rig's num_drones")
-parser.add_argument("--rig", default="payload_rig.yaml", help="rig config (path, or a name in assets/config/)")
+parser.add_argument("--rig", default="payload_rig_marl.yaml", help="rig config (path, or a name in assets/config/)")
 parser.add_argument("--set", action="append", default=[], metavar="KEY=VALUE", help="rig override, repeatable")
 parser.add_argument("--vehicle", default=None, help="vehicle config; default: the rig's vehicle_config")
 parser.add_argument("--vset", action="append", default=[], metavar="KEY=VALUE", help="vehicle override, repeatable")
@@ -53,7 +59,10 @@ parser.add_argument("--ground-truth-hz", type=float, default=50.0,
                     help="sim/* rate in simulated time; every message is published from Python, so it costs real time")
 parser.add_argument("--px4-env", default=os.path.join(CASTOR_ROOT, ".sil/px4.env"), help="written by sil.sh up")
 parser.add_argument("--build", default="px4_sitl_raptor", choices=["px4_sitl_default", "px4_sitl_raptor"])
-parser.add_argument("--airframe", default="gazebo-classic_iris", help="PX4 SITL model (MAVLink HIL airframe)")
+parser.add_argument("--airframe", default="none_iris", help="PX4 SITL model (MAVLink HIL airframe)")
+parser.add_argument("--gps", choices=["rtk", "pegasus"], default="rtk",
+                    help="rtk: 2 cm / 3 cm receiver, PX4 uses GNSS for height; pegasus: Pegasus' metre-level default")
+parser.add_argument("--keep-params", action="store_true", help="keep each PX4 instance's saved parameters")
 parser.add_argument("--duration", type=float, default=60.0, help="simulated seconds; 0 = until the window closes")
 parser.add_argument("--fast", action="store_true",
                     help="do not hold the simulation to real time (the onboard stacks run on wall time, so SIL needs it)")
@@ -88,6 +97,7 @@ from pxr import UsdLux  # noqa: E402
 from pegasus.simulator.logic.backends.px4_mavlink_backend import PX4MavlinkBackend, PX4MavlinkBackendConfig  # noqa: E402
 from pegasus.simulator.logic.dynamics import LinearDrag  # noqa: E402
 from pegasus.simulator.logic.interface.pegasus_interface import PegasusInterface  # noqa: E402
+from pegasus.simulator.logic.sensors import GPS, IMU, Barometer, Magnetometer  # noqa: E402
 from pegasus.simulator.logic.thrusters import QuadraticThrustCurve  # noqa: E402
 from pegasus.simulator.logic.vehicles.multirotor import Multirotor, MultirotorConfig  # noqa: E402
 from pegasus.simulator.params import ROBOTS  # noqa: E402
@@ -95,6 +105,43 @@ from pegasus.simulator.params import ROBOTS  # noqa: E402
 import castor_px4  # noqa: E402
 from castor_assets import usd_build as U  # noqa: E402
 from castor_assets.runtime import RigRuntime  # noqa: E402
+
+
+PHYSICS_HZ = 250  # Pegasus' world; PX4's IMU_GYRO_RATEMAX follows it (mc_raptor drops out on gyro older than 10 ms)
+# RTK-grade GNSS: Pegasus' defaults model a metre-level receiver whose random walk lets the drones' estimates drift
+# apart by more than the formation tolerates.
+RTK_GPS = {"eph": 0.02, "epv": 0.03, "fix_type": 6, "gps_xy_random_walk": 0.0, "gps_z_random_walk": 0.0,
+           "gps_xy_noise_density": 2.0e-5, "gps_z_noise_density": 4.0e-5, "gps_vxy_noise_density": 0.02,
+           "gps_vz_noise_density": 0.04, "sattelites_visible": 18}
+
+
+def px4_parameters(vinfo, n):
+    """What differs from PX4's none_iris defaults in SIL, as PX4_PARAM_* for every instance."""
+    params = {
+        "COM_RC_IN_MODE": 4,       # no sticks: missions arm in Takeoff mode, never in a manual one
+        "NAV_RCL_ACT": 0,
+        "NAV_DLL_ACT": 0,          # no ground station link
+        "COM_DISARM_LAND": -1,     # the land detector must not disarm a drone hanging on a cable
+        "COM_DISARM_PRFLT": -1,
+        "MPC_TKO_SPEED": 0.7,
+        "UXRCE_DDS_SYNCT": 0,      # PX4's clock is the simulation's, the agents' the host's
+    }
+    if args.build == "px4_sitl_raptor":
+        params.update({"MC_RAPTOR_ENABLE": 1, "MC_RAPTOR_OFFB": 0, "MC_RAPTOR_INTREF": 0,
+                       "IMU_GYRO_RATEMAX": PHYSICS_HZ})
+    if args.gps == "rtk":
+        params.update({"EKF2_HGT_REF": 1, "EKF2_GPS_P_NOISE": 0.05, "EKF2_GPS_V_NOISE": 0.1})
+    if vinfo.kind == "s500":
+        # PX4 quad-X: 0 front-right, 1 back-left, 2 front-left, 3 back-right; PX4's y is to the right
+        arm = abs(vinfo.geometry.rotor_xy[0][0])
+        for i, (px, py, km) in enumerate(((arm, arm, 0.05), (-arm, -arm, 0.05), (arm, -arm, -0.05),
+                                          (-arm, arm, -0.05))):
+            params.update({f"CA_ROTOR{i}_PX": px, f"CA_ROTOR{i}_PY": py, f"CA_ROTOR{i}_KM": km})
+        payload_share = 0.0 if args.no_payload else rig.payload.mass / n
+        hover = (vinfo.total_mass + payload_share) * 9.81 / vinfo.max_thrust_total
+        # Pegasus maps a motor command u to 1000 u + 100 rad/s and thrust goes with speed squared
+        params["MPC_THR_HOVER"] = round((1100.0 * math.sqrt(hover) - 100.0) / 1000.0, 3)
+    return {f"PX4_PARAM_{k}": str(v) for k, v in params.items()}
 
 
 def ground_truth_every(physics_dt):
@@ -221,13 +268,11 @@ def px4_instances(n):
 def main():
     n = rig.num_drones
     instances = px4_instances(n)
-    raptor_params = {"PX4_PARAM_MC_RAPTOR_ENABLE": "1", "PX4_PARAM_MC_RAPTOR_OFFB": "0",
-                     "PX4_PARAM_MC_RAPTOR_INTREF": "0", "PX4_PARAM_IMU_GYRO_RATEMAX": "250",
-                     "PX4_PARAM_NAV_DLL_ACT": "0"}
-    castor_px4.install(build=args.build, instances=instances,
-                       extra_env=raptor_params if args.build == "px4_sitl_raptor" else None)
-
     vinfo = U.vehicle_info(rig, vehicle_cfg, os.path.join(C.GENERATED_DIR, "runs"), ROBOTS["Iris"], unique=True)
+    px4_params = px4_parameters(vinfo, n)
+    castor_px4.install(build=args.build, instances=instances, extra_env=px4_params, fresh_params=not args.keep_params)
+    print("[sil] PX4 parameters: " + ", ".join(f"{k[len('PX4_PARAM_'):]}={v}" for k, v in px4_params.items()))
+
     layout, warnings = U.rig_layout_for(rig, vinfo)
     for w in warnings:
         print(f"[sil] WARNING {w}")
@@ -269,6 +314,8 @@ def main():
     drone_paths, vehicles = [], []
     for i in range(n):
         cfg = MultirotorConfig()
+        if args.gps == "rtk":
+            cfg.sensors = [Barometer(), IMU(), Magnetometer(), GPS(RTK_GPS)]
         # backends[0] drives the rotors (Multirotor reads its input_reference): PX4 first, ground truth after
         cfg.backends = [PX4MavlinkBackend(PX4MavlinkBackendConfig({
             "vehicle_id": i, "px4_autolaunch": True, "px4_dir": PX4_DIR, "px4_vehicle_model": args.airframe,
