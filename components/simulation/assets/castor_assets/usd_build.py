@@ -408,7 +408,7 @@ def build_vehicle_usd(cfg: VehicleCfg, path: str) -> dict:
         "hover_throttle": (math.sqrt(mp.total_mass * G.GRAVITY / 4 / tc["rotor_constant"][0]) - 100.0) / 1000.0,
         "spawn_height_on_ground": float(geo.spawn_height_on_ground),
         "overall_height": float(geo.height_overall),
-        "mount_z_range": [float(geo.z_pole_top), float(geo.z_pole_bottom)],
+        "mount_z_range": [float(geo.z_pole_top), float(geo.z_skid)],
     }
     stage.GetRootLayer().customLayerData = {"castor_vehicle": _json(summary), "castor_config": _json(to_dict(cfg))}
     save_atomic(stage, path)

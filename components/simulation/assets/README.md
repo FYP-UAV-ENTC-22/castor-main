@@ -49,7 +49,7 @@ Everything is a key in `payload_rig.yaml`, overridable with `--set key=value` on
 | how far out the drones sit | `formation.horizontal_distance` (payload axis to each cable mount), or `formation.cable_angle_deg` |
 | cable length | `cable.length` |
 | cable model | `cable.model: distance` (PhysX distance joint, can go slack) or `rope` (rigid segments + ball joints) |
-| mount height on the landing gear | `mount.height`: 0 = top of the poles, just under the frame; `landing_gear.pole_length` = bottom |
+| mount height on the landing gear | `mount.height`: 0 = top of the poles, just under the frame; `landing_gear.pole_length` = bottom of the poles; 0.163 = level with the skids, the lowest |
 | release mechanisms | `release.location: none / drone / payload / both`, `release.actuation_delay` |
 
 The layout check rejects formations whose neighbouring rotor discs come closer than
