@@ -15,7 +15,8 @@ MANIFEST = {
         "point_local": [0.0, 0.0, -0.1575],
     },
     "flight": {"setpoint_step_scale": 0.015, "setpoint_leash": 1.5},
-    "rig": {"cable_length": 2.0},
+    "rig": {"cable_length": 2.0, "payload_height": 0.03, "mount_local": [0, 0, -0.1875], "lift_height": 1.0,
+            "anchors_local": [[0.5, 0, 0.015], [-0.25, 0.433, 0.015], [-0.25, -0.433, 0.015]]},
 }
 
 REPO_MODELS = os.path.normpath(os.path.join(os.path.dirname(__file__), "../../../../models"))
@@ -47,6 +48,8 @@ def test_runner_parameters_pick_the_slot_and_flight_settings(tmp_path):
     assert p["model_path"] == str(tmp_path / "demo/v2/policy_falcon2.onnx")
     assert p["obs_frame_base"] == 42 and p["history"] == 3 and p["rate_hz"] == 50.0
     assert p["setpoint_step_scale"] == 0.015
+    assert p["rig_anchor_local"] == [-0.25, 0.433, 0.015] and p["rig_mount_local"] == [0.0, 0.0, -0.1875]
+    assert p["lift_height"] == 1.0 and p["rig_cable_length"] == 2.0
 
 
 def test_team_mismatches_are_refused(tmp_path):

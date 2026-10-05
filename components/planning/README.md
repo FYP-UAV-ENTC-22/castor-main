@@ -26,8 +26,12 @@ position increment, exactly as the env does (`setpoint_step_scale`,
 setpoint goes to `<ns>/vehicle/setpoint` in the vehicle's own odometry frame, and
 the vehicle component hands it to RAPTOR on the FC.
 
-It flies only while the system layer enables it on `<ns>/planning/command` and
-every input is fresh; otherwise it publishes nothing and RAPTOR holds position.
+It flies the mode the system layer asks for on `<ns>/planning/command`, while
+every input that mode needs is fresh: `steady` holds a fixed setpoint, `lift`
+climbs until the payload hangs at the model's lift height, `policy` runs the
+MARL policy; `off` (or a stale command) publishes nothing and RAPTOR holds
+position. In every mode it reports the hand-over check (own cable taut, payload
+clear of the ground) from the model's rig geometry.
 World-frame state comes from `own_state_prefix` / `payload_state_prefix`, for now
 the simulator's ground truth. `<ns>/planning/status` reports whether it is active,
 why not, and the goal errors.

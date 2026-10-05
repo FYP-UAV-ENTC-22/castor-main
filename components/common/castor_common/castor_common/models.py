@@ -35,7 +35,7 @@ class Model:
 
     def runner_parameters(self, team_size: int, team_index: int) -> dict:
         """castor_policy parameters for the drone in `team_index` of a team of `team_size`."""
-        p = self.manifest["policy"]
+        p, rig = self.manifest["policy"], self.manifest["rig"]
         if p["team_size"] != team_size:
             raise ModelError(f"{self.id} was trained for {p['team_size']} drones, this team has {team_size}")
         return {
@@ -46,6 +46,12 @@ class Model:
             "obs_frame_base": int(p["frame_dim"]) - team_size,
             "setpoint_step_scale": float(self.manifest["flight"]["setpoint_step_scale"]),
             "setpoint_leash": float(self.manifest["flight"]["setpoint_leash"]),
+            # the rig, for the lift and the hand-over check
+            "rig_mount_local": [float(x) for x in rig["mount_local"]],
+            "rig_anchor_local": [float(x) for x in rig["anchors_local"][team_index]],
+            "rig_cable_length": float(rig["cable_length"]),
+            "rig_payload_height": float(rig["payload_height"]),
+            "lift_height": float(rig["lift_height"]),
         }
 
 

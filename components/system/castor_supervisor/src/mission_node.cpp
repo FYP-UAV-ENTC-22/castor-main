@@ -3,10 +3,10 @@
 //   /team/command "takeoff" | "land"  (castor_interfaces/TeamCommand, from the ground station)
 //   /team/goal                        (geometry_msgs/PoseStamped: payload goal, world frame ENU)
 //   <ns>/vehicle/state, <ns>/vehicle/odom   what PX4 reports, through the vehicle component
-//   <ns>/planning/status              whether the policy has a model and has reached the goal
+//   <ns>/planning/status              model, lift and hand-over state, goal reached
 //   /<other>/system/mission           teammates' mission state (only system state crosses between drones)
 //   -> <ns>/vehicle/command           arm, takeoff, RAPTOR, land: the vehicle component forwards them to PX4
-//   -> <ns>/planning/command          enable + goal while the policy should fly (refreshed at 10 Hz)
+//   -> <ns>/planning/command          mode (steady, lift, policy) + goal, refreshed at 10 Hz while not off
 //   -> <ns>/system/mission            this drone's mission state, 5 Hz
 //
 // The state machine is castor_supervisor/mission.hpp. The node never talks to PX4
@@ -61,6 +61,9 @@ public:
     vehicle_timeout_s_ = declare_parameter<double>("vehicle_timeout_s", 1.0);
     teammate_timeout_s_ = declare_parameter<double>("teammate_timeout_s", 1.5);
     command_repeat_s_ = declare_parameter<double>("command_repeat_s", 1.0);
+    planning_timeout_s_ = declare_parameter<double>("planning_timeout_s", 3.0);  // planning status is 1 Hz
+    cfg_.lift_timeout_s = declare_parameter<double>("lift_timeout_s", cfg_.lift_timeout_s);
+    cfg_.settle_s = declare_parameter<double>("settle_s", cfg_.settle_s);
     for (const auto &t : declare_parameter<std::vector<std::string>>("teammate_namespaces", std::vector<std::string>{})) {
       watch("/" + t + "/system/mission");
     }
@@ -72,8 +75,10 @@ public:
     });
     odom_sub_ = create_subscription<nav_msgs::msg::Odometry>(
       root + "/vehicle/odom", 10, [this](const nav_msgs::msg::Odometry &o) { altitude_ = o.pose.pose.position.z; });
-    status_sub_ = create_subscription<PolicyStatus>(root + "/planning/status", 10,
-                                                    [this](const PolicyStatus &s) { planning_ = s; });
+    status_sub_ = create_subscription<PolicyStatus>(root + "/planning/status", 10, [this](const PolicyStatus &s) {
+      planning_ = s;
+      planning_at_ = Clock::now();
+    });
     team_cmd_sub_ = create_subscription<TeamCommand>("/team/command", 10, [this](const TeamCommand &c) {
       if (!c.robot_ids.empty() && std::find(c.robot_ids.begin(), c.robot_ids.end(), robot_id_) == c.robot_ids.end()) {
         return;
@@ -83,8 +88,9 @@ public:
     });
     goal_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
       "/team/goal", 10, [this](const geometry_msgs::msg::PoseStamped &g) {
-        if (!m::at_height(state_)) {
-          RCLCPP_WARN(get_logger(), "goal ignored in %s: goals are taken once at take-off height", state_.c_str());
+        if (!m::payload_ready(state_)) {
+          RCLCPP_WARN(get_logger(), "goal ignored in %s: goals are taken once the payload is lifted (READY)",
+                      state_.c_str());
           return;
         }
         goal_ = g.pose;
@@ -127,16 +133,17 @@ private:
     RCLCPP_INFO(get_logger(), "watching teammate %s", topic.c_str());
   }
 
-  bool team_ready() const {
-    if (!m::at_height(state_)) return false;
-    int ready = 0;
+  // Every teammate fresh and in a state `in` accepts (this drone is not counted).
+  template <typename Pred>
+  bool team_all(Pred in) const {
+    int count = 0;
     for (const auto &[index, t] : teammates_) {
       if (static_cast<int>(index) < team_size_ && index != team_index_ && since(t.second) < teammate_timeout_s_ &&
-          m::at_height(t.first.state)) {
-        ++ready;
+          in(t.first.state)) {
+        ++count;
       }
     }
-    return ready >= team_size_ - 1;
+    return count >= team_size_ - 1;
   }
 
   void step() {
@@ -154,9 +161,14 @@ private:
     in.land_cmd = std::exchange(land_cmd_, false);
     in.new_goal = std::exchange(new_goal_, false);
     in.has_goal = goal_.has_value();
-    in.team_ready = team_ready_ = team_ready();
-    in.planning_ready = planning_ && planning_->model_loaded && planning_->obs_dim_ok;
-    in.goal_reached = planning_ && planning_->goal_reached;
+    in.team_in_raptor = m::in_raptor(state_) && team_all(m::in_raptor);
+    in.team_ready = team_ready_ = m::payload_ready(state_) && team_all(m::payload_ready);
+    in.planning_alive = planning_ && since(planning_at_) < planning_timeout_s_;
+    in.planning_ready = in.planning_alive && planning_->model_loaded && planning_->obs_dim_ok;
+    in.lift_done = in.planning_alive && planning_->lift_done;
+    in.lift_failed = in.planning_alive && planning_->lift_failed;
+    in.handover_ok = in.planning_alive && planning_->handover_ok;
+    in.goal_reached = in.planning_alive && planning_->goal_reached;
     in.time_in_state = since(entered_);
 
     const auto out = m::step(state_, in, cfg_);
@@ -168,11 +180,19 @@ private:
       entered_ = Clock::now();  // a new goal restarts MARL's goal-reached hold-off too
     }
     if (out.state != state_) {
-      if (!m::at_height(out.state)) goal_.reset();
+      if (!m::payload_ready(out.state)) goal_.reset();
       state_ = out.state;
       publish_state();
     }
-    planning_enabled_ = out.planning_enabled;
+    if (state_ == m::LIFTED && in.time_in_state > cfg_.settle_s + 5.0 && !in.handover_ok) {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000, "LIFTED: hand-over check failing: %s",
+                           !in.planning_alive ? "no planning status" : planning_->handover_reason.c_str());
+    }
+    if (state_ == m::HOVER && in.time_in_state > 5.0 && (!in.team_in_raptor || !in.planning_alive)) {
+      RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 5000, "HOVER: waiting for %s",
+                           !in.planning_alive ? "planning status" : "the team to reach RAPTOR");
+    }
+    planning_mode_ = out.planning;
     send(out.command);
   }
 
@@ -204,16 +224,21 @@ private:
   }
 
   void publish_planning() {
-    if (!planning_enabled_ && !planning_was_enabled_) {
-      return;  // nothing to say; the policy is off by default
+    if (planning_mode_ == m::Planning::OFF && planning_last_ == m::Planning::OFF) {
+      return;  // nothing to say; planning is off by default
     }
     PlanningCommand c;
     c.header.stamp = now();
     c.header.frame_id = "map";
-    c.enable = planning_enabled_ && goal_.has_value();
+    switch (planning_mode_) {
+      case m::Planning::OFF: c.mode = PlanningCommand::OFF; break;
+      case m::Planning::STEADY: c.mode = PlanningCommand::STEADY; break;
+      case m::Planning::LIFT: c.mode = PlanningCommand::LIFT; break;
+      case m::Planning::POLICY: c.mode = goal_ ? PlanningCommand::POLICY : PlanningCommand::STEADY; break;
+    }
     if (goal_) c.goal = *goal_;
     planning_pub_->publish(c);
-    planning_was_enabled_ = planning_enabled_;
+    planning_last_ = planning_mode_;
   }
 
   void publish_state() {
@@ -231,7 +256,7 @@ private:
   std::string ns_;
   int team_size_{1};
   m::Config cfg_;
-  double vehicle_timeout_s_{1.0}, teammate_timeout_s_{1.5}, command_repeat_s_{1.0};
+  double vehicle_timeout_s_{1.0}, teammate_timeout_s_{1.5}, command_repeat_s_{1.0}, planning_timeout_s_{3.0};
 
   std::string state_{m::WAIT_VEHICLE};
   Clock::time_point entered_;
@@ -239,9 +264,11 @@ private:
   Clock::time_point vehicle_at_;
   double altitude_{0.0};
   std::optional<PolicyStatus> planning_;
+  Clock::time_point planning_at_;
   std::optional<geometry_msgs::msg::Pose> goal_;
   bool takeoff_cmd_{false}, land_cmd_{false}, new_goal_{false};
-  bool planning_enabled_{false}, planning_was_enabled_{false}, team_ready_{false};
+  m::Planning planning_mode_{m::Planning::OFF}, planning_last_{m::Planning::OFF};
+  bool team_ready_{false};
   m::Command last_command_{m::Command::NONE};
   Clock::time_point last_command_at_;
   std::map<uint32_t, std::pair<MissionState, Clock::time_point>> teammates_;

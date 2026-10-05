@@ -7,9 +7,10 @@
 #
 # Mission (the system layer's mission node, from the ground station's domain 20):
 #   sil.sh takeoff                    PX4 Takeoff mode, arm, climb to the take-off height, hand over to RAPTOR
-#   sil.sh goal X Y Z [YAW_DEG]       payload goal, world frame (ENU, m); taken once the team is at height
+#   sil.sh goal X Y Z [YAW_DEG]       payload goal, world frame (ENU, m); taken once the payload is lifted (READY)
 #   sil.sh land                       stop the policy, PX4 Land
 #   sil.sh mission                    print every drone's mission state
+#   sil.sh planning                   print every drone's planning mode, lift and hand-over check
 #
 # What makes it faithful to N separate Pis on one host:
 #   - every robot gets its own ROS 2 domain (drone i: 20+i, payload: after the
@@ -27,7 +28,8 @@
 #     models/DEFAULT, copied into every drone's models dir (mounted at
 #     /var/lib/castor/models, so it overrides the image's copy, no rebuild);
 #     docker-compose.sil.yml only lets the vehicle component forward setpoints
-#     and commands to its PX4 SITL (off on a Pi). CASTOR_TAKEOFF_HEIGHT (2.0 m).
+#     and commands to its PX4 SITL (off on a Pi). The take-off height is the
+#     model's rig.takeoff_height (cables still slack); CASTOR_TAKEOFF_HEIGHT overrides.
 #
 # State lives in $CASTOR_SIL_DIR (default .sil/ in the repo, gitignored).
 set -euo pipefail
@@ -81,6 +83,7 @@ CASTOR_ROBOT_CONFIG=$dir/robot.yaml
 CASTOR_RUN_DIR=$dir/run
 CASTOR_LOG_DIR=$dir/log
 CASTOR_MODELS_DIR=$dir/models
+CASTOR_TAKEOFF_HEIGHT=$TAKEOFF_HEIGHT
 EOF
     # PX4 SITL instance (id-1): same domain, own agent port, no namespace (/fmu/... as on hardware)
     printf '%s ROS_DOMAIN_ID=%s PX4_UXRCE_DDS_PORT=%s PX4_UXRCE_DDS_NS=\n' "$((id - 1))" "$dom" "$aport" >> "$STATE/px4.env"
@@ -104,10 +107,14 @@ robots() { find "$STATE" -mindepth 2 -maxdepth 2 -name stack.env -printf '%h\n' 
 
 case "$cmd" in
 up)
+    TAKEOFF_HEIGHT="${CASTOR_TAKEOFF_HEIGHT:-}"
     if [[ "$MODEL" != *.onnx ]]; then
         read -r MODEL_ID MODEL_DIR < <(model_package) || exit 2
+        [ -n "$TAKEOFF_HEIGHT" ] || TAKEOFF_HEIGHT=$(sed -n 's/^  takeoff_height: *\([0-9.]*\).*/\1/p' "$MODEL_DIR/model.yaml")
         echo "==> model $MODEL_ID ($MODEL_DIR)"
     fi
+    TAKEOFF_HEIGHT="${TAKEOFF_HEIGHT:-1.3}"
+    echo "==> take-off height $TAKEOFF_HEIGHT m"
     rm -rf "$STATE"; mkdir -p "$STATE/gcs/run"
     : > "$STATE/px4.env"
     for i in $(seq 1 "$DRONES"); do
@@ -158,6 +165,17 @@ mission)
         gcs_ros timeout 5 ros2 topic echo --once --field state "/$ns/system/mission" 2>/dev/null | head -1 || echo "(no message)"
     done
     ;;
+planning)
+    for d in $(robots); do
+        ns=$(basename "$d")
+        [ "$ns" = payload ] && continue
+        printf '%s: ' "$ns"
+        gcs_ros timeout 5 ros2 topic echo --once "/$ns/planning/status" 2>/dev/null \
+            | grep -E '^(model_id|mode|active|inactive_reason|lift_done|lift_failed|handover_ok|handover_reason|cable_span|payload_z|goal_position_error):' \
+            | tr '\n' ' ' || true
+        echo
+    done
+    ;;
 status)
     docker ps --filter "label=com.docker.compose.project" --format '{{.Label "com.docker.compose.project"}}\t{{.Names}}\t{{.Status}}' \
         | grep '^castor-sil-' | sort
@@ -166,5 +184,5 @@ down)
     for d in $(robots); do "${COMPOSE[@]}" --env-file "$d/stack.env" down; done
     "${COMPOSE[@]}" -p castor-sil-gcs down
     ;;
-*) sed -n '2,32p' "$0" | sed 's/^# \?//'; exit 2 ;;
+*) sed -n '2,34p' "$0" | sed 's/^# \?//'; exit 2 ;;
 esac

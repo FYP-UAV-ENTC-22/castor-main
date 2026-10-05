@@ -19,8 +19,17 @@ float64 inference_p50_ms
 float64 inference_p99_ms
 float64 inference_max_ms
 # The policy loop (raptor_v1.1 flycrane: position increments -> <ns>/vehicle/setpoint).
-bool active                  # enabled by <ns>/planning/command and publishing setpoints
-string inactive_reason       # why not, when enabled but not active
+string model_id              # <name>/<version> of the model package, empty for a bare model
+string mode                  # what <ns>/planning/command asks for (PlanningCommand), off when stale
+bool active                  # publishing setpoints in that mode
+string inactive_reason       # why not, when the mode is not off but nothing is published
+# Lift and hand-over (castor_policy/lift.hpp), from the model's rig geometry.
+bool lift_done               # LIFT stopped with the payload at the lift height
+bool lift_failed             # LIFT climbed its limit without getting there
+bool handover_ok             # own cable taut and the payload clear of the ground: the state the policy trained from
+string handover_reason       # why not
+float64 cable_span           # [m] own tie point to own anchor, -1 without the state
+float64 payload_z            # [m] payload centre height, -1 without a pose
 float64 goal_position_error  # [m] payload to goal, -1 without a goal and payload pose
 float64 goal_orientation_error  # [rad] rotation angle payload to goal, -1 likewise
 bool goal_reached            # both within goal_position_tolerance / goal_orientation_tolerance

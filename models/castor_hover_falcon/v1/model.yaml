@@ -62,5 +62,5 @@ rig:                     # the rig this policy has to be flown on (components/si
     - [-0.25, 0.433013, 0.015]
     - [-0.25, -0.433013, 0.015]
   drone_yaw_deg: [0.0, 120.0, 240.0]   # each drone faces away from the payload
-  takeoff_height: 1.6    # m above home for PX4's take-off; the cables go taut at 1.77 m
+  takeoff_height: 1.3    # m above home for PX4's take-off (as in the PX4 run); the cables go taut at 1.77 m
   lift_height: 1.0       # payload centre above the ground when the policy takes over
