@@ -21,7 +21,8 @@ frame, the angular one too: that is what the training environment feeds the poli
 Run it on its own to check all three pieces against a trace recorded in the training environment
 (scripts/tools/capture_policy_trace.py in the MARL repo); exits 1 on a mismatch:
 
-    python marl_policy.py                       # uses models/policy_trace.npz and models/policy_falcon<i>.onnx
+    python marl_policy.py                       # models/falcon/: policy_trace.npz and policy_falcon<i>.onnx
+    python marl_policy.py --trained_on s500     # models/s500/
 """
 
 import argparse
@@ -53,6 +54,11 @@ TRAINED_ON = {
     "s500": {"rig": "payload_rig_marl_s500.yaml", "point": "com", "step_scale": 0.02, "max_speed": 1.0},
 }
 POINT_ABOVE_MOUNT = 0.03  # m, for point = "mount"
+
+
+def models_dir(trained_on):
+    """Where the exported policy of that task is kept: models/<trained_on>/."""
+    return os.path.join(HERE, "models", trained_on)
 
 
 def policy_point(trained_on, mount_local, com_local):
@@ -198,7 +204,9 @@ def check(trace_path, model_dir):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--models", default=os.path.join(HERE, "models"))
+    parser.add_argument("--trained_on", choices=tuple(TRAINED_ON), default="falcon")
+    parser.add_argument("--models", default=None, help="default: models/<trained_on>")
     parser.add_argument("--trace", default=None)
     args = parser.parse_args()
+    args.models = args.models or models_dir(args.trained_on)
     sys.exit(0 if check(args.trace or os.path.join(args.models, "policy_trace.npz"), args.models) else 1)

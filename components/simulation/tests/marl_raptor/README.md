@@ -19,7 +19,7 @@ position setpoints to the policy and send it goals.
 | `marl_policy.py` | The policy's side of the chain in NumPy: the 135-value observation, the exported actor (ONNX), the setpoint integrator. Run it on its own to check all three against a trace from the training environment. |
 | `marl_payload.py` | The run without PX4: scripted take-off, tension and lift, the hand-over check, then the policy and its goals. |
 | `marl_scene.py` | The goal marker both runs draw. |
-| `models/` | The policy flown here last: the Falcon-trained one (`Isaac-castor-payload-decentralized-hovering-v0`), as three exported actors and the reference trace. Exporting another policy replaces it, see below. |
+| `models/falcon/`, `models/s500/` | The exported policy of each training task: three actors and the reference trace. `--trained_on` picks the folder. |
 
 RAPTOR is the unchanged `RaptorBackend` of [`../raptor`](../raptor).
 
@@ -41,7 +41,24 @@ Both rigs carry a 0.4 kg disc with anchors 120 degrees apart and the drones faci
 `--max_speed` and `--velocity_filter` override one setting at a time. In the PX4 run give `px4_rig.py` and
 `px4_flight.py` the same `--trained_on`; the flight node warns if they differ.
 
-The numbers measured further down are all from the Falcon-trained policy.
+The numbers measured further down are all from the Falcon-trained policy, except the next section.
+
+### The S500-trained policy, first flights
+
+`models/s500/` is `best_agent.pt` of a 204,800-step run of the S500 task (setpoint cap 1.0 m/s, step scale 0.02).
+One goal, `0.6,0.4,1.2,0,0,30`, one run each:
+
+| Run | Payload at the goal, last 2 s | Drones |
+|---|---|---|
+| Without PX4 | 0.007 m / 1.1 deg | fastest 1.25 m/s, largest tilt 20 deg on the way |
+| With PX4, trained settings | 0.021 m / 1.7 deg | vertical vibration at 8 Hz, about 60 mm/s (under 2 mm), from the moment the policy takes over |
+| With PX4, `--velocity_filter 0.1` | 0.021 m / 2.0 deg | that vibration down to 7 mm/s; the payload drifted 0.27 m in the 3 s after hand-over, then recovered |
+| With PX4, `--velocity_gain 0` | 0.081 m / 4.9 deg | no vibration (1 mm/s) |
+
+The vibration is not there under RAPTOR alone (1 to 4 mm/s with the cables taut), in the training environment or
+without PX4, and switching the payload noise off does not change it. It comes in through the velocity feedforward.
+Why the PX4 path excites it has not been measured; the suspect is a longer delay between drone state and policy
+than the 20 to 60 ms the task trains with.
 
 ## Setup (once)
 
@@ -57,11 +74,12 @@ python -m pip install --target .deps-py312 --no-deps --python-version 3.12 --onl
 `--target .deps --no-deps` keeps these out of the `castor` env on purpose: pip inside that env can see, and remove,
 packages that belong to the Isaac Sim install.
 
-`models/` holds the Falcon-trained policy. To put another one there, in the MARL repo, with the Python that trained it:
+`models/falcon/` and `models/s500/` hold the policy of each task. To replace one, in the MARL repo, with the Python
+that trained it:
 
 ```bash
 RUN=logs/skrl/mappo_castor_hover/<run>
-OUT=<castor-main>/components/simulation/tests/marl_raptor/models
+OUT=<castor-main>/components/simulation/tests/marl_raptor/models/falcon      # or models/s500
 python scripts/tools/export_policy_onnx.py $RUN/checkpoints/best_agent.pt --out $OUT
 python scripts/tools/capture_policy_trace.py --checkpoint $RUN/checkpoints/best_agent.pt --out $OUT/policy_trace.npz
 ```
@@ -168,6 +186,7 @@ world-frame conversion lives in `localization`, and the sequence is gated by `sy
 
 ```bash
 python marl_policy.py                       # pipeline check against the trace, no Isaac Sim; exits 1 on a mismatch
+python marl_policy.py --trained_on s500     # the same for the S500 policy
 
 python marl_payload.py --headless                                        # one default goal
 python marl_payload.py --headless --goal=0.6,0.4,1.2,0,0,30 --goal=-0.5,0.5,0.9
