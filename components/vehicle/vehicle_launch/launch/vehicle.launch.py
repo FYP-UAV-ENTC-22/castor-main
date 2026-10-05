@@ -7,8 +7,9 @@ Driven entirely by robot.yaml (see deploy/robot.example.yaml):
   fc.px4_namespace    the uxrce_dds_client namespace set on the FC ("" = /fmu/...)
 
 The agent respawns, so the container keeps running with the FC unplugged and
-picks the link up when it appears. Setpoint forwarding to PX4 stays off unless
-launched with enable_setpoint_output:=true.
+picks the link up when it appears. Setpoint and command forwarding to PX4 stay
+off unless launched with enable_setpoint_output:=true / enable_commands:=true
+(SIL turns both on through docker/docker-compose.sil.yml).
 """
 
 from launch import LaunchDescription
@@ -24,6 +25,7 @@ def generate_launch_description():
     cfg = robot()
     fc, mav = cfg.fc, cfg.mavlink
     enable_setpoints = LaunchConfiguration("enable_setpoint_output")
+    enable_commands = LaunchConfiguration("enable_commands")
 
     actions = [
         Node(
@@ -35,6 +37,7 @@ def generate_launch_description():
                 "world_frame": f"{cfg.namespace}/odom",
                 "body_frame": f"{cfg.namespace}/base_link",
                 "enable_setpoint_output": enable_setpoints,
+                "enable_commands": enable_commands,
             }],
             output="screen",
             respawn=True,
@@ -63,6 +66,10 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument("enable_setpoint_output", default_value="false",
                               description="Forward <ns>/vehicle/setpoint to PX4. Off unless a flight test needs it."),
+        DeclareLaunchArgument("enable_commands", default_value="false",
+                              description="Forward <ns>/vehicle/command (arm, takeoff, RAPTOR, land) to PX4."),
+        LogInfo(condition=IfCondition(enable_commands),
+                msg="COMMANDS ENABLED: <ns>/vehicle/command is forwarded to PX4 vehicle_command"),
         LogInfo(condition=IfCondition(enable_setpoints),
                 msg="SETPOINT OUTPUT ENABLED: <ns>/vehicle/setpoint is forwarded to PX4 trajectory_setpoint"),
         component_group("vehicle", actions),

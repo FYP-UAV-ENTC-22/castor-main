@@ -2,15 +2,19 @@
 //
 //   /fmu/out/vehicle_odometry   (NED/FRD) -> odom  nav_msgs/Odometry (ENU/FLU)
 //   /fmu/out/vehicle_status_vN            -> state castor_interfaces/VehicleState
+//   /fmu/out/vehicle_land_detected, home_position -> state (landed; home altitude kept for TAKEOFF)
 //   setpoint castor_interfaces/PositionSetpoint (ENU) -> /fmu/in/trajectory_setpoint (NED)
+//   command  castor_interfaces/VehicleCommand        -> /fmu/in/vehicle_command
 //
 // Every other component uses only the right-hand side, so nothing outside this
-// container depends on px4_msgs or on PX4's frame conventions.
+// container depends on px4_msgs or on PX4's frame conventions. The system layer
+// decides; this node only translates.
 //
-// Safety: this node never arms, never changes mode and never sends a command.
-// Setpoint forwarding is off unless enable_setpoint_output is set, and even then
-// only finite position + velocity + yaw targets are forwarded (RAPTOR rejects
-// anything else). RAPTOR itself holds position when setpoints stop for 200 ms.
+// Safety: both outputs to PX4 are off unless launched with them enabled
+// (enable_setpoint_output, enable_commands). Only finite position + velocity +
+// yaw setpoints are forwarded (RAPTOR rejects anything else); RAPTOR itself holds
+// position when setpoints stop for 200 ms. Commands are ARM, DISARM, TAKEOFF,
+// RAPTOR and LAND only; PX4's own arming checks and failsafes still apply.
 
 #include <chrono>
 #include <cmath>
@@ -20,19 +24,27 @@
 #include <string>
 
 #include "castor_interfaces/msg/position_setpoint.hpp"
+#include "castor_interfaces/msg/vehicle_command.hpp"
 #include "castor_interfaces/msg/vehicle_state.hpp"
 #include "castor_vehicle_interface/frames.hpp"
 #include "nav_msgs/msg/odometry.hpp"
+#include "px4_msgs/msg/home_position.hpp"
 #include "px4_msgs/msg/offboard_control_mode.hpp"
 #include "px4_msgs/msg/trajectory_setpoint.hpp"
+#include "px4_msgs/msg/vehicle_command.hpp"
+#include "px4_msgs/msg/vehicle_command_ack.hpp"
+#include "px4_msgs/msg/vehicle_land_detected.hpp"
 #include "px4_msgs/msg/vehicle_odometry.hpp"
 #include "px4_msgs/msg/vehicle_status.hpp"
 #include "rclcpp/rclcpp.hpp"
 
 using namespace std::chrono_literals;
 namespace f = castor_vehicle_interface::frames;
+using px4_msgs::msg::HomePosition;
 using px4_msgs::msg::OffboardControlMode;
 using px4_msgs::msg::TrajectorySetpoint;
+using px4_msgs::msg::VehicleCommandAck;
+using px4_msgs::msg::VehicleLandDetected;
 using px4_msgs::msg::VehicleOdometry;
 using px4_msgs::msg::VehicleStatus;
 
@@ -58,17 +70,35 @@ public:
     link_timeout_s_ = declare_parameter<double>("link_timeout_s", 1.0);
     enable_setpoint_output_ = declare_parameter<bool>("enable_setpoint_output", false);
     publish_offboard_mode_ = declare_parameter<bool>("publish_offboard_control_mode", true);
+    enable_commands_ = declare_parameter<bool>("enable_commands", false);
+    // RAPTOR registers as an external mode; with it the only one, PX4 gives it EXTERNAL1.
+    raptor_nav_state_ = static_cast<uint8_t>(
+      declare_parameter<int64_t>("raptor_nav_state", VehicleStatus::NAVIGATION_STATE_EXTERNAL1));
 
     const std::string fmu = px4_ns.empty() ? "/fmu" : "/" + px4_ns + "/fmu";
     const std::string odom_topic = versioned(fmu + "/out/vehicle_odometry", VehicleOdometry::MESSAGE_VERSION);
     const std::string status_topic = versioned(fmu + "/out/vehicle_status", VehicleStatus::MESSAGE_VERSION);
     const std::string traj_topic = versioned(fmu + "/in/trajectory_setpoint", TrajectorySetpoint::MESSAGE_VERSION);
+    const std::string land_topic = versioned(fmu + "/out/vehicle_land_detected", VehicleLandDetected::MESSAGE_VERSION);
+    const std::string home_topic = versioned(fmu + "/out/home_position", HomePosition::MESSAGE_VERSION);
+    const std::string ack_topic = versioned(fmu + "/out/vehicle_command_ack", VehicleCommandAck::MESSAGE_VERSION);
+    const std::string cmd_topic =
+      versioned(fmu + "/in/vehicle_command", px4_msgs::msg::VehicleCommand::MESSAGE_VERSION);
 
     // PX4's writers are best effort; SensorDataQoS (best effort, volatile) matches them.
     odom_sub_ = create_subscription<VehicleOdometry>(
       odom_topic, rclcpp::SensorDataQoS(), [this](const VehicleOdometry &m) { on_odometry(m); });
     status_sub_ = create_subscription<VehicleStatus>(
       status_topic, rclcpp::SensorDataQoS(), [this](const VehicleStatus &m) { on_status(m); });
+    land_sub_ = create_subscription<VehicleLandDetected>(
+      land_topic, rclcpp::SensorDataQoS(), [this](const VehicleLandDetected &m) { landed_ = m.landed; });
+    home_sub_ = create_subscription<HomePosition>(home_topic, rclcpp::SensorDataQoS(), [this](const HomePosition &m) {
+      if (m.valid_alt && std::isfinite(m.alt)) {
+        home_alt_ = m.alt;
+      }
+    });
+    ack_sub_ = create_subscription<VehicleCommandAck>(
+      ack_topic, rclcpp::SensorDataQoS(), [this](const VehicleCommandAck &m) { on_ack(m); });
 
     // Reliable publishers match both reliable and best-effort subscribers.
     odom_pub_ = create_publisher<nav_msgs::msg::Odometry>("odom", 10);
@@ -83,15 +113,25 @@ public:
       }
     }
 
+    command_sub_ = create_subscription<castor_interfaces::msg::VehicleCommand>(
+      "command", 10, [this](const castor_interfaces::msg::VehicleCommand &c) { on_command(c); });
+    if (enable_commands_) {
+      cmd_pub_ = create_publisher<px4_msgs::msg::VehicleCommand>(cmd_topic, 10);
+    }
+
     state_timer_ = create_wall_timer(100ms, [this] { publish_state(); });
 
-    RCLCPP_INFO(get_logger(), "PX4 topics: %s, %s; setpoint output %s%s", odom_topic.c_str(),
+    RCLCPP_INFO(get_logger(), "PX4 topics: %s, %s; setpoint output %s%s; commands %s%s", odom_topic.c_str(),
                 status_topic.c_str(), enable_setpoint_output_ ? "ENABLED -> " : "disabled",
-                enable_setpoint_output_ ? traj_topic.c_str() : "");
+                enable_setpoint_output_ ? traj_topic.c_str() : "", enable_commands_ ? "ENABLED -> " : "disabled",
+                enable_commands_ ? cmd_topic.c_str() : "");
   }
 
 private:
   void on_odometry(const VehicleOdometry &m) {
+    // The link is alive while anything arrives: vehicle_status alone is too sparse (5 Hz cap, ~1 Hz
+    // when nothing changes), and slower still in SIL behind real time.
+    last_fc_message_ = now();
     if (!std::isfinite(m.q[0]) || !std::isfinite(m.position[0])) {
       RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000, "odometry without a valid pose; not republished");
       return;
@@ -151,17 +191,77 @@ private:
 
   void on_status(const VehicleStatus &m) {
     last_status_ = now();
+    last_fc_message_ = *last_status_;
     armed_ = m.arming_state == VehicleStatus::ARMING_STATE_ARMED;
     nav_state_ = m.nav_state;
     failsafe_ = m.failsafe;
     preflight_ok_ = m.pre_flight_checks_pass;
+    system_id_ = m.system_id;
+  }
+
+  void on_ack(const VehicleCommandAck &m) {
+    if (m.result != VehicleCommandAck::VEHICLE_CMD_RESULT_ACCEPTED) {
+      RCLCPP_WARN(get_logger(), "PX4 refused command %u: result %u (reason %u)", m.command, m.result,
+                  m.result_param1);
+    }
+  }
+
+  void on_command(const castor_interfaces::msg::VehicleCommand &c) {
+    using C = castor_interfaces::msg::VehicleCommand;
+    using P = px4_msgs::msg::VehicleCommand;
+    if (!cmd_pub_) {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000,
+                           "command '%s' received but enable_commands is false; not forwarded to PX4",
+                           c.command.c_str());
+      return;
+    }
+    if (!system_id_) {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000, "command '%s' dropped: no vehicle_status from PX4 yet",
+                           c.command.c_str());
+      return;
+    }
+    constexpr float nan = std::numeric_limits<float>::quiet_NaN();
+    P out{};
+    out.param1 = out.param2 = out.param3 = out.param4 = nan;
+    out.param5 = out.param6 = std::numeric_limits<double>::quiet_NaN();
+    out.param7 = nan;
+    if (c.command == C::ARM || c.command == C::DISARM) {
+      out.command = P::VEHICLE_CMD_COMPONENT_ARM_DISARM;
+      out.param1 = c.command == C::ARM ? 1.0f : 0.0f;
+      out.param2 = 0.0f;
+    } else if (c.command == C::TAKEOFF) {
+      if (!home_alt_ || !std::isfinite(c.altitude) || c.altitude <= 0.0f) {
+        RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 2000, "takeoff dropped: %s",
+                             home_alt_ ? "altitude must be a positive number" : "no home altitude from PX4 yet");
+        return;
+      }
+      out.command = P::VEHICLE_CMD_NAV_TAKEOFF;
+      out.param7 = *home_alt_ + c.altitude;  // AMSL; lat/lon NaN = here
+    } else if (c.command == C::RAPTOR) {
+      out.command = P::VEHICLE_CMD_SET_NAV_STATE;
+      out.param1 = static_cast<float>(raptor_nav_state_);
+    } else if (c.command == C::LAND) {
+      out.command = P::VEHICLE_CMD_NAV_LAND;
+    } else {
+      RCLCPP_ERROR(get_logger(), "unknown command '%s' ignored", c.command.c_str());
+      return;
+    }
+    out.timestamp = static_cast<uint64_t>(now().nanoseconds() / 1000);
+    out.target_system = *system_id_;
+    out.target_component = 1;
+    out.source_system = *system_id_;
+    out.source_component = 1;
+    out.from_external = true;
+    cmd_pub_->publish(out);
+    RCLCPP_INFO(get_logger(), "-> PX4: %s%s", c.command.c_str(),
+                c.command == C::TAKEOFF ? (" to " + std::to_string(c.altitude) + " m").c_str() : "");
   }
 
   void publish_state() {
     castor_interfaces::msg::VehicleState s;
     s.header.stamp = now();
-    if (last_status_) {
-      const double age = (now() - *last_status_).seconds();
+    if (last_status_ && last_fc_message_) {
+      const double age = (now() - *last_fc_message_).seconds();
       s.seconds_since_fc_message = static_cast<float>(age);
       s.fc_connected = age < link_timeout_s_;
     } else {
@@ -174,6 +274,7 @@ private:
     s.nav_state = nav_state_;
     s.failsafe = failsafe_;
     s.preflight_checks_pass = preflight_ok_;
+    s.landed = landed_;
     state_pub_->publish(s);
   }
 
@@ -217,14 +318,22 @@ private:
 
   std::string world_frame_, body_frame_;
   double link_timeout_s_{1.0};
-  bool enable_setpoint_output_{false}, publish_offboard_mode_{true};
+  bool enable_setpoint_output_{false}, publish_offboard_mode_{true}, enable_commands_{false};
+  uint8_t raptor_nav_state_{VehicleStatus::NAVIGATION_STATE_EXTERNAL1};
 
-  std::optional<rclcpp::Time> last_status_;
-  bool armed_{false}, failsafe_{false}, preflight_ok_{false};
+  std::optional<rclcpp::Time> last_status_, last_fc_message_;
+  bool armed_{false}, failsafe_{false}, preflight_ok_{false}, landed_{true};
+  std::optional<uint8_t> system_id_;
+  std::optional<float> home_alt_;
   uint8_t nav_state_{0};
 
   rclcpp::Subscription<VehicleOdometry>::SharedPtr odom_sub_;
   rclcpp::Subscription<VehicleStatus>::SharedPtr status_sub_;
+  rclcpp::Subscription<VehicleLandDetected>::SharedPtr land_sub_;
+  rclcpp::Subscription<HomePosition>::SharedPtr home_sub_;
+  rclcpp::Subscription<VehicleCommandAck>::SharedPtr ack_sub_;
+  rclcpp::Subscription<castor_interfaces::msg::VehicleCommand>::SharedPtr command_sub_;
+  rclcpp::Publisher<px4_msgs::msg::VehicleCommand>::SharedPtr cmd_pub_;
   rclcpp::Subscription<castor_interfaces::msg::PositionSetpoint>::SharedPtr setpoint_sub_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
   rclcpp::Publisher<castor_interfaces::msg::VehicleState>::SharedPtr state_pub_;

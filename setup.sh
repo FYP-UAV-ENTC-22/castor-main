@@ -194,7 +194,7 @@ cat <<EOF
     Then smoke-test training (about a minute):
 
         cd $ROOT/components/planning/MARL_cooperative_aerial_manipulation_ext
-        python scripts/skrl/train.py \\
+        isaac-python scripts/skrl/train.py \\
             --task=Isaac-flycrane-payload-decentralized-hovering-v0 \\
             --headless --num_envs=8 --max_iterations=3 --seed=42 --algorithm=MAPPO
 EOF

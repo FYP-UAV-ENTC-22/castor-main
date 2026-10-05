@@ -107,8 +107,9 @@ def test_bridge_config(tmp_path):
     assert all(p.startswith("/drone2/") for p in ros["allow"]["publishers"])
     assert not any("fmu" in p for p in ros["allow"]["publishers"] + ros["allow"]["subscribers"])
     assert ros["allow"]["service_servers"] == [] and ros["allow"]["action_clients"] == []
-    # team commands, and the payload FC's state (drones ignore each other)
-    assert ros["allow"]["subscribers"] == ["/team/.*", "/payload[a-z0-9_]*/vehicle/(odom|state)"]
+    # team commands, the payload FC's state, and of other drones only their mission state
+    assert ros["allow"]["subscribers"] == ["/team/.*", "/payload[a-z0-9_]*/vehicle/(odom|state)",
+                                           "/[a-z][a-z0-9_]*/system/mission"]
     # routers only connect to what multicast finds if told to
     assert doc["scouting"]["multicast"]["autoconnect"] == {"router": ["router"]}
 

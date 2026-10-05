@@ -36,7 +36,14 @@ Then, in every new shell:
 
 ```bash
 source env/env.sh
+isaac-python <script.py>      # any script that needs Isaac Sim, from anywhere in the repo
 ```
+
+`env.sh` uses the simulation container (`make sim-image`, see
+[docker/README.md](docker/README.md)) when its image exists, and starts it;
+otherwise a native Isaac Sim linked by `setup.sh`; otherwise it stops with an
+error. `CASTOR_ISAAC=container|native` forces one. Neither an external Isaac
+install nor NVIDIA's asset pack is needed with the container.
 
 ## Layout
 
@@ -46,7 +53,7 @@ becomes one container; submodules sit inside the component that uses them.
 ```
 castor-main/
 ├── setup.sh                  one-command workspace setup
-├── env/env.sh                activates the `castor` conda env
+├── env/env.sh                Isaac for this shell: the simulation container, else the native `castor` env
 ├── components/
 │   ├── vehicle/              flight controller and sensor interfacing
 │   │   ├── PX4-Autopilot/    (fork) flight firmware; the RAPTOR neural-policy module
@@ -120,7 +127,7 @@ make stack-up             # run them here, against deploy/robot.laptop.yaml
 ```bash
 source env/env.sh
 cd components/planning/MARL_cooperative_aerial_manipulation_ext
-python scripts/skrl/train.py \
+isaac-python scripts/skrl/train.py \
     --task=Isaac-flycrane-payload-decentralized-hovering-v0 \
     --headless --num_envs=8 --max_iterations=3 --seed=42 --algorithm=MAPPO
 ```

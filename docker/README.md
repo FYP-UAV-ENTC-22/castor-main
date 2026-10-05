@@ -160,7 +160,7 @@ make sim-up                     # headless container, repo at /home/ws, GPU, hos
 make sim-shell
 make sim-train-smoke            # 3 MAPPO iterations on the flycrane hover task
 make sim-px4                    # builds px4_sitl_default and px4_sitl_raptor into the PX4 checkout
-make sim-pegasus-ros2 DRONES=2  # Pegasus S500s publishing drone<i>/state/*, /sensors/* into the graph
+make sim-pegasus-ros2           # the configured rig, one disarmed PX4 SITL per drone (see below)
 make sim-gui                    # Isaac Sim on your display
 make sim-own                    # give files the container wrote into the repo back to you
 make sim-down
@@ -179,30 +179,82 @@ make sim-down
   libcrypto breaks apt and curl. `ros2` in the container is the system Jazzy
   (Python 3.12). Both are Fast DDS 2.14 on domain 20 with the localhost profile,
   so the simulator and the onboard containers share one graph.
-- Assets come from the local pack (`CASTOR_ASSET_PACK`, default
-  `/mnt/isaac/isaacsim_assets`), mounted read-only; the entrypoint points Kit's
-  asset root at it.
+- CASTOR's own assets come from `components/simulation/assets`. NVIDIA's
+  asset pack is optional, tried in order: (1) a local pack, mounted when
+  `make` finds `CASTOR_ASSET_PACK` (default `/mnt/isaac/isaacsim_assets`)
+  readable, otherwise an empty folder is mounted; (2) NVIDIA's S3, which serves
+  only the files a scene references (cached in the `sim-ov-cache` volume);
+  (3) neither reachable: Pegasus leaves out its NVIDIA environment presets
+  and CASTOR's own scenes still run.
+- `source env/env.sh` starts this container when the image exists and gives
+  you `isaac-python` (runs `/isaac-sim/python.sh` in the container, in the same
+  repo directory) and `isaac-shell`. Paths outside the repo are not visible in
+  the container.
 - `ACCEPT_EULA=Y` is set in the compose file, so starting the container means
   you accept NVIDIA's EULA. `PRIVACY_CONSENT` is not set.
 
 ### Software in the loop
 
 ```bash
+make sim-px4                                        # once: PX4 SITL builds
 components/simulation/sil/sil.sh up --drones 3      # one onboard stack per drone + a ground-station bridge
-docker compose -f docker/docker-compose.sim.yml exec simulation \
-  /isaac-sim/python.sh components/simulation/sil/sil_pegasus.py --headless --drones 3
+                                                    #   --model policy.onnx: the planning policy for every drone
+make sim-pegasus-ros2 DRONES=3                      # the simulator: GUI, until the window closes
+make sim-pegasus-ros2 HEADLESS=1 DURATION=60        # or headless; PX4_BUILD=px4_sitl_default for stock PX4
 components/simulation/sil/sil.sh status | down
 ```
+
+The mission, from the ground station (each command goes to every drone's
+mission node through zenoh):
+
+```bash
+components/simulation/sil/sil.sh takeoff            # arm, PX4 Takeoff to the take-off height, then RAPTOR
+components/simulation/sil/sil.sh goal 0.5 0 1.0 30  # payload goal x y z [yaw deg], world frame ENU
+components/simulation/sil/sil.sh mission            # every drone's mission state
+components/simulation/sil/sil.sh land
+```
+
+Each drone's mission node (system layer) arms it, takes it off with PX4's
+Takeoff mode and switches PX4 to RAPTOR at the take-off height
+(`CASTOR_TAKEOFF_HEIGHT`, default 2.0 m). Once every drone is there it takes a
+goal and enables its planning policy, which publishes setpoints to the vehicle
+component; the vehicle component forwards commands and setpoints to PX4. When the
+goal is reached the policy keeps running to hold the payload there, until the
+next goal or `land`. `docker/docker-compose.sil.yml` is what lets the vehicle
+component forward anything to PX4; a Pi runs without it. The policy needs a
+raptor_v1.1 checkpoint (3 outputs, a position increment) exported with
+`components/planning/tools/export_policy.py`; an ACCBR checkpoint (5 outputs) is
+refused.
 
 Each drone's stack is the Pi's compose file under its own project
 (`castor-sil-drone<i>`), on its own ROS domain (20 + i), with its own XRCE agent
 port (8887 + i) and zenoh bridge (127.0.0.1:7447 + i) connected to the ground
 station's (domain 20). Robots never share a DDS domain, so everything between
-them crosses zenoh with the flight allow-lists. `sil_pegasus.py` flies one S500
-per stack, each with its own PX4 SITL instance pointed at that stack's domain and
-agent port (`castor_px4.py`), and holds the simulation to real time. The XRCE
+them crosses zenoh with the flight allow-lists.
+
+`make sim-pegasus-ros2` runs `components/simulation/sil/sil_pegasus.py`. It
+builds the rig configured in `components/simulation/assets/config`
+(`payload_rig.yaml` and its vehicle file; `--set`/`--vset` override keys) with
+everything on the ground: each drone on its skids at its formation position and
+yaw, the payload resting on the ground, the cables slack (this needs
+`cable.model: distance`). Every drone gets its own PX4 SITL instance over
+Pegasus' MAVLink HIL link (TCP 4560 + i, lockstep), pointed at its stack's
+domain and agent port (`castor_px4.py`, from `.sil/px4.env`, or the same scheme
+when `sil.sh up` has not run yet). PX4 boots disarmed and nothing takes off
+until a stack commands it. PX4 runs the RAPTOR build by default, with the
+RAPTOR parameters set for SITL through `PX4_PARAM_*` (see the script's
+docstring). The simulation never runs ahead of real time
+(with three drones it runs behind it, see the printed real-time factor). Isaac ground
+truth goes to domain 20 at 50 Hz: `sim/drone<i>/state/{pose,twist,twist_inertial,accel}`
+and `sim/payload/state/{pose,twist_inertial}` (ENU, frame `map`). Each robot's
+own domain also gets `/sim/drone<i>/state/{pose,twist,twist_inertial}` and
+`/sim/payload/state/pose`: the world frame the planning policy uses until
+localization exists. The XRCE
 agent binds UDP on all interfaces (v2.4.3 has no bind option), so on a shared
 network firewall ports 8888-8899.
+
+`components/simulation/tests/pegasus_ros2.py` is the bare plumbing check that
+target used to run: S500s publishing Pegasus' ROS topics, no PX4, no rig.
 
 ## Adding things
 

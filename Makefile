@@ -89,6 +89,10 @@ vehicle-qgc:
 	$(STACK_ENV) $(PROD_COMPOSE) exec vehicle castor-qgc
 
 # ------------------------------------------------------------- simulation (GPU machine only)
+# NVIDIA's asset pack is mounted only when it is readable (an unplugged drive must not stop the container).
+SIM_ASSET_PACK ?= /mnt/isaac/isaacsim_assets
+CASTOR_ASSET_PACK ?= $(shell test -r $(SIM_ASSET_PACK)/Assets 2>/dev/null && echo $(SIM_ASSET_PACK))
+export CASTOR_ASSET_PACK
 SIM_COMPOSE := docker compose -f docker/docker-compose.sim.yml
 SIM_EXEC := $(SIM_COMPOSE) exec simulation
 MARL_DIR := components/planning/MARL_cooperative_aerial_manipulation_ext
@@ -114,10 +118,15 @@ sim-train-smoke: sim-up
 	$(SIM_COMPOSE) exec -w /home/ws/$(MARL_DIR) simulation /isaac-sim/python.sh scripts/skrl/train.py \
 	  --task=Isaac-flycrane-payload-decentralized-hovering-v0 --headless --num_envs=8 --max_iterations=3 --seed=42 --algorithm=MAPPO; \
 	  s=$$?; $(MAKE) --no-print-directory sim-own; exit $$s
-# Pegasus S500s publishing drone<i>/state/* and drone<i>/sensors/* into the ROS graph (DRONES=1, 60 s).
-# From the host: source /opt/ros/<distro>/setup.bash && source docker/host_ros_env.sh && ros2 topic list
+# The configured rig (components/simulation/assets/config) on the ground, one disarmed PX4 SITL per drone, until the
+# window closes. PX4 i waits for robot i+1's stack (components/simulation/sil/sil.sh up). Ground truth on sim/*.
+# Options: DRONES=N (default: the rig's), HEADLESS=1, DURATION=s, PX4_BUILD=px4_sitl_default (default: the RAPTOR
+# build). Needs make sim-px4 once.
 sim-pegasus-ros2: sim-up
-	$(SIM_EXEC) /isaac-sim/python.sh components/simulation/tests/pegasus_ros2.py --headless --drones $(or $(DRONES),1)
+	@[ -n "$(HEADLESS)" ] || { command -v xhost >/dev/null && xhost +local: >/dev/null || echo "xhost not found; the GUI may not be allowed on the display"; }
+	$(SIM_EXEC) /isaac-sim/python.sh components/simulation/sil/sil_pegasus.py --duration $(or $(DURATION),0) \
+	  $(if $(DRONES),--drones $(DRONES)) $(if $(HEADLESS),--headless) $(if $(PX4_BUILD),--build $(PX4_BUILD)); \
+	  s=$$?; $(MAKE) --no-print-directory sim-own; exit $$s
 # Fast DDS shared-memory segments left in /dev/shm by killed containers (root-owned); only unused ones go.
 dds-shm-clean:
 	docker run --rm --ipc host --entrypoint bash ghcr.io/fyp-uav-entc-22/castor-system:$(or $(CASTOR_TAG),local) -c 'source /opt/ros/jazzy/setup.bash && fastdds shm clean'

@@ -29,7 +29,8 @@ services:
       ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-20}
     volumes:
       - ..:/home/ws
-      - ${CASTOR_ASSET_PACK:-/mnt/isaac/isaacsim_assets}:/mnt/isaac/isaacsim_assets:ro
+      # Optional NVIDIA asset pack; without one an empty folder is mounted and Kit uses S3.
+      - ${CASTOR_ASSET_PACK:-./simulation/no-asset-pack}:/mnt/isaac/isaacsim_assets:ro
       - /tmp/.X11-unix:/tmp/.X11-unix
       # Shader, Kit, compute and pip caches survive container restarts.
       - sim-kit-cache:/isaac-sim/kit/cache

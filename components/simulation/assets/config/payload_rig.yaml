@@ -9,12 +9,13 @@ num_drones: 3                   # >= 1. Anchors sit at equal spacing around the 
 vehicle: s500                   # s500 | iris (Pegasus' Iris: no landing-gear rod, the cable ties under the body)
 vehicle_config: s500.yaml
 
-payload:                        # solid cylinder, axis vertical
-  radius: 0.25
-  height: 0.16                  # flycrane's basket is 0.55 x 0.45 x 0.16 m
-  mass: 0.4                     # flycrane load_link
+payload:                        # solid cylinder, axis vertical. Values below match the MARL training payload
+                                # (flycrane_rod: a 0.55 x 0.45 x 0.15 m, 1.4 kg box) as far as a cylinder can
+  radius: 0.275                 # half the training box's 0.55 m side; its anchors sit at x = +-0.27
+  height: 0.15                  # training box height
+  mass: 1.4                     # training payload (marl_hover_env_cfg); was 0.4 (flycrane load_link)
   com_offset: [0.0, 0.0, 0.0]   # from the cylinder centre
-  inertia: null                 # [ixx, iyy, izz] about the CoM; null = solid cylinder
+  inertia: [0.02625, 0.0379, 0.0589]  # [ixx, iyy, izz] about the CoM; the training box's. null = solid cylinder
   anchor_radius: null           # cable attach radius from the axis; null = on the rim, or the centre when N = 1
   anchor_height: null           # from the cylinder centre; null = top face
   angle_offset_deg: 0.0         # azimuth of anchor 0, from +x
@@ -32,7 +33,7 @@ mount:                          # cross rod between the two landing-gear poles; 
 
 cable:
   model: distance               # distance = PhysX distance joint (option C); rope = rigid segments + ball joints (A)
-  length: 2.0                   # flycrane
+  length: 1.0                   # the training rods (flycrane_rod: 1.0 m); was 2.0
   radius: 0.0025                # flycrane. Visual thickness, and the collider radius for rope segments
   # distance model
   stiffness: 20000.0            # N/m spring on the length limit, i.e. cable stretch; null = rigid limit

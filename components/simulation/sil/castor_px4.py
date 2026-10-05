@@ -61,10 +61,24 @@ class CastorPX4LaunchTool:
         binary = f"{self.px4_dir}/build/{_build}/bin/px4"
         if not os.path.exists(binary):
             raise FileNotFoundError(f"{binary} not found: build it with `make sim-px4`")
+        self._kill_stale()
         log = open(self.workdir / "px4.log", "ab")
         self.px4_process = subprocess.Popen(
             [binary, f"{self.px4_dir}/ROMFS/px4fmu_common/", "-s", self.rc_script, "-i", str(self.vehicle_id), "-d"],
             cwd=self.workdir, env=self.environment, stdout=log, stderr=subprocess.STDOUT)
+        (self.workdir / "px4.pid").write_text(str(self.px4_process.pid))
+
+    def _kill_stale(self):
+        """A PX4 left behind by a simulator that died without stopping it would keep this instance's ports."""
+        pidfile = self.workdir / "px4.pid"
+        try:
+            pid = int(pidfile.read_text())
+            cmdline = Path(f"/proc/{pid}/cmdline").read_bytes().split(b"\0")
+        except (OSError, ValueError):
+            return
+        if cmdline and cmdline[0].endswith(b"/bin/px4") and str(self.vehicle_id).encode() in cmdline:
+            os.kill(pid, 9)
+            print(f"[castor_px4] killed a stale PX4 instance {self.vehicle_id} (pid {pid})")
 
     def kill_px4(self):
         if self.px4_process is not None:
@@ -76,13 +90,24 @@ class CastorPX4LaunchTool:
         self.kill_px4()
 
 
+def sil_env(instance: int) -> dict[str, str]:
+    """What sil.sh up writes for PX4 instance i (robot i + 1): its domain, its agent port, no /fmu namespace."""
+    return {"ROS_DOMAIN_ID": str(21 + instance), "PX4_UXRCE_DDS_PORT": str(8888 + instance), "PX4_UXRCE_DDS_NS": ""}
+
+
 def install(px4_env_file: str | None = None, build: str = "px4_sitl_default",
-            workdir_root: str | None = None, extra_env: dict[str, str] | None = None) -> None:
-    """Make Pegasus' PX4 backend use CastorPX4LaunchTool. Call before vehicles start."""
+            workdir_root: str | None = None, extra_env: dict[str, str] | None = None,
+            instances: dict[int, dict[str, str]] | None = None) -> None:
+    """Make Pegasus' PX4 backend use CastorPX4LaunchTool. Call before vehicles start.
+
+    instances: per-instance environment, used instead of px4_env_file."""
     global _instances, _build, _workdir_root, _extra
     from pegasus.simulator.logic.backends import px4_mavlink_backend
 
-    _instances = read_env_file(px4_env_file) if px4_env_file else {}
+    if instances is not None:
+        _instances = {i: dict(env) for i, env in instances.items()}
+    else:
+        _instances = read_env_file(px4_env_file) if px4_env_file else {}
     _build = build
     _extra = dict(extra_env or {})
     if workdir_root:

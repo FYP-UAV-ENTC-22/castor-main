@@ -21,11 +21,12 @@ from .robot_config import RobotConfig
 ODOM_MAX_HZ = 20
 
 
-# What a drone shares about itself: liveness, vehicle state, supervisor state, policy status.
+# What a drone shares about itself: liveness, vehicle state, supervisor state, mission state, policy status.
 _DRONE_TOPICS = [
     "[a-z_]+/heartbeat",
     "vehicle/(odom|state)",
     "system/state",
+    "system/mission",
     "planning/status",
 ]
 _ANY_DRONE = "[a-z][a-z0-9_]*"   # any robot namespace (robot_config enforces this shape)
@@ -42,13 +43,14 @@ def allowed_publishers(cfg: RobotConfig) -> list[str]:
 def allowed_subscribers(cfg: RobotConfig) -> list[str]:
     """Topics other hosts publish that subscribers on this host may receive.
 
-    A drone only takes team commands from the ground station; drones do not
-    see each other's topics unless a later change adds them here.
+    A drone takes team commands from the ground station and, from other
+    drones, only their mission state (the mission node waits for the whole team
+    at take-off height).
     """
     if cfg.zenoh.role == "ground_station":
         return [f"/{_ANY_DRONE}/{t}" for t in _DRONE_TOPICS]
     if cfg.zenoh.role == "drone":
-        return ["/team/.*", _PAYLOAD_TOPICS]
+        return ["/team/.*", _PAYLOAD_TOPICS, f"/{_ANY_DRONE}/system/mission"]
     return ["/team/.*"]
 
 

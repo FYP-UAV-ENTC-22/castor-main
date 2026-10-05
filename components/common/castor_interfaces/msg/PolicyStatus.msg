@@ -18,3 +18,9 @@ float64 inference_mean_ms
 float64 inference_p50_ms
 float64 inference_p99_ms
 float64 inference_max_ms
+# The policy loop (raptor_v1.1 flycrane: position increments -> <ns>/vehicle/setpoint).
+bool active                  # enabled by <ns>/planning/command and publishing setpoints
+string inactive_reason       # why not, when enabled but not active
+float64 goal_position_error  # [m] payload to goal, -1 without a goal and payload pose
+float64 goal_orientation_error  # [rad] rotation angle payload to goal, -1 likewise
+bool goal_reached            # both within goal_position_tolerance / goal_orientation_tolerance

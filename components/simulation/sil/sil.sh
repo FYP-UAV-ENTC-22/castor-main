@@ -2,8 +2,14 @@
 # Software in the loop on one machine: one onboard stack per simulated flight
 # controller, exactly as each drone's Pi would run it, plus a ground station.
 #
-#   components/simulation/sil/sil.sh up [--drones N] [--payload] [--tag TAG]
+#   components/simulation/sil/sil.sh up [--drones N] [--payload] [--tag TAG] [--model policy.onnx]
 #   components/simulation/sil/sil.sh status | down
+#
+# Mission (the system layer's mission node, from the ground station's domain 20):
+#   sil.sh takeoff                    arm, PX4 take-off to the take-off height, hand over to RAPTOR
+#   sil.sh goal X Y Z [YAW_DEG]       payload goal, world frame (ENU, m); taken once the team is at height
+#   sil.sh land                       stop the policy, PX4 Land
+#   sil.sh mission                    print every drone's mission state
 #
 # What makes it faithful to N separate Pis on one host:
 #   - every robot gets its own ROS 2 domain (drone i: 20+i, payload: after the
@@ -16,25 +22,39 @@
 #     through environment variables PX4's rcS already reads (written to
 #     <state>/px4.env for the simulator to use);
 #   - the same images and docker-compose.prod.yml as a Pi, one compose project
-#     per robot (castor-sil-<namespace>), each with its own run/log/model dirs.
+#     per robot (castor-sil-<namespace>), each with its own run/log/model dirs;
+#     docker-compose.sil.yml only lets the vehicle component forward setpoints
+#     and commands to its PX4 SITL (off on a Pi). CASTOR_TAKEOFF_HEIGHT (2.0 m).
 #
 # State lives in $CASTOR_SIL_DIR (default .sil/ in the repo, gitignored).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 STATE="${CASTOR_SIL_DIR:-$ROOT/.sil}"
-COMPOSE=(docker compose -f "$ROOT/docker/docker-compose.prod.yml")
-DRONES=3 PAYLOAD=0 TAG="${CASTOR_TAG:-local}"
+COMPOSE=(docker compose -f "$ROOT/docker/docker-compose.prod.yml" -f "$ROOT/docker/docker-compose.sil.yml")
+DRONES=3 PAYLOAD=0 TAG="${CASTOR_TAG:-local}" MODEL=""
 
 cmd="${1:-}"; shift || true
-while [ $# -gt 0 ]; do
-    case "$1" in
-        --drones) DRONES="$2"; shift 2 ;;
-        --payload) PAYLOAD=1; shift ;;
-        --tag) TAG="$2"; shift 2 ;;
-        *) echo "unknown option '$1'" >&2; exit 2 ;;
-    esac
-done
+if [ "$cmd" != goal ]; then
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --drones) DRONES="$2"; shift 2 ;;
+            --payload) PAYLOAD=1; shift ;;
+            --tag) TAG="$2"; shift 2 ;;
+            --model) MODEL="$(realpath "$2")"; shift 2 ;;
+            *) echo "unknown option '$1'" >&2; exit 2 ;;
+        esac
+    done
+fi
+
+# A ROS 2 command on the ground station's domain, from the system image.
+gcs_ros() {
+    docker run --rm --network host --ipc host -e ROS_DOMAIN_ID=20 -v "$STATE/gcs/robot.yaml:/etc/castor/robot.yaml:ro" \
+        "${CASTOR_REGISTRY:-ghcr.io/fyp-uav-entc-22}/castor-system:$TAG" "$@"
+}
+# Publish a few times, after the bridge has matched: a single sample can leave before
+# the route to the drones exists.
+team_pub() { gcs_ros ros2 topic pub -w 1 --times 3 "$@" >/dev/null && echo "sent $1"; }
 
 # robot <namespace> <id> <domain> <bridge port> <agent port> <role> <team index>
 write_robot() {
@@ -70,6 +90,7 @@ up)
     : > "$STATE/px4.env"
     for i in $(seq 1 "$DRONES"); do
         write_robot "drone$i" "$i" $((20 + i)) $((7447 + i)) $((8887 + i)) drone $((i - 1))
+        [ -z "$MODEL" ] || cp "$MODEL" "$STATE/drone$i/models/policy.onnx"
     done
     if [ "$PAYLOAD" -eq 1 ]; then
         p=$((DRONES + 1))
@@ -92,6 +113,23 @@ EOF
     done
     echo "PX4 SITL environment per instance: $STATE/px4.env"
     ;;
+takeoff | land)
+    team_pub /team/command castor_interfaces/msg/TeamCommand "{command: $cmd}"
+    ;;
+goal)
+    [ $# -ge 3 ] || { echo "usage: sil.sh goal X Y Z [YAW_DEG]" >&2; exit 2; }
+    read -r qz qw < <(python3 -c "import math; y = math.radians(${4:-0}); print(math.sin(y / 2), math.cos(y / 2))")
+    team_pub /team/goal geometry_msgs/msg/PoseStamped \
+        "{header: {frame_id: map}, pose: {position: {x: $1, y: $2, z: $3}, orientation: {z: $qz, w: $qw}}}"
+    ;;
+mission)
+    for d in $(robots); do
+        ns=$(basename "$d")
+        [ "$ns" = payload ] && continue
+        printf '%s: ' "$ns"
+        gcs_ros timeout 5 ros2 topic echo --once --field state "/$ns/system/mission" 2>/dev/null | head -1 || echo "(no message)"
+    done
+    ;;
 status)
     docker ps --filter "label=com.docker.compose.project" --format '{{.Label "com.docker.compose.project"}}\t{{.Names}}\t{{.Status}}' \
         | grep '^castor-sil-' | sort
@@ -100,5 +138,5 @@ down)
     for d in $(robots); do "${COMPOSE[@]}" --env-file "$d/stack.env" down; done
     "${COMPOSE[@]}" -p castor-sil-gcs down
     ;;
-*) sed -n '2,22p' "$0" | sed 's/^# \?//'; exit 2 ;;
+*) sed -n '2,29p' "$0" | sed 's/^# \?//'; exit 2 ;;
 esac

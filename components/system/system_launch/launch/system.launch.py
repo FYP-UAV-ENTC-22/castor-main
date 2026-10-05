@@ -1,6 +1,11 @@
-"""System component: the supervisor (YASMIN + behaviour trees) and optional recording.
+"""System component: the supervisor (YASMIN + behaviour trees), the mission node and optional recording.
 
-  record:=true   record this robot's topics to MCAP under /var/log/castor/bags
+  record:=true            record this robot's topics to MCAP under /var/log/castor/bags
+  takeoff_height:=2.0     mission node: metres above home before handing over to RAPTOR
+
+The mission node is the temporary take-off / MARL / hold / land state machine. It
+commands nothing unless the ground station sends /team/command "takeoff", and its
+commands reach PX4 only if the vehicle component forwards them (enable_commands).
 """
 
 import os
@@ -34,6 +39,22 @@ def generate_launch_description():
         respawn_delay=RESPAWN_DELAY_S,
     )
 
+    mission = Node(
+        package="castor_supervisor",
+        executable="mission",
+        name="mission",
+        parameters=[{
+            "robot_id": cfg.robot_id,
+            "robot_namespace": cfg.namespace,
+            "team_size": cfg.team_size,
+            "team_index": cfg.team_index,
+            "takeoff_height": LaunchConfiguration("takeoff_height"),
+        }],
+        output="screen",
+        respawn=True,
+        respawn_delay=RESPAWN_DELAY_S,
+    )
+
     bag_dir = os.path.join("/var/log/castor/bags", f"{cfg.namespace}_{datetime.now():%Y%m%d_%H%M%S}")
     recorder = ExecuteProcess(
         condition=IfCondition(LaunchConfiguration("record")),
@@ -46,5 +67,6 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument("record", default_value="false"),
         DeclareLaunchArgument("update_gate_path", default_value="/run/castor/update_gate"),
-        component_group("system", [supervisor, recorder]),
+        DeclareLaunchArgument("takeoff_height", default_value="2.0"),
+        component_group("system", [supervisor, mission, recorder]),
     ])

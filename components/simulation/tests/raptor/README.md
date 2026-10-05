@@ -16,11 +16,12 @@ without PX4. One `RaptorBackend` per vehicle, each with its own GRU state.
 
 ## Setup (once)
 
-Pegasus imports `pymavlink` even when no PX4 is used. Install it next to the
-scripts rather than into the `castor` env:
+Nothing in the simulation container (`source env/env.sh` picks it when it is
+built). With a native Isaac Sim only: Pegasus imports `pymavlink` even when no
+PX4 is used. Install it next to the scripts rather than into the `castor` env:
 
 ```bash
-source env/env.sh
+CASTOR_ISAAC=native source env/env.sh
 python -m pip install --target components/simulation/tests/raptor/.deps --no-deps pymavlink
 ```
 
@@ -30,11 +31,11 @@ python -m pip install --target components/simulation/tests/raptor/.deps --no-dep
 source env/env.sh
 cd components/simulation/tests/raptor
 
-python raptor_policy.py                     # port check, no Isaac Sim needed; exits 1 on mismatch
+isaac-python raptor_policy.py                     # port check, no Isaac Sim needed; exits 1 on mismatch
 
-python raptor_pegasus.py --trajectory waypoints --num_vehicles 3       # with the GUI
-python raptor_pegasus.py --headless --trajectory lissajous             # headless
-python raptor_pegasus.py --headless --trajectory hover --spawn_z 0.07  # take off from the ground
+isaac-python raptor_pegasus.py --trajectory waypoints --num_vehicles 3       # with the GUI
+isaac-python raptor_pegasus.py --headless --trajectory lissajous             # headless
+isaac-python raptor_pegasus.py --headless --trajectory hover --spawn_z 0.07  # take off from the ground
 ```
 
 `--physics_hz` defaults to 400 (the `IMU_GYRO_RATEMAX` used on real flight
@@ -49,23 +50,23 @@ overridden with `--set` (rig) or `--vset` (vehicle).
 
 ```bash
 # headless
-python raptor_payload.py --headless --trajectory hover                          # 3 x S500, distance-joint cables
-python raptor_payload.py --headless --trajectory waypoints --set cable.model=rope
-python raptor_payload.py --headless --set num_drones=4 --set cable.length=1.2
-python raptor_payload.py --headless --set vehicle=iris                          # Pegasus' Iris instead
-python raptor_payload.py --headless --release 8:0:drone                         # release cable 0 at the drone, t = 8 s
-python raptor_payload.py --headless --no_payload --set num_drones=1             # the airframe alone
+isaac-python raptor_payload.py --headless --trajectory hover                          # 3 x S500, distance-joint cables
+isaac-python raptor_payload.py --headless --trajectory waypoints --set cable.model=rope
+isaac-python raptor_payload.py --headless --set num_drones=4 --set cable.length=1.2
+isaac-python raptor_payload.py --headless --set vehicle=iris                          # Pegasus' Iris instead
+isaac-python raptor_payload.py --headless --release 8:0:drone                         # release cable 0 at the drone, t = 8 s
+isaac-python raptor_payload.py --headless --no_payload --set num_drones=1             # the airframe alone
 
 # with the window: the camera frames the formation; --keep_open pauses at the end and leaves the window open
-python raptor_payload.py --trajectory waypoints --set cable.model=rope --keep_open
-python raptor_payload.py --trajectory hover --follow --keep_open                # camera follows the payload
+isaac-python raptor_payload.py --trajectory waypoints --set cable.model=rope --keep_open
+isaac-python raptor_payload.py --trajectory hover --follow --keep_open                # camera follows the payload
 ```
 
 ### Playing around in the window
 
 ```bash
-python raptor_payload.py --trajectory manual                                 # fly the formation with the keyboard
-python raptor_payload.py --trajectory waypoints --keep_open                  # scripted run, then press Play and fly
+isaac-python raptor_payload.py --trajectory manual                                 # fly the formation with the keyboard
+isaac-python raptor_payload.py --trajectory waypoints --keep_open                  # scripted run, then press Play and fly
 ```
 
 Keys (click an empty part of the viewport first, so no prim is selected): I/K move the formation along x, J/L along
