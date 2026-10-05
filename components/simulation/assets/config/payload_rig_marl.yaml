@@ -1,0 +1,28 @@
+# The rig the MARL policy was trained on (MARL_cooperative_aerial_manipulation_ext,
+# Isaac-castor-payload-decentralized-hovering-v0): three drones, a 0.4 kg disc, 2 m cables, anchors on the rim
+# 120 degrees apart, each drone facing away from the payload. Keys not listed keep their payload_rig.yaml meaning and
+# the defaults in castor_assets/config.py. Used by tests/marl_raptor/.
+
+num_drones: 3
+vehicle: s500
+vehicle_config: s500.yaml
+
+payload:
+  radius: 0.5
+  height: 0.03
+  mass: 0.4
+  angle_offset_deg: 0.0         # anchor 0 on the payload's +x; drone i (the policy's one-hot slot i) flies on cable i
+
+formation:
+  cable_angle_deg: 28.65        # the cable angle the policy's episodes start from
+  drone_yaw: outward            # as in training: each drone's heading is its anchor's azimuth
+
+mount:
+  height: 0.163                 # the rod sits between the landing gear's feet, level with the skids: the lowest point
+
+cable:
+  model: distance
+  length: 2.0
+
+release:
+  location: none

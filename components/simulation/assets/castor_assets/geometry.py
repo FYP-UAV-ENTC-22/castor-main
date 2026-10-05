@@ -156,17 +156,23 @@ class S500Geometry:
         """Body-origin height that puts the skids on z = 0."""
         return -self.z_ground
 
+    @property
+    def mount_height_max(self):
+        """The lowest the cross rod can sit: level with the skids."""
+        return self.z_pole_top - self.z_skid
+
     def mount_point(self, mount_height):
         """Cable attach point (centre of the cross rod between the two poles), body frame.
 
         mount_height = 0 puts the rod at the top of the poles, just under the frame; mount_height = pole_length puts it
-        at the bottom of the poles, on top of the tee connectors.
+        at the bottom of the poles, on top of the tee connectors; anything up to mount_height_max puts it on the
+        landing gear's feet, between the tees, down to the level of the skids.
         """
         lg = self.cfg.landing_gear
-        if not 0.0 <= mount_height <= lg.pole_length + 1e-9:
+        if not 0.0 <= mount_height <= self.mount_height_max + 1e-9:
             raise ConfigError(
-                f"mount.height {mount_height:.3f} m is outside the pole travel [0, {lg.pole_length:.3f}] m "
-                f"(landing_gear.pole_length)"
+                f"mount.height {mount_height:.3f} m is outside the landing gear: 0 is the top of the poles, "
+                f"{lg.pole_length:.3f} m their bottom (landing_gear.pole_length), {self.mount_height_max:.4f} m the skids"
             )
         return np.array([lg.pole_x, 0.0, self.z_pole_top - mount_height])
 

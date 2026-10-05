@@ -28,7 +28,8 @@ formation:
 
 mount:                          # cross rod between the two landing-gear poles; the cable ties to its centre
   height: 0.14                  # m below the top of the poles: 0 = just under the frame, landing_gear.pole_length =
-                                # bottom of the poles. Below ~0.06 the rod meets the stock battery mount.
+                                # bottom of the poles, 0.163 = between the feet, level with the skids. Above ~0.06
+                                # the rod meets the stock battery mount.
   rod_diameter: 0.010
 
 cable:

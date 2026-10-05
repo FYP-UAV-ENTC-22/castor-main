@@ -1,0 +1,21 @@
+# robot.yaml for drone 3 of the PX4 SITL run (px4_rig.py): PX4 instance 2, its uXRCE-DDS client on
+# udp 8890 with namespace px4_3. See deploy/robot.example.yaml for every key.
+
+robot:
+  id: 3
+  namespace: drone3
+  hardware: laptop
+
+team:
+  size: 3
+  index: 2
+
+fc:
+  enabled: true
+  transport: udp
+  udp_port: 8890
+  px4_namespace: px4_3
+
+zenoh:
+  connect: []
+  multicast_scouting: false
