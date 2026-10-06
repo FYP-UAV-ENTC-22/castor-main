@@ -39,4 +39,8 @@ why not, and the goal errors.
 The policy is a versioned model package from [`models/`](../../models) at the
 repo root, baked into the planning image and overridable by mounting
 `/var/lib/castor/models`; its manifest sets the runner's parameters. See
-[`models/README.md`](../../models/README.md).
+[`models/README.md`](../../models/README.md). Besides what training did, the
+manifest says how to fly the policy on this airframe (`flight.hpp`): the point
+on the drone the policy calls its position (its setpoint is moved back to the
+body origin for RAPTOR), the step scale, an optional speed cap, a low-pass on
+the velocity feedforward, and the box goals are clamped into.

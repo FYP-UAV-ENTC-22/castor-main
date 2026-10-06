@@ -8,8 +8,9 @@
 //               R_goal * R_load^T row-major (9)                -> 42 + N
 //   observation = the last `history` frames, oldest first; the first frame after
 //                 a reset fills every slot (Isaac Lab CircularBuffer)
-//   action (3) = position increment: sp_pos += a * step_scale,
-//                sp_vel = a * step_scale / step_dt, sp_pos leashed to the drone
+//   action (3) = position increment: sp_pos += a * step_scale (no faster than
+//                setpoint_max_speed when the task sets one), sp_vel = increment / step_dt,
+//                sp_pos leashed to the drone
 //
 // Everything is in the world frame (ENU, z up), velocities included, as in the env.
 
@@ -129,12 +130,19 @@ struct Setpoint {
   bool leashed{false};  // the leash bound on the last step
 };
 
+// max_speed <= 0: no cap (setpoint_max_speed None in the env).
 inline void advance(Setpoint &sp, const std::array<float, 3> &action, const Vec3 &drone_position, double step_scale,
-                    double step_dt, double leash) {
+                    double step_dt, double leash, double max_speed = 0.0) {
+  Vec3 inc{};
+  for (int i = 0; i < 3; ++i) inc[i] = static_cast<double>(action[i]) * step_scale;
+  if (max_speed > 0.0) {
+    // actions are unbounded: the step scale is only the speed at unit action
+    const double k = std::fmin(max_speed * step_dt / std::fmax(norm(inc), 1e-9), 1.0);
+    for (double &x : inc) x *= k;
+  }
   for (int i = 0; i < 3; ++i) {
-    const double inc = static_cast<double>(action[i]) * step_scale;
-    sp.position[i] += inc;
-    sp.velocity[i] = inc / step_dt;
+    sp.position[i] += inc[i];
+    sp.velocity[i] = inc[i] / step_dt;
   }
   const Vec3 offset{sp.position[0] - drone_position[0], sp.position[1] - drone_position[1],
                     sp.position[2] - drone_position[2]};

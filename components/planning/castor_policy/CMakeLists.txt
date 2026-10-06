@@ -46,6 +46,8 @@ if(BUILD_TESTING)
   target_include_directories(test_flycrane PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
   ament_add_gtest(test_lift test/test_lift.cpp)
   target_include_directories(test_lift PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+  ament_add_gtest(test_flight test/test_flight.cpp)
+  target_include_directories(test_flight PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 endif()
 
 ament_package()

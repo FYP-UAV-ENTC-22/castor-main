@@ -36,6 +36,7 @@
 #include "castor_interfaces/msg/planning_command.hpp"
 #include "castor_interfaces/msg/policy_status.hpp"
 #include "castor_interfaces/msg/position_setpoint.hpp"
+#include "castor_policy/flight.hpp"
 #include "castor_policy/flycrane.hpp"
 #include "castor_policy/lift.hpp"
 #include "castor_policy/team.hpp"
@@ -85,6 +86,13 @@ public:
     // Action processing, from marl_hover_env_cfg.py (raptor_v1.1).
     step_scale_ = declare_parameter<double>("setpoint_step_scale", 0.05);
     leash_ = declare_parameter<double>("setpoint_leash", 1.5);
+    max_speed_ = declare_parameter<double>("setpoint_max_speed", 0.0);  // <= 0: none
+    // Flying it on this airframe (flight.hpp; the model manifest's flight section and policy.point_local).
+    point_local_ = vec3_param("policy_point_local").value_or(Vec3{0.0, 0.0, 0.0});
+    velocity_filter_s_ = declare_parameter<double>("velocity_filter_s", 0.0);
+    velocity_gain_ = declare_parameter<double>("velocity_gain", 1.0);
+    goal_lo_ = vec3_param("goal_box_min");
+    goal_hi_ = vec3_param("goal_box_max");
     // "Goal reached", the env's goal_achieved_range / goal_achieved_ori_range.
     goal_pos_tol_ = declare_parameter<double>("goal_position_tolerance", 0.3);
     goal_ori_tol_ = declare_parameter<double>("goal_orientation_tolerance", 0.4);
@@ -263,12 +271,19 @@ private:
     return "";
   }
 
+  // The commanded goal position, clamped into the box the policy saw in training when the model gives one.
+  Vec3 goal_position() const {
+    const Vec3 g = vec(command_->msg.goal.position);
+    return goal_lo_ && goal_hi_ ? castor_policy::clamp_box(g, *goal_lo_, *goal_hi_) : g;
+  }
+
   void update_goal_errors() {
     goal_pos_err_ = goal_ori_err_ = -1.0;
     if (!command_ || !payload_pose_) return;
     const auto &g = command_->msg.goal;
     const auto &p = payload_pose_->msg.pose;
-    const Vec3 d{g.position.x - p.position.x, g.position.y - p.position.y, g.position.z - p.position.z};
+    const Vec3 goal = goal_position();
+    const Vec3 d{goal[0] - p.position.x, goal[1] - p.position.y, goal[2] - p.position.z};
     goal_pos_err_ = castor_policy::norm(d);
     goal_ori_err_ = castor_policy::angle_between(quat(g.orientation), quat(p.orientation));
   }
@@ -404,20 +419,32 @@ private:
 
 #if CASTOR_HAVE_ORT
   // One policy step: observation, inference, setpoint integration. Moves hold_ to the policy's setpoint.
+  // The policy sees, and sets, its own point on the drone (point_local_); hold_ is the body origin's.
   bool policy_step(const BodyState &own, double dt) {
+    const BodyState point = castor_policy::policy_point(own, point_local_);
     if (policy_pending_) {
       sp_ = {};
-      sp_.position = own.position;
+      sp_.position = point.position;
       sp_.yaw = hold_.yaw;  // the heading the drone has been holding
+      filtered_velocity_ = {0.0, 0.0, 0.0};
       history_.clear();
       policy_pending_ = false;
-      RCLCPP_INFO(get_logger(), "policy: started at (%.2f, %.2f, %.2f), yaw %.2f", own.position[0], own.position[1],
-                  own.position[2], sp_.yaw);
+      RCLCPP_INFO(get_logger(), "policy: started at (%.2f, %.2f, %.2f), yaw %.2f; step %.3f m, speed cap %.2f m/s, "
+                  "velocity filter %.2f s", point.position[0], point.position[1], point.position[2], sp_.yaw,
+                  step_scale_, max_speed_, velocity_filter_s_);
     }
-    const auto &goal = command_->msg.goal;
+    const Vec3 goal = goal_position();
+    if (goal != last_goal_) {
+      const Vec3 asked = vec(command_->msg.goal.position);
+      if (goal != asked) {
+        RCLCPP_WARN(get_logger(), "goal (%.2f, %.2f, %.2f) is outside the trained box; flying to (%.2f, %.2f, %.2f)",
+                    asked[0], asked[1], asked[2], goal[0], goal[1], goal[2]);
+      }
+      last_goal_ = goal;
+    }
     const auto &load = payload_pose_->msg.pose;
-    history_.push(castor_policy::frame(vec(load.position), quat(load.orientation), one_hot_, own, vec(goal.position),
-                                       quat(goal.orientation)));
+    history_.push(castor_policy::frame(vec(load.position), quat(load.orientation), one_hot_, point, goal,
+                                       quat(command_->msg.goal.orientation)));
     obs_ = history_.flat();
 
     std::vector<float> action;
@@ -436,10 +463,12 @@ private:
       return false;
     }
 
-    castor_policy::advance(sp_, {action[0], action[1], action[2]}, own.position, step_scale_, dt, leash_);
+    castor_policy::advance(sp_, {action[0], action[1], action[2]}, point.position, step_scale_, dt, leash_, max_speed_);
     leash_steps_ += sp_.leashed ? 1 : 0;
-    hold_.position = sp_.position;
-    hold_.velocity = sp_.velocity;
+    const Vec3 v{sp_.velocity[0] * velocity_gain_, sp_.velocity[1] * velocity_gain_, sp_.velocity[2] * velocity_gain_};
+    filtered_velocity_ = castor_policy::low_pass(filtered_velocity_, v, dt, velocity_filter_s_);
+    hold_.position = castor_policy::body_setpoint(sp_.position, sp_.yaw, point_local_);
+    hold_.velocity = filtered_velocity_;
     hold_.yaw = sp_.yaw;
     return true;
   }
@@ -526,6 +555,9 @@ private:
   int team_size_{0}, team_index_{-1}, history_len_{3};
   std::string model_id_, model_path_, setpoint_frame_;
   double rate_hz_{50.0}, step_scale_{0.05}, leash_{1.5}, goal_pos_tol_{0.3}, goal_ori_tol_{0.4};
+  double max_speed_{0.0}, velocity_filter_s_{0.0}, velocity_gain_{1.0};
+  Vec3 point_local_{}, filtered_velocity_{}, last_goal_{};
+  std::optional<Vec3> goal_lo_, goal_hi_;
   double command_timeout_s_{0.5}, state_timeout_s_{0.2};
   bool run_inference_{false};
   std::vector<float> one_hot_, obs_;

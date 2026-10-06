@@ -14,7 +14,8 @@ MANIFEST = {
         "slots": [{"file": f"policy_falcon{i}.onnx"} for i in (1, 2, 3)],
         "point_local": [0.0, 0.0, -0.1575],
     },
-    "flight": {"setpoint_step_scale": 0.015, "setpoint_leash": 1.5},
+    "flight": {"setpoint_step_scale": 0.015, "setpoint_leash": 1.5, "setpoint_max_speed": None,
+               "velocity_filter_s": 0.1, "goal_box": {"min": [-1, -1, 0.5], "max": [1, 1, 1.5]}},
     "rig": {"cable_length": 2.0, "payload_height": 0.03, "mount_local": [0, 0, -0.1875], "lift_height": 1.0,
             "anchors_local": [[0.5, 0, 0.015], [-0.25, 0.433, 0.015], [-0.25, -0.433, 0.015]]},
 }
@@ -50,6 +51,9 @@ def test_runner_parameters_pick_the_slot_and_flight_settings(tmp_path):
     assert p["setpoint_step_scale"] == 0.015
     assert p["rig_anchor_local"] == [-0.25, 0.433, 0.015] and p["rig_mount_local"] == [0.0, 0.0, -0.1875]
     assert p["lift_height"] == 1.0 and p["rig_cable_length"] == 2.0
+    assert p["setpoint_max_speed"] == 0.0 and p["velocity_filter_s"] == 0.1 and p["velocity_gain"] == 1.0
+    assert p["policy_point_local"] == [0.0, 0.0, -0.1575]
+    assert p["goal_box_min"] == [-1.0, -1.0, 0.5] and p["goal_box_max"] == [1.0, 1.0, 1.5]
 
 
 def test_team_mismatches_are_refused(tmp_path):

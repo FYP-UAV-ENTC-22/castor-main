@@ -35,17 +35,22 @@ class Model:
 
     def runner_parameters(self, team_size: int, team_index: int) -> dict:
         """castor_policy parameters for the drone in `team_index` of a team of `team_size`."""
-        p, rig = self.manifest["policy"], self.manifest["rig"]
+        p, rig, flight = self.manifest["policy"], self.manifest["rig"], self.manifest["flight"]
         if p["team_size"] != team_size:
             raise ModelError(f"{self.id} was trained for {p['team_size']} drones, this team has {team_size}")
-        return {
+        params = {
             "model_id": self.id,
             "model_path": self.slot_file(team_index),
             "rate_hz": float(p["rate_hz"]),
             "history": int(p["history"]),
             "obs_frame_base": int(p["frame_dim"]) - team_size,
-            "setpoint_step_scale": float(self.manifest["flight"]["setpoint_step_scale"]),
-            "setpoint_leash": float(self.manifest["flight"]["setpoint_leash"]),
+            "setpoint_step_scale": float(flight["setpoint_step_scale"]),
+            "setpoint_leash": float(flight["setpoint_leash"]),
+            # ROS parameters cannot be None: 0 means no cap / no filter
+            "setpoint_max_speed": float(flight.get("setpoint_max_speed") or 0.0),
+            "velocity_filter_s": float(flight.get("velocity_filter_s") or 0.0),
+            "velocity_gain": float(flight.get("velocity_gain", 1.0)),
+            "policy_point_local": [float(x) for x in p.get("point_local", (0.0, 0.0, 0.0))],
             # the rig, for the lift and the hand-over check
             "rig_mount_local": [float(x) for x in rig["mount_local"]],
             "rig_anchor_local": [float(x) for x in rig["anchors_local"][team_index]],
@@ -53,6 +58,11 @@ class Model:
             "rig_payload_height": float(rig["payload_height"]),
             "lift_height": float(rig["lift_height"]),
         }
+        box = flight.get("goal_box")
+        if box:
+            params["goal_box_min"] = [float(x) for x in box["min"]]
+            params["goal_box_max"] = [float(x) for x in box["max"]]
+        return params
 
 
 def load(path: str, model_id: str | None = None) -> Model:
