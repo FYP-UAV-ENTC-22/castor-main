@@ -34,4 +34,4 @@ Two nodes:
   `/team/command` `land` stops planning and sends land. If PX4 goes into
   failsafe or leaves RAPTOR, planning stops and PX4 stays in charge
   (FC_OVERRIDE). The commands reach PX4 only if the vehicle component was
-  launched with `enable_commands:=true` (SIL does that; a Pi does not).
+  launched with `enable_commands:=true` (stack_sim does that; a Pi does not).

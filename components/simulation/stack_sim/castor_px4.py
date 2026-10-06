@@ -1,14 +1,14 @@
-"""PX4 SITL launching for SIL, without patching the Pegasus fork.
+"""PX4 SITL launching for stack_sim, without patching the Pegasus fork.
 
 Pegasus' PX4LaunchTool runs every PX4 instance with Isaac Sim's own environment
 (it even mutates os.environ), from build/px4_sitl_default, in a throwaway temp
-directory. For SIL each instance needs its own environment (ROS_DOMAIN_ID,
-PX4_UXRCE_DDS_PORT, PX4_UXRCE_DDS_NS: see sil.sh), may need the RAPTOR build,
+directory. In stack_sim each instance needs its own environment (ROS_DOMAIN_ID,
+PX4_UXRCE_DDS_PORT, PX4_UXRCE_DDS_NS: see stack_sim.sh), may need the RAPTOR build,
 and RAPTOR loads ./raptor/policy.tar from the working directory. This module
 swaps in a launch tool that does that:
 
     import castor_px4
-    castor_px4.install(px4_env_file=".sil/px4.env", build="px4_sitl_raptor")
+    castor_px4.install(px4_env_file=".stack_sim/px4.env", build="px4_sitl_raptor")
     # ...then create Pegasus vehicles with PX4MavlinkBackend as usual
 """
 
@@ -27,7 +27,7 @@ _fresh_params = True
 
 
 def read_env_file(path: str) -> dict[int, dict[str, str]]:
-    """sil.sh's px4.env: '<instance> KEY=value KEY=value ...' per line."""
+    """stack_sim.sh's px4.env: '<instance> KEY=value KEY=value ...' per line."""
     out: dict[int, dict[str, str]] = {}
     for line in Path(path).read_text().splitlines():
         if not line.strip():
@@ -96,8 +96,8 @@ class CastorPX4LaunchTool:
         self.kill_px4()
 
 
-def sil_env(instance: int) -> dict[str, str]:
-    """What sil.sh up writes for PX4 instance i (robot i + 1): its domain, its agent port, no /fmu namespace."""
+def stack_env(instance: int) -> dict[str, str]:
+    """What stack_sim.sh up writes for PX4 instance i (robot i + 1): its domain, its agent port, no /fmu namespace."""
     return {"ROS_DOMAIN_ID": str(21 + instance), "PX4_UXRCE_DDS_PORT": str(8888 + instance), "PX4_UXRCE_DDS_NS": ""}
 
 

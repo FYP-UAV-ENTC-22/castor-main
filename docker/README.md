@@ -149,13 +149,18 @@ means force-removing packages apt considers required, so they stay.
 ## Simulation image
 
 One image for everything that needs the GPU: Isaac Sim 5.1, Isaac Lab, Pegasus,
-PX4 SITL, ROS 2 Jazzy and training (`simulation` target, `castor-simulation:local`).
-It is built locally and never pushed: it contains NVIDIA's Isaac Sim layers, and
-NVIDIA's licence does not allow redistributing them. Each machine pulls
-`nvcr.io/nvidia/isaac-sim:5.1.0` itself (the build script checks its digest).
+PX4 SITL, ROS 2 Jazzy and training (`simulation` target). It has exactly one
+name, `ghcr.io/fyp-uav-entc-22/castor-simulation:latest`, whether you built it
+or pulled it; a rebuild replaces it and removes the image it replaced. The GHCR
+package is **private** (team members only) and must stay that way: the image
+contains NVIDIA's Isaac Sim layers, and NVIDIA's licence does not allow
+redistributing them. A build pulls `nvcr.io/nvidia/isaac-sim:5.1.0` itself (the
+build script checks its digest).
 
 ```bash
-make sim-image                  # docker/build_simulation.sh; 27.4 GB
+make sim-pull                   # fetch the team's image (docker login ghcr.io first), or:
+make sim-image                  # docker/build_simulation.sh
+make sim-push                   # publish your build to the private package (token with write:packages)
 make sim-up                     # headless container, repo at /home/ws, GPU, host network
 make sim-shell
 make sim-train-smoke            # 3 MAPPO iterations on the flycrane hover task
@@ -172,7 +177,12 @@ make sim-down
 - Python packages from the repo (Isaac Lab, Pegasus, skrl, the MARL ext) are not
   in the image: a `.pth` file points Isaac's Python at `/home/ws`, so a code
   change needs no rebuild. Their dependencies are baked in, resolved from their
-  metadata files only, so a source edit doesn't invalidate those layers either.
+  metadata files only, so a source edit doesn't invalidate those layers either:
+  one layer for Isaac Lab's, one after it for skrl's and the MARL ext's. pip
+  downloads are kept in a BuildKit cache mount, so a rebuild fetches only what
+  changed. After switching branches, run `git submodule update` before
+  `make sim-image`: a submodule left on another commit changes the metadata and
+  rebuilds those layers.
 - Isaac's own processes (`/isaac-sim/python.sh`, `isaac-sim.sh`) use the ROS 2
   Jazzy that ships with the Isaac ROS bridge (Python 3.11). It is added to
   `LD_LIBRARY_PATH` only for them, by `setup_python_env.sh`; set globally, its
@@ -193,65 +203,85 @@ make sim-down
 - `ACCEPT_EULA=Y` is set in the compose file, so starting the container means
   you accept NVIDIA's EULA. `PRIVACY_CONSENT` is not set.
 
-### Software in the loop
+### stack_sim: the onboard stacks of a simulated team
 
 ```bash
-make sim-px4                                        # once: PX4 SITL builds
-components/simulation/sil/sil.sh up --drones 3      # one onboard stack per drone + a ground-station bridge
-                                                    #   --model policy.onnx: the planning policy for every drone
-make sim-pegasus-ros2 DRONES=3                      # the simulator: GUI, until the window closes
-make sim-pegasus-ros2 HEADLESS=1 DURATION=60        # or headless; PX4_BUILD=px4_sitl_default for stock PX4
-components/simulation/sil/sil.sh status | down
+make sim-px4                                             # once: PX4 SITL builds
+components/simulation/stack_sim/stack_sim.sh up          # one onboard stack per drone + a ground-station bridge
+                                                         #   --model <name>/<version>: another model package
+make sim-pegasus-ros2                                    # the simulator: GUI, until the window closes (same MODEL=)
+make sim-pegasus-ros2 HEADLESS=1 DURATION=120            # or headless; PX4_BUILD=px4_sitl_default for stock PX4
+components/simulation/stack_sim/stack_sim.sh status | down
 ```
+
+Everything follows the model package and the assets: the model
+(`models/DEFAULT` unless `--model` / `MODEL=`) names the rig it was trained on
+(`model.yaml` `rig.config`), and both `stack_sim.sh` and the simulator load that
+rig and its vehicle file from `components/simulation/assets/config`
+(`stack_sim/rig_check.py`). The model's other rig numbers (cable length, tie
+point, anchors, headings) are checked against the asset, and a mismatch stops
+the run: the onboard runner flies with the model's numbers. The number of drones
+is the rig's. PX4's SITL settings are `assets/config/px4_sitl.yaml` plus what the
+vehicle file decides (rotor positions and yaw moments, hover throttle).
 
 The mission, from the ground station (each command goes to every drone's
 mission node through zenoh):
 
 ```bash
-components/simulation/sil/sil.sh takeoff            # arm, PX4 Takeoff to the take-off height, then RAPTOR
-components/simulation/sil/sil.sh goal 0.5 0 1.0 30  # payload goal x y z [yaw deg], world frame ENU
-components/simulation/sil/sil.sh mission            # every drone's mission state
-components/simulation/sil/sil.sh land
+components/simulation/stack_sim/stack_sim.sh takeoff            # waits for every drone to be IDLE, then take-off
+components/simulation/stack_sim/stack_sim.sh watch              # every drone's mission state changes
+components/simulation/stack_sim/stack_sim.sh goal 0.5 0 1.0 30  # payload goal x y z [yaw deg], world frame ENU
+components/simulation/stack_sim/stack_sim.sh mission | planning # mission state | planning status, once
+components/simulation/stack_sim/stack_sim.sh land
 ```
 
-Each drone's mission node (system layer) arms it, takes it off with PX4's
-Takeoff mode and switches PX4 to RAPTOR at the take-off height
-(`CASTOR_TAKEOFF_HEIGHT`, default 2.0 m). Once every drone is there it takes a
-goal and enables its planning policy, which publishes setpoints to the vehicle
-component; the vehicle component forwards commands and setpoints to PX4. When the
-goal is reached the policy keeps running to hold the payload there, until the
-next goal or `land`. `docker/docker-compose.sil.yml` is what lets the vehicle
-component forward anything to PX4; a Pi runs without it. The policy needs a
-raptor_v1.1 checkpoint (3 outputs, a position increment) exported with
-`components/planning/tools/export_policy.py`; an ACCBR checkpoint (5 outputs) is
-refused.
+`takeoff` waits until every drone's mission node is IDLE (its vehicle connected
+to PX4), printing which drones are not, and only then sends the command: a
+mission node refuses a take-off that arrives before its vehicle is connected
+(and says so in its log), rather than keeping it for later. It then follows each
+drone until the team is in RAPTOR, or reports the drone that stopped. Each
+mission node switches PX4 to Takeoff mode, arms, climbs to the take-off height
+and switches PX4 to RAPTOR; once the whole team is there the planning
+components lift the payload together, run the hand-over check and wait for a
+goal; with the team ready the policy flies the payload to it, and keeps holding
+it there until the next goal or `land`.
+
+The take-off height is the model's `rig.takeoff_height`, but never below the
+height where the cables go taut minus `px4_sitl.yaml`'s `takeoff.taut_margin`,
+so the drones do not hang low over slack cable; `CASTOR_TAKEOFF_HEIGHT`
+replaces the model's value, with the same floor. `stack_sim.sh up` prints which
+one it uses.
+
+`docker/docker-compose.stack_sim.yml` is everything that differs from a Pi: the
+vehicle component forwards commands and setpoints to PX4, the mission node times
+its states on the simulator's `/clock`, and the planning policy steps once per
+payload sample, which the simulator sends every 1/rate of simulated time (so the
+policy runs on the time PX4 and the physics live in, however fast the simulation
+runs).
 
 Each drone's stack is the Pi's compose file under its own project
-(`castor-sil-drone<i>`), on its own ROS domain (20 + i), with its own XRCE agent
-port (8887 + i) and zenoh bridge (127.0.0.1:7447 + i) connected to the ground
-station's (domain 20). Robots never share a DDS domain, so everything between
-them crosses zenoh with the flight allow-lists.
+(`castor-stack-sim-drone<i>`), on its own ROS domain (20 + i), with its own XRCE
+agent port (8887 + i) and zenoh bridge (127.0.0.1:7447 + i) connected to the
+ground station's (domain 20). Robots never share a DDS domain, so everything
+between them crosses zenoh with the flight allow-lists.
 
-`make sim-pegasus-ros2` runs `components/simulation/sil/sil_pegasus.py`. It
-builds the rig configured in `components/simulation/assets/config`
-(`payload_rig.yaml` and its vehicle file; `--set`/`--vset` override keys) with
-everything on the ground: each drone on its skids at its formation position and
-yaw, the payload resting on the ground, the cables slack (this needs
-`cable.model: distance`). Every drone gets its own PX4 SITL instance over
-Pegasus' MAVLink HIL link (TCP 4560 + i, lockstep), pointed at its stack's
-domain and agent port (`castor_px4.py`, from `.sil/px4.env`, or the same scheme
-when `sil.sh up` has not run yet). PX4 boots disarmed and nothing takes off
-until a stack commands it. PX4 runs the RAPTOR build by default, with the
-RAPTOR parameters set for SITL through `PX4_PARAM_*` (see the script's
-docstring). The simulation never runs ahead of real time
-(with three drones it runs behind it, see the printed real-time factor). Isaac ground
-truth goes to domain 20 at 50 Hz: `sim/drone<i>/state/{pose,twist,twist_inertial,accel}`
-and `sim/payload/state/{pose,twist_inertial}` (ENU, frame `map`). Each robot's
-own domain also gets `/sim/drone<i>/state/{pose,twist,twist_inertial}` and
-`/sim/payload/state/pose`: the world frame the planning policy uses until
-localization exists. The XRCE
-agent binds UDP on all interfaces (v2.4.3 has no bind option), so on a shared
-network firewall ports 8888-8899.
+`make sim-pegasus-ros2` runs `components/simulation/stack_sim/stack_sim_pegasus.py`.
+It builds the model's rig with everything on the ground: each drone on its skids
+at its formation position and yaw, the payload resting on the ground, the cables
+slack (this needs `cable.model: distance`). Every drone gets its own PX4 SITL
+instance over Pegasus' MAVLink HIL link (TCP 4560 + i, lockstep), pointed at its
+stack's domain and agent port (`castor_px4.py`, from `.stack_sim/px4.env`, or the
+same scheme when `stack_sim.sh up` has not run yet). PX4 boots disarmed and
+nothing takes off until a stack commands it. PX4 runs the RAPTOR build by
+default. The simulation never runs ahead of real time (with three drones it runs
+behind it, see the printed real-time factor). Isaac ground truth goes to domain
+20 at 50 Hz: `sim/drone<i>/state/{pose,twist,twist_inertial,accel}` and
+`sim/payload/state/{pose,twist_inertial}` (ENU, frame `map`). Each robot's own
+domain also gets `/sim/drone<i>/state/{pose,twist,twist_inertial}` and
+`/sim/payload/state/pose`, stamped with simulated time, and `/clock`: the world
+frame the planning policy uses until localization exists. The XRCE agent binds
+UDP on all interfaces (v2.4.3 has no bind option), so on a shared network
+firewall ports 8888-8899.
 
 `components/simulation/tests/pegasus_ros2.py` is the bare plumbing check that
 target used to run: S500s publishing Pegasus' ROS topics, no PX4, no rig.

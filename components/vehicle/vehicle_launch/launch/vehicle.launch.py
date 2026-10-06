@@ -9,7 +9,7 @@ Driven entirely by robot.yaml (see deploy/robot.example.yaml):
 The agent respawns, so the container keeps running with the FC unplugged and
 picks the link up when it appears. Setpoint and command forwarding to PX4 stay
 off unless launched with enable_setpoint_output:=true / enable_commands:=true
-(SIL turns both on through docker/docker-compose.sil.yml).
+(stack_sim turns both on through docker/docker-compose.stack_sim.yml).
 """
 
 from launch import LaunchDescription

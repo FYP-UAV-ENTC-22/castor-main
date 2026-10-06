@@ -14,7 +14,7 @@
 #   CASTOR_ROBOT_CONFIG  default /etc/castor/robot.yaml
 #   CASTOR_RUN_DIR, CASTOR_LOG_DIR, CASTOR_MODELS_DIR
 #                        default /run/castor, /var/log/castor, /var/lib/castor/models;
-#                        SIL gives each simulated robot its own (one project per robot, -p)
+#                        stack_sim gives each simulated robot its own (one project per robot, -p)
 #   ZENOH_BRIDGE_IMAGE   default ghcr.io/fyp-uav-entc-22/zenoh-bridge-ros2dds:1.10.1, CI's tagged
 #                        mirror of eclipse/zenoh-bridge-ros2dds:1.10.1 (digest pinned in images.yml)
 #

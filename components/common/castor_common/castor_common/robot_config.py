@@ -39,7 +39,7 @@ class ConfigError(ValueError):
 
 @dataclass(frozen=True)
 class RosConfig:
-    domain_id: int = 20              # one per host on a Pi; one per simulated robot in SIL
+    domain_id: int = 20              # one per host on a Pi; one per simulated robot in stack_sim
 
 
 @dataclass(frozen=True)
@@ -70,7 +70,7 @@ class UwbConfig:
 class ZenohConfig:
     role: str = "drone"              # drone | payload | ground_station: decides the bridge allow-lists
     connect: tuple[str, ...] = ()    # other bridges / the ground station, e.g. tcp/10.0.0.5:7447
-    listen_address: str = "0.0.0.0"  # 127.0.0.1 in SIL, where all bridges share one host
+    listen_address: str = "0.0.0.0"  # 127.0.0.1 in stack_sim, where all bridges share one host
     listen_port: int = 7447
     multicast_scouting: bool = True  # find other bridges on the same network automatically
 

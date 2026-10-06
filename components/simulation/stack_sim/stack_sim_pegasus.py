@@ -1,34 +1,33 @@
-"""The simulator side of SIL: the configured payload rig in Isaac Sim, every drone flown by its own PX4 SITL instance.
+"""The simulator side of stack_sim: the model's payload rig in Isaac Sim, every drone flown by its own PX4 SITL instance.
 
-    make sim-pegasus-ros2                     # GUI, until the window closes; HEADLESS=1, DRONES=N, DURATION=s
-    /isaac-sim/python.sh components/simulation/sil/sil_pegasus.py --headless --duration 60
+    make sim-pegasus-ros2                     # GUI, until the window closes; HEADLESS=1, MODEL=, DURATION=s
+    /isaac-sim/python.sh components/simulation/stack_sim/stack_sim_pegasus.py --headless --duration 60
 
-The rig comes from components/simulation/assets/config/payload_rig_marl.yaml by default (the rig the default policy
-in models/ was trained for: three drones, 0.4 kg disc, 2 m cables, drones facing outward) and its vehicle config
-(s500.yaml); --rig picks another, --set / --vset override keys. Everything starts on the ground, as PX4 expects
-at boot: each drone on its skids at its formation x, y and yaw, the payload resting on the ground, the cables slack.
-Nothing arms or takes off; the drones wait for commands from their stacks.
+Everything comes from the assets (rig_check.py): the model package (--model, default models/DEFAULT) names the rig it
+was trained on (model.yaml rig.config), which is loaded from components/simulation/assets/config with its vehicle file;
+the model's other rig numbers are checked against it and a mismatch stops the run. --rig picks another rig file (it
+must still match the model), --set / --vset override keys. Everything starts on the ground, as PX4 expects at boot:
+each drone on its skids at its formation x, y and yaw, the payload resting on the ground, the cables slack. Nothing
+arms or takes off; the drones wait for commands from their stacks.
 
 Each vehicle i gets Pegasus' PX4 MAVLink backend (HIL over TCP 4560+i, lockstep) and a PX4 instance i started by
-castor_px4 with the environment `sil.sh up` wrote for robot i+1 (ROS domain 21+i, XRCE agent UDP 8888+i, no /fmu
-namespace), so PX4 instance i talks only to robot i+1's stack. Without .sil/px4.env the same scheme is used, so the
-stacks can be started before or after the simulator. Isaac ground truth goes to the simulator's own domain (20):
+castor_px4 with the environment `stack_sim.sh up` wrote for robot i+1 (ROS domain 21+i, XRCE agent UDP 8888+i, no /fmu
+namespace), so PX4 instance i talks only to robot i+1's stack. Without .stack_sim/px4.env the same scheme is used, so
+the stacks can be started before or after the simulator. Isaac ground truth goes to the simulator's own domain (20):
 sim/drone<i+1>/state/{pose,twist,twist_inertial,accel} and sim/payload/state/{pose,twist_inertial} (ENU, frame map),
 at --ground-truth-hz (50) of simulated time. Robot i+1's domain gets its own drone's and the payload's
-(/sim/drone<i+1>/state/{pose,twist,twist_inertial}, /sim/payload/state/pose): until localization exists, the planning
-policy reads the world frame from there.
+(/sim/drone<i+1>/state/{pose,twist,twist_inertial}, /sim/payload/state/pose), stamped with simulated time, and /clock
+at the same instants: until localization exists the planning policy reads the world frame from there and steps once
+per payload sample, and the mission node times its states on /clock.
 
 PX4 runs the RAPTOR build by default (--build px4_sitl_default for stock PX4) on the none_iris airframe, every instance
-from fresh parameters, set through PX4_PARAM_* for SITL only (px4_parameters): RAPTOR as a separate external mode
-that holds position by itself and follows trajectory_setpoint while it is fresh (MC_RAPTOR_ENABLE=1, MC_RAPTOR_OFFB=0,
-MC_RAPTOR_INTREF=0, IMU_GYRO_RATEMAX=250); no RC and no ground station expected (COM_RC_IN_MODE=4, NAV_RCL_ACT=0,
-NAV_DLL_ACT=0); no auto-disarm, since a drone hanging on a cable can look landed; the S500's rotor geometry and
-hover thrust with its share of the payload; GNSS height with an RTK-grade receiver (--gps rtk), so the three
-estimates agree to centimetres and RAPTOR holds the formation; no uXRCE-DDS time sync (PX4 runs on simulated time,
-the agents on the host's). These are the settings of the PX4 run in components/simulation/tests/marl_raptor.
+from fresh parameters set through PX4_PARAM_* for SITL only: assets/config/px4_sitl.yaml (RAPTOR as its own mode, no
+RC or ground station, no auto-disarm, the GNSS receiver and EKF2 height source, no uXRCE-DDS time sync) plus what the
+vehicle file decides (rotor positions and yaw moments, hover throttle with the drone's share of the payload,
+IMU_GYRO_RATEMAX = the physics rate).
 
-The loop is held to real time unless --fast: in lockstep the simulator sets PX4's pace, and the onboard stacks run on
-wall time. The real-time factor is printed every 2500 steps; below 1 the simulator cannot keep up.
+The loop is held to real time unless --fast: in lockstep the simulator sets PX4's pace, and the onboard stacks' links
+and timeouts run on wall time. The real-time factor is printed every 2500 steps; below 1 the simulator cannot keep up.
 """
 
 import argparse
@@ -46,10 +45,14 @@ sys.path.insert(0, ASSETS)
 
 from castor_assets import config as C  # noqa: E402
 
+sys.path.insert(0, HERE)
+import rig_check as R  # noqa: E402
+
 parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
 parser.add_argument("--headless", action="store_true")
 parser.add_argument("--drones", type=int, default=None, help="default: the rig's num_drones")
-parser.add_argument("--rig", default="payload_rig_marl.yaml", help="rig config (path, or a name in assets/config/)")
+parser.add_argument("--model", default=None, help="model package (<name>/<version> or a dir); default models/DEFAULT")
+parser.add_argument("--rig", default=None, help="rig config instead of the model's (path, or a name in assets/config/)")
 parser.add_argument("--set", action="append", default=[], metavar="KEY=VALUE", help="rig override, repeatable")
 parser.add_argument("--vehicle", default=None, help="vehicle config; default: the rig's vehicle_config")
 parser.add_argument("--vset", action="append", default=[], metavar="KEY=VALUE", help="vehicle override, repeatable")
@@ -57,20 +60,25 @@ parser.add_argument("--no-payload", action="store_true", help="the drones in the
 parser.add_argument("--no-ground-truth", action="store_true", help="do not publish Isaac ground truth on sim/*")
 parser.add_argument("--ground-truth-hz", type=float, default=50.0,
                     help="sim/* rate in simulated time; every message is published from Python, so it costs real time")
-parser.add_argument("--px4-env", default=os.path.join(CASTOR_ROOT, ".sil/px4.env"), help="written by sil.sh up")
+parser.add_argument("--px4-env", default=os.path.join(CASTOR_ROOT, ".stack_sim/px4.env"),
+                    help="written by stack_sim.sh up")
 parser.add_argument("--build", default="px4_sitl_raptor", choices=["px4_sitl_default", "px4_sitl_raptor"])
 parser.add_argument("--airframe", default="none_iris", help="PX4 SITL model (MAVLink HIL airframe)")
-parser.add_argument("--gps", choices=["rtk", "pegasus"], default="rtk",
-                    help="rtk: 2 cm / 3 cm receiver, PX4 uses GNSS for height; pegasus: Pegasus' metre-level default")
 parser.add_argument("--keep-params", action="store_true", help="keep each PX4 instance's saved parameters")
 parser.add_argument("--duration", type=float, default=60.0, help="simulated seconds; 0 = until the window closes")
 parser.add_argument("--fast", action="store_true",
-                    help="do not hold the simulation to real time (the onboard stacks run on wall time, so SIL needs it)")
+                    help="do not hold the simulation to real time (the stacks' links and timeouts run on wall time)")
 args = parser.parse_args()
 
 # config mistakes fail here, before Isaac Sim starts
-rig = C.load_rig(args.rig, args.set + ([f"num_drones={args.drones}"] if args.drones else []))
-vehicle_cfg = C.load_vehicle(args.vehicle or rig.vehicle_config, args.vset)
+try:
+    plan = R.plan(args.model, args.rig, args.set + ([f"num_drones={args.drones}"] if args.drones else []), args.vset)
+except (R.RigError, C.ConfigError, OSError) as e:
+    parser.error(str(e))
+if plan.mismatches:
+    parser.error(f"the rig in the assets is not the rig {plan.model_id} was trained on: " + "; ".join(plan.mismatches))
+rig = plan.rig
+vehicle_cfg = C.load_vehicle(args.vehicle, args.vset) if args.vehicle else plan.vehicle
 if not args.no_payload and rig.cable.model != "distance":
     parser.error(f"the rig starts on the ground with slack cables, which needs cable.model=distance (config has "
                  f"{rig.cable.model!r}); pass --set cable.model=distance or --no-payload")
@@ -85,7 +93,6 @@ from isaacsim.core.utils.extensions import enable_extension  # noqa: E402
 enable_extension("omni.isaac.dynamic_control")  # Pegasus 5.1 still uses it
 simulation_app.update()
 sys.path.insert(0, PEGASUS_EXT)
-sys.path.insert(0, HERE)
 
 import numpy as np  # noqa: E402
 import omni.timeline  # noqa: E402
@@ -108,40 +115,6 @@ from castor_assets.runtime import RigRuntime  # noqa: E402
 
 
 PHYSICS_HZ = 250  # Pegasus' world; PX4's IMU_GYRO_RATEMAX follows it (mc_raptor drops out on gyro older than 10 ms)
-# RTK-grade GNSS: Pegasus' defaults model a metre-level receiver whose random walk lets the drones' estimates drift
-# apart by more than the formation tolerates.
-RTK_GPS = {"eph": 0.02, "epv": 0.03, "fix_type": 6, "gps_xy_random_walk": 0.0, "gps_z_random_walk": 0.0,
-           "gps_xy_noise_density": 2.0e-5, "gps_z_noise_density": 4.0e-5, "gps_vxy_noise_density": 0.02,
-           "gps_vz_noise_density": 0.04, "sattelites_visible": 18}
-
-
-def px4_parameters(vinfo, n):
-    """What differs from PX4's none_iris defaults in SIL, as PX4_PARAM_* for every instance."""
-    params = {
-        "COM_RC_IN_MODE": 4,       # no sticks: missions arm in Takeoff mode, never in a manual one
-        "NAV_RCL_ACT": 0,
-        "NAV_DLL_ACT": 0,          # no ground station link
-        "COM_DISARM_LAND": -1,     # the land detector must not disarm a drone hanging on a cable
-        "COM_DISARM_PRFLT": -1,
-        "MPC_TKO_SPEED": 0.7,
-        "UXRCE_DDS_SYNCT": 0,      # PX4's clock is the simulation's, the agents' the host's
-    }
-    if args.build == "px4_sitl_raptor":
-        params.update({"MC_RAPTOR_ENABLE": 1, "MC_RAPTOR_OFFB": 0, "MC_RAPTOR_INTREF": 0,
-                       "IMU_GYRO_RATEMAX": PHYSICS_HZ})
-    if args.gps == "rtk":
-        params.update({"EKF2_HGT_REF": 1, "EKF2_GPS_P_NOISE": 0.05, "EKF2_GPS_V_NOISE": 0.1})
-    if vinfo.kind == "s500":
-        # PX4 quad-X: 0 front-right, 1 back-left, 2 front-left, 3 back-right; PX4's y is to the right
-        arm = abs(vinfo.geometry.rotor_xy[0][0])
-        for i, (px, py, km) in enumerate(((arm, arm, 0.05), (-arm, -arm, 0.05), (arm, -arm, -0.05),
-                                          (-arm, arm, -0.05))):
-            params.update({f"CA_ROTOR{i}_PX": px, f"CA_ROTOR{i}_PY": py, f"CA_ROTOR{i}_KM": km})
-        payload_share = 0.0 if args.no_payload else rig.payload.mass / n
-        hover = (vinfo.total_mass + payload_share) * 9.81 / vinfo.max_thrust_total
-        # Pegasus maps a motor command u to 1000 u + 100 rad/s and thrust goes with speed squared
-        params["MPC_THR_HOVER"] = round((1100.0 * math.sqrt(hover) - 100.0) / 1000.0, 3)
-    return {f"PX4_PARAM_{k}": str(v) for k, v in params.items()}
 
 
 def ground_truth_every(physics_dt):
@@ -189,16 +162,20 @@ class PayloadGroundTruth:
 
 
 class RobotDomainGroundTruth:
-    """Each drone's own state and the payload pose, published into that robot's ROS domain (its stack's world frame).
+    """Each drone's own state and the payload pose, published into that robot's ROS domain (its stack's world frame),
+    stamped with simulated time, then /clock for the same instant (the stacks' use_sim_time).
 
-    One rclpy context per domain: the simulator process sits on domain 20, each SIL robot on its own."""
+    One rclpy context per domain: the simulator process sits on domain 20, each stack_sim robot on its own."""
 
     def __init__(self, vehicles, domains, rig_rt, every):
         import rclpy
+        from builtin_interfaces.msg import Time
         from geometry_msgs.msg import PoseStamped, TwistStamped
+        from rosgraph_msgs.msg import Clock
 
-        self.rclpy, self.Pose, self.Twist = rclpy, PoseStamped, TwistStamped
+        self.rclpy, self.Pose, self.Twist, self.Time, self.Clock = rclpy, PoseStamped, TwistStamped, Time, Clock
         self.vehicles, self.rig_rt, self.every, self.calls = vehicles, rig_rt, every, 0
+        self.sim_time = 0.0
         qos = rclpy.qos.qos_profile_sensor_data
         self.robots = []
         for i, domain in enumerate(domains):
@@ -212,6 +189,7 @@ class RobotDomainGroundTruth:
                 "twist_inertial": node.create_publisher(TwistStamped, f"{ns}/twist_inertial", qos),
                 "payload": node.create_publisher(PoseStamped, "/sim/payload/state/pose", qos)
                 if rig_rt is not None else None,
+                "clock": node.create_publisher(Clock, "/clock", 10),
             }))
 
     def _pose(self, stamp, p, q):
@@ -228,17 +206,20 @@ class RobotDomainGroundTruth:
         m.twist.angular.x, m.twist.angular.y, m.twist.angular.z = (float(x) for x in w)
         return m
 
-    def publish(self, _dt):
+    def publish(self, dt):
         self.calls += 1
+        self.sim_time += dt
         if self.calls % self.every:
             return
+        ns = round(self.sim_time * 1e9)
+        stamp = self.Time(sec=ns // 1_000_000_000, nanosec=ns % 1_000_000_000)
+        clock = self.Clock(clock=stamp)
         payload = None
         if self.rig_rt is not None:
             pp = self.rig_rt.dc.get_rigid_body_pose(self.rig_rt.payload_h)
             payload = (pp.p, pp.r)  # dynamic_control quaternion is x, y, z, w
         for i, (_ctx, node, pubs) in enumerate(self.robots):
             st = self.vehicles[i].state
-            stamp = node.get_clock().now().to_msg()
             pubs["pose"].publish(self._pose(stamp, st.position, st.attitude))
             # Pegasus' convention: body-frame linear and angular velocity; inertial linear velocity.
             pubs["twist"].publish(self._twist(stamp, f"drone{i + 1}/base_link", st.linear_body_velocity,
@@ -246,6 +227,7 @@ class RobotDomainGroundTruth:
             pubs["twist_inertial"].publish(self._twist(stamp, "map", st.linear_velocity, (0.0, 0.0, 0.0)))
             if payload is not None:
                 pubs["payload"].publish(self._pose(stamp, *payload))
+            pubs["clock"].publish(clock)
 
     def close(self):
         for ctx, node, _ in self.robots:
@@ -254,33 +236,34 @@ class RobotDomainGroundTruth:
 
 
 def px4_instances(n):
-    """Environment per PX4 instance: .sil/px4.env where it has one, otherwise the scheme sil.sh uses."""
+    """Environment per PX4 instance: .stack_sim/px4.env where it has one, otherwise the scheme stack_sim.sh uses."""
     instances = castor_px4.read_env_file(args.px4_env) if os.path.exists(args.px4_env) else {}
     if not instances:
-        print(f"[sil] {args.px4_env} not found: PX4 instance i uses sil.sh's scheme (domain 21+i, agent udp 8888+i); "
-              f"start the stacks with `components/simulation/sil/sil.sh up --drones {n}`")
+        print(f"[stack_sim] {args.px4_env} not found: PX4 instance i uses stack_sim.sh's scheme (domain 21+i, agent udp "
+              f"8888+i); start the stacks with `components/simulation/stack_sim/stack_sim.sh up`")
     elif len(instances) != n:
-        print(f"[sil] WARNING {args.px4_env} has {len(instances)} instance(s) for {n} drones: run "
-              f"`sil.sh up --drones {n}` so every drone has a stack; the rest use sil.sh's scheme with no stack behind it")
-    return {i: instances.get(i, castor_px4.sil_env(i)) for i in range(n)}
+        print(f"[stack_sim] WARNING {args.px4_env} has {len(instances)} instance(s) for {n} drones: run "
+              f"`stack_sim.sh up` with the same model so every drone has a stack; the rest use stack_sim.sh's scheme with "
+              f"no stack behind it")
+    return {i: instances.get(i, castor_px4.stack_env(i)) for i in range(n)}
 
 
 def main():
     n = rig.num_drones
     instances = px4_instances(n)
     vinfo = U.vehicle_info(rig, vehicle_cfg, os.path.join(C.GENERATED_DIR, "runs"), ROBOTS["Iris"], unique=True)
-    px4_params = px4_parameters(vinfo, n)
+    px4_params = R.px4_parameters(plan, args.build, PHYSICS_HZ, vinfo.total_mass, payload=not args.no_payload)
     castor_px4.install(build=args.build, instances=instances, extra_env=px4_params, fresh_params=not args.keep_params)
-    print("[sil] PX4 parameters: " + ", ".join(f"{k[len('PX4_PARAM_'):]}={v}" for k, v in px4_params.items()))
+    print("[stack_sim] PX4 parameters: " + ", ".join(f"{k[len('PX4_PARAM_'):]}={v}" for k, v in px4_params.items()))
 
     layout, warnings = U.rig_layout_for(rig, vinfo)
     for w in warnings:
-        print(f"[sil] WARNING {w}")
+        print(f"[stack_sim] WARNING {w}")
     layout = U.grounded_layout(rig, vinfo, layout, cables=not args.no_payload)
     if vinfo.kind == "s500":
         s = vinfo.summary
-        print(f"[sil] S500 {s['total_mass']:.3f} kg, T/W {s['thrust_to_weight']:.2f}, USD {vinfo.usd_path}")
-    print(f"[sil] rig {args.rig}: {n} x {rig.vehicle}"
+        print(f"[stack_sim] S500 {s['total_mass']:.3f} kg, T/W {s['thrust_to_weight']:.2f}, USD {vinfo.usd_path}")
+    print(f"[stack_sim] model {plan.model_id}, rig {plan.rig_file}: {n} x {rig.vehicle}"
           + ("" if args.no_payload else f", payload {rig.payload.mass} kg, {rig.cable.model} cables {rig.cable.length} m")
           + f", drones {layout.horizontal_distance:.3f} m from the payload axis, all on the ground")
 
@@ -311,11 +294,12 @@ def main():
             def update(self, dt):
                 pass  # no subscriptions (sub_control off), so nothing to spin
 
+    gps = R.gps_sensor(plan)  # None: Pegasus' default receiver
     drone_paths, vehicles = [], []
     for i in range(n):
         cfg = MultirotorConfig()
-        if args.gps == "rtk":
-            cfg.sensors = [Barometer(), IMU(), Magnetometer(), GPS(RTK_GPS)]
+        if gps is not None:
+            cfg.sensors = [Barometer(), IMU(), Magnetometer(), GPS(gps)]
         # backends[0] drives the rotors (Multirotor reads its input_reference): PX4 first, ground truth after
         cfg.backends = [PX4MavlinkBackend(PX4MavlinkBackendConfig({
             "vehicle_id": i, "px4_autolaunch": True, "px4_dir": PX4_DIR, "px4_vehicle_model": args.airframe,
@@ -332,7 +316,7 @@ def main():
                                    [0.0, 0.0, math.sin(yaw / 2), math.cos(yaw / 2)], config=cfg))
         drone_paths.append(path)
         env = instances[i]
-        print(f"[sil] drone{i + 1}: PX4 instance {i} ({args.build}), HIL tcp {4560 + i}, "
+        print(f"[stack_sim] drone{i + 1}: PX4 instance {i} ({args.build}), HIL tcp {4560 + i}, "
               f"domain {env.get('ROS_DOMAIN_ID', '?')}, agent udp {env.get('PX4_UXRCE_DDS_PORT', '8888')}")
 
     rig_rt = None
@@ -347,13 +331,13 @@ def main():
             world.add_physics_callback("castor_payload_ground_truth", PayloadGroundTruth(rig_rt, gt_every).publish)
     robot_gt = None
     if ground_truth:
-        print(f"[sil] ground truth at {1.0 / (gt_every * world.get_physics_dt()):.0f} Hz (simulated) on domain "
+        print(f"[stack_sim] ground truth at {1.0 / (gt_every * world.get_physics_dt()):.0f} Hz (simulated) on domain "
               f"{os.environ.get('ROS_DOMAIN_ID', '0')}: sim/drone<i>/state/*"
               + ("" if rig_rt is None else ", sim/payload/state/*"))
         domains = [int(instances[i].get("ROS_DOMAIN_ID", 21 + i)) for i in range(n)]
         robot_gt = RobotDomainGroundTruth(vehicles, domains, rig_rt, gt_every)
         world.add_physics_callback("castor_robot_ground_truth", robot_gt.publish)
-        print(f"[sil] and into each robot's domain {domains}: /sim/drone<i>/state/{{pose,twist,twist_inertial}}"
+        print(f"[stack_sim] and into each robot's domain {domains}: /sim/drone<i>/state/{{pose,twist,twist_inertial}}"
               + ("" if rig_rt is None else ", /sim/payload/state/pose"))
 
     if not args.headless:
@@ -366,7 +350,7 @@ def main():
 
     timeline = omni.timeline.get_timeline_interface()
     timeline.play()
-    print("[sil] running: PX4 boots disarmed; nothing arms or takes off until a stack commands it")
+    print("[stack_sim] running: PX4 boots disarmed; nothing arms or takes off until a stack commands it")
     wall0, steps = time.perf_counter(), 0
     try:
         while simulation_app.is_running() and (args.duration <= 0 or world.current_time < args.duration):
@@ -379,16 +363,16 @@ def main():
                 time.sleep(ahead)
             if steps % 2500 == 0:
                 wall = time.perf_counter() - wall0
-                print(f"[sil] sim {world.current_time:7.1f} s, wall {wall:7.1f} s, real-time factor "
+                print(f"[stack_sim] sim {world.current_time:7.1f} s, wall {wall:7.1f} s, real-time factor "
                       f"{world.current_time / wall:.2f}")
     except KeyboardInterrupt:
-        print("[sil] interrupted")
+        print("[stack_sim] interrupted")
     finally:
         timeline.stop()  # Pegasus' PX4 backends kill their PX4 instances on stop
         if robot_gt is not None:
             robot_gt.close()
     wall = time.perf_counter() - wall0
-    print(f"[sil] done: {world.current_time:.1f} s simulated in {wall:.1f} s wall, {steps} steps, "
+    print(f"[stack_sim] done: {world.current_time:.1f} s simulated in {wall:.1f} s wall, {steps} steps, "
           f"real-time factor {world.current_time / max(wall, 1e-9):.2f}")
     simulation_app.close()
 
