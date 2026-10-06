@@ -1,7 +1,0 @@
-# flight logs from marl_payload.py
-runs/
-# pip --target installs (pymavlink, onnxruntime), see README
-.deps/
-.deps-py*/
-# PX4 SITL working directories, one per drone, made by px4_rig.py
-px4_rootfs/

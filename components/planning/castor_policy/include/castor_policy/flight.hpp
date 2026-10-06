@@ -1,6 +1,6 @@
 // What flying a trained policy on the aircraft needs on top of the training env's processing (flycrane.hpp),
 // free of ROS so it can be unit-tested. The values come from the model's manifest (models/README.md: flight and
-// policy.point_local); they were measured in the PX4 run in components/simulation/tests/marl_raptor:
+// policy.point_local); they were measured in Mugesram's PX4 harness (castor_marl_v1, removed after 241b700):
 //
 //   point     the policy calls a particular point on the drone its position (the Falcon task: 0.03 m above the
 //             cable tie point). It gets that point's position and velocity, and its setpoint is for that point;

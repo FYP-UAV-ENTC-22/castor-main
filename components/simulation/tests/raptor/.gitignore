@@ -1,4 +1,0 @@
-# flight logs from raptor_pegasus.py
-runs/
-# pip --target install of pymavlink, see README
-.deps/

@@ -1,7 +1,7 @@
 # The rig the MARL policy was trained on (MARL_cooperative_aerial_manipulation_ext,
 # Isaac-castor-payload-decentralized-hovering-v0): three drones, a 0.4 kg disc, 2 m cables, anchors on the rim
 # 120 degrees apart, each drone facing away from the payload. Keys not listed keep their payload_rig.yaml meaning and
-# the defaults in castor_assets/config.py. Used by tests/marl_raptor/.
+# the defaults in castor_assets/config.py. The rig of models/castor_hover_falcon (model.yaml rig.config).
 
 num_drones: 3
 vehicle: s500

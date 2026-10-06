@@ -14,7 +14,7 @@
 //   land: any airborne state -> LANDING (PX4 Land) -> disarm once PX4 reports landed -> IDLE
 //   PX4 failsafe, or PX4 leaving RAPTOR while we fly it -> FC_OVERRIDE (planning off, PX4 in charge)
 //
-// The take-off, lift and hand-over check follow the PX4 run in components/simulation/tests/marl_raptor, where
+// The take-off, lift and hand-over check follow Mugesram's PX4 harness (castor_marl_v1, removed after 241b700), where
 // one process flew all three drones: the policy only ever trained from taut cables and a payload in the air.
 //
 // Temporary: this is replaced by the real supervisor and mission trees later.

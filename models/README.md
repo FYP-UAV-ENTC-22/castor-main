@@ -40,7 +40,7 @@ components/simulation/stack_sim/stack_sim.sh up --model castor_hover_falcon/v1
 | `policy.frame_dim`, `history`, `rate_hz`, `point_local` | `castor_policy`: observation width, loop rate, the point given to the policy as the drone's position |
 | `flight.*` | `castor_policy`: step scale, speed cap, leash, velocity filter, goal clamp |
 | `rig.*` | `castor_policy`: cable span for the hand-over check, lift height; stack_sim: which rig to simulate, and the take-off height (never below the cables' taut height minus a margin) |
-| `training.*` | reference only, and the parity check in `components/simulation/tests/marl_raptor/marl_policy.py` |
+| `training.*` | reference only, and the parity check in `components/planning/tools/check_model.py` |
 
 `castor_common/models.py` resolves a package and turns it into the runner's parameters.
 
@@ -75,5 +75,5 @@ Then copy the previous version's `model.yaml`, update `source` (MARL commit, tas
 `sha256sum`), and `rig`/`flight` if they changed. Check the export against the trace:
 
 ```bash
-python components/simulation/tests/marl_raptor/marl_policy.py --models models/<name>/<version>
+python components/planning/tools/check_model.py models/<name>/<version>   # castor conda env
 ```

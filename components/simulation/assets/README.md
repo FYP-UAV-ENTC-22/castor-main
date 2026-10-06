@@ -20,7 +20,7 @@ Generated USD assets for CASTOR's own hardware, built from YAML so every dimensi
 | [`castor_assets/flycrane.py`](castor_assets/flycrane.py) | The MARL training asset (flycrane) for the S500 and this rig, as URDF; S500 numbers for the training controllers. |
 | [`castor_assets/runtime.py`](castor_assets/runtime.py) | The rig in a running sim: state log, cable tension, distance-cable drawing, release API. |
 | [`build_assets.py`](build_assets.py) | CLI that writes `generated/s500.usd` and a standalone rig file. |
-| `generated/` | Build output, gitignored. Rebuilt on every run of `build_assets.py` or `raptor_payload.py`. |
+| `generated/` | Build output, gitignored. Rebuilt on every run of `build_assets.py` or stack_sim's simulator. |
 
 ## Build and look at it
 
@@ -35,8 +35,8 @@ python build_assets.py --vset mass.total=1.62             # e.g. a measured all-
 Open `generated/rig_*.usd` in Isaac Sim (File > Open) and press Play. `--pin_drones` fixes each drone to the world,
 so the payload just hangs; without it nothing drives the rotors and everything falls. Distance-joint cables
 (`cable.model: distance`) have no geometry of their own, so in a bare file they only show as joint gizmos (enable
-Show > Physics > Joints); the flight runner draws them. To fly the rig with RAPTOR, use
-[`../tests/raptor/raptor_payload.py`](../tests/raptor/raptor_payload.py).
+Show > Physics > Joints); stack_sim's simulator draws them. To fly the rig, use
+[stack_sim](../stack_sim/) (`make sim-pegasus-ros2`).
 
 ## Configuring the rig
 
