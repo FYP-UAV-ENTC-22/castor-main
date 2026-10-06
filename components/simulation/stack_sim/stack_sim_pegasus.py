@@ -33,6 +33,7 @@ and timeouts run on wall time. The real-time factor is printed every 2500 steps;
 import argparse
 import math
 import os
+import socket
 import sys
 import time
 
@@ -82,6 +83,16 @@ vehicle_cfg = C.load_vehicle(args.vehicle, args.vset) if args.vehicle else plan.
 if not args.no_payload and rig.cable.model != "distance":
     parser.error(f"the rig starts on the ground with slack cables, which needs cable.model=distance (config has "
                  f"{rig.cable.model!r}); pass --set cable.model=distance or --no-payload")
+# A second simulator cannot get the HIL ports. Pegasus only logs that, and the two would then publish ground truth
+# and /clock into the same robot domains, so the stacks fly an invisible run on a clock that jumps between the two.
+for i in range(rig.num_drones):
+    with socket.socket() as s:
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)  # as pymavlink binds; TIME_WAIT is no conflict
+        try:
+            s.bind(("127.0.0.1", 4560 + i))
+        except OSError:
+            parser.error(f"tcp {4560 + i} (PX4 HIL for drone{i + 1}) is taken: another simulator is running. "
+                         "Stop it first (check `ps` in the simulation container)")
 sys.stdout.reconfigure(line_buffering=True)
 
 from isaacsim import SimulationApp  # noqa: E402
