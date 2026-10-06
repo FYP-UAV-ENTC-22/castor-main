@@ -2,6 +2,7 @@
 
   record:=true            record this robot's topics to MCAP under /var/log/castor/bags
   takeoff_height:=2.0     mission node: metres above home before handing over to RAPTOR
+  use_sim_time:=false     mission node: time its states on the simulator's /clock (stack_sim)
 
 The mission node is the temporary take-off / MARL / hold / land state machine. It
 commands nothing unless the ground station sends /team/command "takeoff", and its
@@ -49,6 +50,7 @@ def generate_launch_description():
             "team_size": cfg.team_size,
             "team_index": cfg.team_index,
             "takeoff_height": LaunchConfiguration("takeoff_height"),
+            "use_sim_time": LaunchConfiguration("use_sim_time"),
         }],
         output="screen",
         respawn=True,
@@ -68,5 +70,6 @@ def generate_launch_description():
         DeclareLaunchArgument("record", default_value="false"),
         DeclareLaunchArgument("update_gate_path", default_value="/run/castor/update_gate"),
         DeclareLaunchArgument("takeoff_height", default_value="2.0"),
+        DeclareLaunchArgument("use_sim_time", default_value="false"),
         component_group("system", [supervisor, mission, recorder]),
     ])

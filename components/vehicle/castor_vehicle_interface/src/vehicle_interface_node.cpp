@@ -92,11 +92,17 @@ public:
       status_topic, rclcpp::SensorDataQoS(), [this](const VehicleStatus &m) { on_status(m); });
     land_sub_ = create_subscription<VehicleLandDetected>(
       land_topic, rclcpp::SensorDataQoS(), [this](const VehicleLandDetected &m) { landed_ = m.landed; });
-    home_sub_ = create_subscription<HomePosition>(home_topic, rclcpp::SensorDataQoS(), [this](const HomePosition &m) {
-      if (m.valid_alt && std::isfinite(m.alt)) {
-        home_alt_ = m.alt;
-      }
-    });
+    // home_position changes rarely and PX4 publishes it only then; its writer is transient-local (like all of
+    // PX4's), so a transient-local reader still gets the last one after a late start or a respawn.
+    home_sub_ = create_subscription<HomePosition>(
+      home_topic, rclcpp::QoS(1).best_effort().transient_local(), [this](const HomePosition &m) {
+        if (m.valid_alt && std::isfinite(m.alt)) {
+          if (!home_alt_ || std::abs(*home_alt_ - m.alt) > 0.01f) {
+            RCLCPP_INFO(get_logger(), "home altitude %.2f m AMSL", m.alt);
+          }
+          home_alt_ = m.alt;
+        }
+      });
     ack_sub_ = create_subscription<VehicleCommandAck>(
       ack_topic, rclcpp::SensorDataQoS(), [this](const VehicleCommandAck &m) { on_ack(m); });
 
@@ -130,7 +136,7 @@ public:
 private:
   void on_odometry(const VehicleOdometry &m) {
     // The link is alive while anything arrives: vehicle_status alone is too sparse (5 Hz cap, ~1 Hz
-    // when nothing changes), and slower still in SIL behind real time.
+    // when nothing changes), and slower still in stack_sim behind real time.
     last_fc_message_ = now();
     if (!std::isfinite(m.q[0]) || !std::isfinite(m.position[0])) {
       RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000, "odometry without a valid pose; not republished");

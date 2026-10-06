@@ -38,6 +38,8 @@ def runner(context):
         "payload_state_prefix": arg("payload_state_prefix"),
         "sched_fifo_priority": int(arg("sched_fifo_priority")),
         "run_inference_every_step": arg("run_inference_every_step").lower() == "true",
+        "step_trigger": arg("step_trigger"),
+        "use_sim_time": arg("use_sim_time").lower() == "true",
     }
     actions = []
     bare = arg("model_path")
@@ -83,5 +85,8 @@ def generate_launch_description():
                               description="SCHED_FIFO priority for the control loop; 0 = normal scheduling"),
         DeclareLaunchArgument("run_inference_every_step", default_value="false",
                               description="run the model every step on a zero observation (timing)"),
+        DeclareLaunchArgument("step_trigger", default_value="timer",
+                              description="timer (wall clock, a Pi) or payload (one step per payload sample, stack_sim)"),
+        DeclareLaunchArgument("use_sim_time", default_value="false", description="the simulator's /clock (stack_sim)"),
         component_group("planning", [OpaqueFunction(function=runner)]),
     ])

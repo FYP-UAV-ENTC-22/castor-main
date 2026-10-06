@@ -12,6 +12,11 @@
 // The state machine is castor_supervisor/mission.hpp. The node never talks to PX4
 // itself. Teammates are found by topic name (any /<ns>/system/mission the zenoh
 // bridge makes visible); teammate_namespaces names them explicitly instead.
+//
+// Time: how long a state has lasted (take-off, lift and settle timeouts) is on the
+// ROS clock, so with use_sim_time (stack_sim) it is simulated time, the time PX4 and
+// the physics live in. Whether an input is fresh is wall time: a dead link must be
+// noticed even while simulated time stands still.
 
 #include <algorithm>
 #include <chrono>
@@ -60,7 +65,8 @@ public:
     cfg_.raptor_nav_state = static_cast<int>(declare_parameter<int64_t>("raptor_nav_state", cfg_.raptor_nav_state));
     vehicle_timeout_s_ = declare_parameter<double>("vehicle_timeout_s", 1.0);
     teammate_timeout_s_ = declare_parameter<double>("teammate_timeout_s", 1.5);
-    command_repeat_s_ = declare_parameter<double>("command_repeat_s", 1.0);
+    command_repeat_s_ = declare_parameter<double>("command_repeat_s", 0.5);
+    cfg_.arming_timeout_s = declare_parameter<double>("arming_timeout_s", cfg_.arming_timeout_s);
     planning_timeout_s_ = declare_parameter<double>("planning_timeout_s", 3.0);  // planning status is 1 Hz
     cfg_.lift_timeout_s = declare_parameter<double>("lift_timeout_s", cfg_.lift_timeout_s);
     cfg_.settle_s = declare_parameter<double>("settle_s", cfg_.settle_s);
@@ -102,14 +108,15 @@ public:
     planning_pub_ = create_publisher<PlanningCommand>(root + "/planning/command", 10);
     state_pub_ = create_publisher<MissionState>("mission", 10);
 
-    entered_ = Clock::now();
+    entered_ = now();
     step_timer_ = create_wall_timer(50ms, [this] { step(); });
     planning_timer_ = create_wall_timer(100ms, [this] { publish_planning(); });
     state_timer_ = create_wall_timer(200ms, [this] { publish_state(); });
     discover_timer_ = create_wall_timer(1s, [this] { discover_teammates(); });
 
-    RCLCPP_INFO(get_logger(), "robot %u, team slot %u of %d, take-off height %.2f m, RAPTOR nav_state %d", robot_id_,
-                team_index_, team_size_, cfg_.takeoff_height, cfg_.raptor_nav_state);
+    RCLCPP_INFO(get_logger(), "robot %u, team slot %u of %d, take-off height %.2f m, RAPTOR nav_state %d%s", robot_id_,
+                team_index_, team_size_, cfg_.takeoff_height, cfg_.raptor_nav_state,
+                get_parameter("use_sim_time").as_bool() ? ", simulated time" : "");
   }
 
 private:
@@ -146,9 +153,36 @@ private:
     return count >= team_size_ - 1;
   }
 
+  // Why the vehicle is not usable, or "" when it is.
+  std::string vehicle_problem() const {
+    if (!vehicle_) return "no state from the vehicle component yet";
+    if (since(vehicle_at_) >= vehicle_timeout_s_) return "vehicle component state stale";
+    if (!vehicle_->fc_connected) {
+      return vehicle_->seconds_since_fc_message < 0.0f ? "no message from PX4 yet" : "PX4 link lost";
+    }
+    return "";
+  }
+
+  // A line every few seconds while the drone waits on the ground, so the log says whether it can take off.
+  void log_waiting(const m::Inputs &in) {
+    if (state_ == m::WAIT_VEHICLE) {
+      RCLCPP_INFO_THROTTLE(get_logger(), wall_clock_, 5000, "WAIT_VEHICLE: not ready for take-off: %s",
+                           in.vehicle_problem.c_str());
+    } else if (state_ == m::IDLE) {
+      RCLCPP_INFO_THROTTLE(get_logger(), wall_clock_, 10000, "IDLE: ready for take-off (PX4 nav_state %d, %s)",
+                           in.nav_state, in.landed ? "landed" : "not landed");
+    } else if (state_ == m::ARMING) {
+      RCLCPP_INFO_THROTTLE(get_logger(), wall_clock_, 2000, "ARMING %.1f s: %s", in.time_in_state,
+                           in.nav_state != m::NAV_AUTO_TAKEOFF ? "asking PX4 for Takeoff mode"
+                           : in.preflight_ok                   ? "in Takeoff, arming"
+                                                               : "in Takeoff, waiting for PX4's preflight checks");
+    }
+  }
+
   void step() {
     m::Inputs in;
-    in.vehicle_ok = vehicle_ && since(vehicle_at_) < vehicle_timeout_s_ && vehicle_->fc_connected;
+    in.vehicle_problem = vehicle_problem();
+    in.vehicle_ok = in.vehicle_problem.empty();
     if (vehicle_) {
       in.armed = vehicle_->armed;
       in.landed = vehicle_->landed;
@@ -169,7 +203,7 @@ private:
     in.lift_failed = in.planning_alive && planning_->lift_failed;
     in.handover_ok = in.planning_alive && planning_->handover_ok;
     in.goal_reached = in.planning_alive && planning_->goal_reached;
-    in.time_in_state = since(entered_);
+    in.time_in_state = (now() - entered_).seconds();
 
     const auto out = m::step(state_, in, cfg_);
     if (!out.note.empty()) {
@@ -177,7 +211,7 @@ private:
                   out.state != state_ ? out.state.c_str() : "", out.note.c_str());
     }
     if (out.state != state_ || (in.new_goal && (state_ == m::MARL || state_ == m::HOLD))) {
-      entered_ = Clock::now();  // a new goal restarts MARL's goal-reached hold-off too
+      entered_ = now();  // a new goal restarts MARL's goal-reached hold-off too
     }
     if (out.state != state_) {
       if (!m::payload_ready(out.state)) goal_.reset();
@@ -192,6 +226,7 @@ private:
       RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 5000, "HOVER: waiting for %s",
                            !in.planning_alive ? "planning status" : "the team to reach RAPTOR");
     }
+    log_waiting(in);
     planning_mode_ = out.planning;
     send(out.command);
   }
@@ -259,7 +294,8 @@ private:
   double vehicle_timeout_s_{1.0}, teammate_timeout_s_{1.5}, command_repeat_s_{1.0}, planning_timeout_s_{3.0};
 
   std::string state_{m::WAIT_VEHICLE};
-  Clock::time_point entered_;
+  rclcpp::Time entered_;
+  rclcpp::Clock wall_clock_{RCL_STEADY_TIME};
   std::optional<VehicleState> vehicle_;
   Clock::time_point vehicle_at_;
   double altitude_{0.0};

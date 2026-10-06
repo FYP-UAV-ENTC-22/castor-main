@@ -31,6 +31,24 @@ TEST(Mission, WaitsForTheVehicle) {
   EXPECT_EQ(step(WAIT_VEHICLE, ok(), cfg).state, IDLE);
 }
 
+TEST(Mission, TakeoffBeforeTheVehicleIsRefusedAndNotKept) {
+  // The stack_sim failure of 2026-10-06: the command came 11 s before PX4 was connected and vanished without a word.
+  Inputs in;
+  in.vehicle_problem = "no vehicle state";
+  in.takeoff_cmd = true;
+  auto out = step(WAIT_VEHICLE, in, cfg);
+  EXPECT_EQ(out.state, WAIT_VEHICLE);
+  EXPECT_EQ(out.command, Command::NONE);
+  EXPECT_NE(out.note.find("takeoff refused"), std::string::npos);
+  EXPECT_NE(out.note.find("no vehicle state"), std::string::npos);
+
+  in = ok();  // the vehicle connects afterwards: IDLE, and no take-off from the old command
+  out = step(WAIT_VEHICLE, in, cfg);
+  EXPECT_EQ(out.state, IDLE);
+  EXPECT_EQ(out.command, Command::NONE);
+  EXPECT_EQ(step(IDLE, in, cfg).state, IDLE);
+}
+
 TEST(Mission, TakeoffSwitchesToTakeoffModeBeforeArming) {
   // PX4 boots in Position mode; without sticks it fails preflight there, which must not block the request.
   Inputs in = ok();
@@ -224,4 +242,14 @@ TEST(Mission, DisarmInFlightGoesIdle) {
   Inputs in = flying(cfg.raptor_nav_state);
   in.armed = false;
   EXPECT_EQ(step(HOVER, in, cfg).state, IDLE);
+}
+
+TEST(Mission, LandingDisarmsOnceLanded) {
+  // PX4's auto-disarm is off (COM_DISARM_LAND=-1), so the mission disarms the drone itself on the ground.
+  Inputs in = flying(NAV_AUTO_LAND);
+  EXPECT_EQ(step(LANDING, in, cfg).command, Command::NONE);
+  in.landed = true;
+  EXPECT_EQ(step(LANDING, in, cfg).command, Command::DISARM);
+  in.armed = false;
+  EXPECT_EQ(step(LANDING, in, cfg).state, IDLE);
 }

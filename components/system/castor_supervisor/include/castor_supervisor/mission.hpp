@@ -3,13 +3,15 @@
 // src/mission_node.cpp feeds it inputs at a fixed rate and carries out its outputs.
 //
 //   WAIT_VEHICLE -> IDLE -takeoff-> ARMING -> TAKING_OFF (PX4 Takeoff) -> HANDOVER (-> RAPTOR)
+//     A take-off that arrives before the vehicle is connected is refused (with a note), never kept for later:
+//     a stale command must not arm the drone minutes afterwards. The ground station waits for IDLE first.
 //     ARMING switches PX4 to Takeoff first and arms there: PX4 boots in Position mode, which needs stick input,
 //     so without RC it refuses to arm in it (and reports its preflight checks failing for it); armed in Takeoff
 //     it climbs at once, to a height where the cables are still slack.
 //   -> HOVER (RAPTOR holds, cables slack) -team in RAPTOR-> LIFT (planning climbs; cables go taut, payload lifts)
 //     -> LIFTED (planning holds the setpoint) -settled + hand-over check-> READY
 //     -> goal + team READY -> MARL -goal reached-> HOLD -new goal-> MARL
-//   land: any airborne state -> LANDING (PX4 Land) -> IDLE once PX4 disarms
+//   land: any airborne state -> LANDING (PX4 Land) -> disarm once PX4 reports landed -> IDLE
 //   PX4 failsafe, or PX4 leaving RAPTOR while we fly it -> FC_OVERRIDE (planning off, PX4 in charge)
 //
 // The take-off, lift and hand-over check follow the PX4 run in components/simulation/tests/marl_raptor, where
@@ -35,7 +37,7 @@ struct Config {
   double takeoff_height{2.0};   // m above home; below where the cables go taut
   double height_tolerance{0.2};
   int raptor_nav_state{23};     // NAVIGATION_STATE_EXTERNAL1
-  double arming_timeout_s{15.0};
+  double arming_timeout_s{40.0};  // PX4 switches to Takeoff and arms in a few seconds; SITL can be slower
   double takeoff_timeout_s{60.0};
   double handover_timeout_s{10.0};
   double lift_timeout_s{60.0};
@@ -45,6 +47,7 @@ struct Config {
 
 struct Inputs {
   bool vehicle_ok{false};  // fresh vehicle state with the FC connected
+  std::string vehicle_problem;  // why not, for the log: "no vehicle state", "PX4 link down", ...
   bool armed{false}, landed{true}, failsafe{false}, preflight_ok{false};
   int nav_state{0};
   double altitude{0.0};    // m above the vehicle's local origin (home)
@@ -58,7 +61,7 @@ struct Inputs {
   bool lift_done{false}, lift_failed{false};
   bool handover_ok{false};
   bool goal_reached{false};
-  double time_in_state{0.0};
+  double time_in_state{0.0};  // s on the ROS clock: simulated time in stack_sim
 };
 
 enum class Command { NONE, ARM, DISARM, TAKEOFF, RAPTOR, LAND };
@@ -94,7 +97,13 @@ inline Outputs step(const std::string &state, const Inputs &in, const Config &cf
   }
 
   if (state == WAIT_VEHICLE) {
-    if (in.vehicle_ok) go(in.armed ? FC_OVERRIDE : IDLE, in.armed ? "vehicle already armed" : "vehicle connected");
+    if (in.vehicle_ok) {
+      go(in.armed ? FC_OVERRIDE : IDLE, in.armed ? "vehicle already armed" : "vehicle connected");
+    } else if (in.takeoff_cmd) {
+      out.note = "takeoff refused: waiting for the vehicle (" + in.vehicle_problem + "); send it again once IDLE";
+    } else if (in.land_cmd) {
+      out.note = "land ignored: waiting for the vehicle (" + in.vehicle_problem + ")";
+    }
     return out;
   }
 
@@ -106,6 +115,8 @@ inline Outputs step(const std::string &state, const Inputs &in, const Config &cf
         go(ARMING, "takeoff requested: PX4 Takeoff mode, then arm");
         out.command = Command::TAKEOFF;
       }
+    } else if (in.land_cmd) {
+      out.note = "land ignored: on the ground";
     }
     return out;
   }
@@ -153,7 +164,9 @@ inline Outputs step(const std::string &state, const Inputs &in, const Config &cf
       go(HANDOVER, "at take-off height");
       out.command = Command::RAPTOR;
     } else if (in.time_in_state > cfg.takeoff_timeout_s) {
-      go(LANDING, "take-off timed out");
+      go(LANDING, "take-off timed out at " + std::to_string(in.altitude).substr(0, 4) + " m of " +
+                    std::to_string(cfg.takeoff_height).substr(0, 4) + " m, PX4 nav_state " +
+                    std::to_string(in.nav_state));
       out.command = Command::LAND;
     } else if (in.nav_state != NAV_AUTO_TAKEOFF && in.nav_state != NAV_AUTO_LOITER) {
       out.command = Command::TAKEOFF;
@@ -209,6 +222,8 @@ inline Outputs step(const std::string &state, const Inputs &in, const Config &cf
   } else if (state == LANDING) {
     if (!in.armed) {
       go(IDLE, "landed and disarmed");
+    } else if (in.landed) {
+      out.command = Command::DISARM;  // PX4's own auto-disarm is off: a drone hanging on a cable can look landed
     } else if (in.nav_state != NAV_AUTO_LAND) {
       out.command = Command::LAND;
     }

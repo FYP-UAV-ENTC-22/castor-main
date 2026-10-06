@@ -3,7 +3,7 @@
 // and for the steps that get the payload into the state the policy trained from.
 //
 //   <ns>/planning/command  castor_interfaces/PlanningCommand   from the system layer: mode + payload goal
-//   own state, payload pose (world frame; Isaac ground truth in SIL for now, localization later)
+//   own state, payload pose (world frame; Isaac ground truth in stack_sim for now, localization later)
 //   <ns>/vehicle/odom      the vehicle's own local frame, to express setpoints in it
 //   -> <ns>/vehicle/setpoint castor_interfaces/PositionSetpoint  at rate_hz while active
 //   -> <ns>/planning/status  castor_interfaces/PolicyStatus      1 Hz
@@ -19,6 +19,14 @@
 // setpoint at the drone, target yaw = the setpoint's (the env's spawn heading).
 // The hand-over check (own cable taut, payload clear of the ground) is computed in
 // every mode from the model's rig geometry and reported on the status.
+//
+// Step trigger (step_trigger): "timer" (default, a Pi) runs a wall-clock timer at
+// rate_hz. "payload" (stack_sim) runs one step per new payload pose: the simulator
+// publishes it every 1/rate_hz of simulated time, so the policy steps on the time
+// PX4 and the physics live in however fast the simulation runs, and always on the
+// sample of that instant (a /clock timer would fire before the sample is taken,
+// one step late). A sample whose stamp is not newer than the last stepped one (a
+// duplicate from a bridge restart) does not step.
 
 #include <pthread.h>
 #include <sched.h>
@@ -30,6 +38,7 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -79,6 +88,10 @@ public:
     model_id_ = declare_parameter<std::string>("model_id", "");
     model_path_ = declare_parameter<std::string>("model_path", "/var/lib/castor/models/policy.onnx");
     rate_hz_ = declare_parameter<double>("rate_hz", 50.0);  // raptor_v1.1 trains the policy at 50 Hz
+    step_trigger_ = declare_parameter<std::string>("step_trigger", "timer");
+    if (step_trigger_ != "timer" && step_trigger_ != "payload") {
+      throw std::invalid_argument("step_trigger must be timer or payload, not '" + step_trigger_ + "'");
+    }
     const int frame_base = static_cast<int>(declare_parameter<int64_t>("obs_frame_base", 42));
     history_len_ = static_cast<int>(declare_parameter<int64_t>("history", 3));
     run_inference_ = declare_parameter<bool>("run_inference_every_step", false);
@@ -109,7 +122,7 @@ public:
     lift_cfg_.speed = declare_parameter<double>("lift_speed", lift_cfg_.speed);
     lift_cfg_.accel = declare_parameter<double>("lift_accel", lift_cfg_.accel);
     lift_cfg_.max_climb = declare_parameter<double>("lift_max_climb", handover_cfg_.cable_length + 1.5);
-    // World-frame state. SIL: the simulator's ground truth, published into this robot's domain.
+    // World-frame state. stack_sim: the simulator's ground truth, published into this robot's domain.
     const auto own = declare_parameter<std::string>("own_state_prefix", "/sim/" + ns + "/state");
     const auto payload = declare_parameter<std::string>("payload_state_prefix", "/sim/payload/state");
 
@@ -122,8 +135,10 @@ public:
     for (float x : one_hot_) {
       hot += (hot.empty() ? "" : ", ") + std::to_string(static_cast<int>(x));
     }
-    RCLCPP_INFO(get_logger(), "team slot %d of %d, one-hot [%s], expected obs width %zu, %.0f Hz; state from %s, %s",
-                team_index_, team_size_, hot.c_str(), expected_dim_, rate_hz_, own.c_str(), payload.c_str());
+    RCLCPP_INFO(get_logger(), "team slot %d of %d, one-hot [%s], expected obs width %zu, %.0f Hz (%s); state from %s, %s",
+                team_index_, team_size_, hot.c_str(), expected_dim_, rate_hz_,
+                step_trigger_ == "payload" ? "one step per payload sample" : "wall-clock timer", own.c_str(),
+                payload.c_str());
 
     load_model();
     if (fifo_priority > 0) {
@@ -140,7 +155,7 @@ public:
       own + "/twist_inertial", qos,
       [this](const geometry_msgs::msg::TwistStamped &m) { own_twist_w_ = {m, Clock::now()}; });
     payload_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
-      payload + "/pose", qos, [this](const geometry_msgs::msg::PoseStamped &m) { payload_pose_ = {m, Clock::now()}; });
+      payload + "/pose", qos, [this](const geometry_msgs::msg::PoseStamped &m) { on_payload(m); });
     odom_sub_ = create_subscription<nav_msgs::msg::Odometry>(
       root + "/vehicle/odom", 10, [this](const nav_msgs::msg::Odometry &m) { odom_ = {m, Clock::now()}; });
     command_sub_ = create_subscription<castor_interfaces::msg::PlanningCommand>(
@@ -153,7 +168,9 @@ public:
     period_ = std::chrono::duration_cast<Clock::duration>(period);
     next_due_ = Clock::now() + period_;
     window_start_ = Clock::now();
-    step_timer_ = create_wall_timer(period, [this] { step(); });
+    if (step_trigger_ == "timer") {
+      step_timer_ = create_wall_timer(period, [this] { step(); });
+    }
     status_timer_ = create_wall_timer(1s, [this] { publish_status(); });
   }
 
@@ -329,13 +346,35 @@ private:
     policy_pending_ = true;
   }
 
+  void on_payload(const geometry_msgs::msg::PoseStamped &m) {
+    payload_pose_ = {m, Clock::now()};
+    if (step_trigger_ != "payload") return;
+    const rclcpp::Time stamp(m.header.stamp, RCL_ROS_TIME);
+    if (last_payload_stamp_ && stamp < *last_payload_stamp_ - rclcpp::Duration::from_seconds(1.0)) {
+      RCLCPP_WARN(get_logger(), "payload time went back %.1f s (simulator restarted?); following it",
+                  (*last_payload_stamp_ - stamp).seconds());
+      last_payload_stamp_.reset();
+      deactivate("simulator restarted");
+    }
+    if (last_payload_stamp_ && stamp <= *last_payload_stamp_) return;  // duplicate or out of order
+    if (last_payload_stamp_) {
+      // How far the sample spacing is from the policy's period, in the stamps' (simulated) time.
+      const double late_ms = ((stamp - *last_payload_stamp_).seconds() - 1.0 / rate_hz_) * 1000.0;
+      max_late_ms_ = std::max(max_late_ms_, late_ms);
+    }
+    last_payload_stamp_ = stamp;
+    step();
+  }
+
   void step() {
     const auto now = Clock::now();
-    const double late_ms = std::chrono::duration<double, std::milli>(now - next_due_).count();
-    max_late_ms_ = std::max(max_late_ms_, late_ms);
-    next_due_ += period_;
-    if (now - next_due_ > 10 * period_) {
-      next_due_ = now + period_;  // fell far behind (e.g. suspended); resynchronise
+    if (step_trigger_ == "timer") {
+      const double late_ms = std::chrono::duration<double, std::milli>(now - next_due_).count();
+      max_late_ms_ = std::max(max_late_ms_, late_ms);
+      next_due_ += period_;
+      if (now - next_due_ > 10 * period_) {
+        next_due_ = now + period_;  // fell far behind (e.g. suspended); resynchronise
+      }
     }
     ++steps_;
     update_goal_errors();
@@ -554,6 +593,8 @@ private:
 
   int team_size_{0}, team_index_{-1}, history_len_{3};
   std::string model_id_, model_path_, setpoint_frame_;
+  std::string step_trigger_{"timer"};
+  std::optional<rclcpp::Time> last_payload_stamp_;
   double rate_hz_{50.0}, step_scale_{0.05}, leash_{1.5}, goal_pos_tol_{0.3}, goal_ori_tol_{0.4};
   double max_speed_{0.0}, velocity_filter_s_{0.0}, velocity_gain_{1.0};
   Vec3 point_local_{}, filtered_velocity_{}, last_goal_{};
