@@ -1,0 +1,18 @@
+# stack_sim overlay for docker-compose.prod.yml (components/simulation/stack_sim/stack_sim.sh adds it). On a Pi none
+# of this is set (the prod defaults):
+#   vehicle   forwards setpoints and commands to its PX4 SITL instance, so the mission node can fly it
+#   system    the mission node times its states on the simulator's /clock (simulated time, PX4's time)
+#   planning  one policy step per payload sample, which the simulator sends every 1/rate of simulated time
+#
+#   CASTOR_TAKEOFF_HEIGHT   metres above home for PX4's take-off; stack_sim.sh sets it (components/simulation/stack_sim/
+#                           rig_check.py: the model's rig.takeoff_height, never below the cables' taut height - margin)
+
+services:
+  vehicle:
+    command: ["ros2", "launch", "vehicle_launch", "vehicle.launch.py",
+              "enable_setpoint_output:=true", "enable_commands:=true"]
+  system:
+    command: ["ros2", "launch", "system_launch", "system.launch.py",
+              "takeoff_height:=${CASTOR_TAKEOFF_HEIGHT:?stack_sim.sh sets CASTOR_TAKEOFF_HEIGHT}", "use_sim_time:=true"]
+  planning:
+    command: ["ros2", "launch", "planning_launch", "planning.launch.py", "step_trigger:=payload", "use_sim_time:=true"]

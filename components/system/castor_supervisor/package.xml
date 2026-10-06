@@ -13,6 +13,8 @@
   <depend>yasmin</depend>
   <depend>behaviortree_cpp</depend>
   <depend>castor_interfaces</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav_msgs</depend>
 
   <test_depend>ament_cmake_gtest</test_depend>
 

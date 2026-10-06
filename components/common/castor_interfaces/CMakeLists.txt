@@ -14,6 +14,9 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/TeamCommand.msg"
   "msg/SupervisorState.msg"
   "msg/PolicyStatus.msg"
+  "msg/VehicleCommand.msg"
+  "msg/MissionState.msg"
+  "msg/PlanningCommand.msg"
   DEPENDENCIES builtin_interfaces std_msgs geometry_msgs
 )
 

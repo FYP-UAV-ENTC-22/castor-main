@@ -9,6 +9,7 @@
 !components/localization/
 !components/planning/
 !components/system/
+!models/
 
 components/vehicle/PX4-Autopilot
 components/vehicle/uwb_firmware
@@ -16,6 +17,8 @@ components/vehicle/tools
 components/planning/MARL_cooperative_aerial_manipulation_ext
 components/planning/skrl
 **/README.md
+# model test vectors and training traces stay out of the image
+models/**/*.npz
 **/__pycache__
 **/*.py[cod]
 **/.pytest_cache

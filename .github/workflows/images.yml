@@ -30,6 +30,7 @@ on:
       - "components/localization/**"
       - "components/planning/**"
       - "components/system/**"
+      - "models/**"
       - "docker/**"
       - ".devcontainer/**"
       - ".dockerignore"
@@ -42,6 +43,7 @@ on:
       - "components/localization/**"
       - "components/planning/**"
       - "components/system/**"
+      - "models/**"
       - "docker/**"
       - ".devcontainer/**"
       - ".dockerignore"
@@ -109,6 +111,8 @@ jobs:
                 picked=""
                 for c in $all; do
                   echo "$changed" | grep -qE "^(components/$c/|\.devcontainer/$c/)" && picked="$picked $c"
+                  [ "$c" = planning ] && echo "$changed" | grep -q '^models/' && [[ " $picked " != *" planning "* ]] \
+                    && picked="$picked planning"
                 done
               fi
             fi

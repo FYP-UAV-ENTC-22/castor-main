@@ -10,6 +10,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(castor_interfaces REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
 
 # ONNX Runtime is optional so the package still builds on a machine without it.
 # The planning image installs the prebuilt release under /opt/castor/third_party.
@@ -19,7 +21,8 @@ find_library(ORT_LIBRARY onnxruntime PATHS "${ONNXRUNTIME_ROOT}/lib" NO_DEFAULT_
 
 add_executable(policy_runner src/policy_runner_node.cpp)
 target_include_directories(policy_runner PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(policy_runner PRIVATE rclcpp::rclcpp ${castor_interfaces_TARGETS})
+target_link_libraries(policy_runner PRIVATE rclcpp::rclcpp ${castor_interfaces_TARGETS} ${geometry_msgs_TARGETS}
+  ${nav_msgs_TARGETS})
 
 if(ORT_INCLUDE_DIR AND ORT_LIBRARY)
   message(STATUS "castor_policy: ONNX Runtime from ${ONNXRUNTIME_ROOT}")
@@ -39,6 +42,12 @@ if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
   ament_add_gtest(test_team test/test_team.cpp)
   target_include_directories(test_team PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+  ament_add_gtest(test_flycrane test/test_flycrane.cpp)
+  target_include_directories(test_flycrane PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+  ament_add_gtest(test_lift test/test_lift.cpp)
+  target_include_directories(test_lift PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+  ament_add_gtest(test_flight test/test_flight.cpp)
+  target_include_directories(test_flight PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 endif()
 
 ament_package()

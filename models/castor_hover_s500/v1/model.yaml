@@ -1,0 +1,68 @@
+# One exported policy and everything needed to fly it. See models/README.md.
+# A committed version never changes: a re-export or a retrain is a new version directory.
+
+name: castor_hover_s500
+version: v1
+date: 2026-10-05
+description: >-
+  MAPPO payload policy for three S500s carrying a 0.4 kg disc of 0.3 m radius on 3 m cables: holds the payload and
+  flies it to a goal pose by nudging each drone's RAPTOR position setpoint. Trained on the S500 rig on the RAPTOR
+  inner loop, with a 1 m/s setpoint speed cap.
+
+source:
+  repo: FYP-UAV-ENTC-22/MARL_cooperative_aerial_manipulation_ext
+  commit: null           # the S500 task is not pushed to the MARL repo yet; set this when it is
+  task: Isaac-castor-s500-payload-decentralized-hovering-v0
+  experiment: logs/skrl/mappo_castor_s500_hover (204,800 steps)
+  checkpoint: best_agent.pt
+  exported_with: scripts/tools/export_policy_onnx.py
+  trace_with: scripts/tools/capture_policy_trace.py --task Isaac-castor-s500-payload-decentralized-hovering-v0
+
+policy:
+  team_size: 3
+  frame_dim: 45          # payload pos 3, R 9, one-hot 3, own pos 3, R 9, v 3, w 3, goal - payload 3, R_goal R^T 9
+  history: 3             # frames, oldest first: 135 inputs
+  action_dim: 3          # position increment
+  rate_hz: 50
+  slots:                 # team slot i loads slots[i]; the input scaler is inside each file
+    - file: policy_falcon1.onnx
+      sha256: 3c51764f870c7c951a8ba318ec16c5712161fcf68062e5e447c9057e0eb526d1
+    - file: policy_falcon2.onnx
+      sha256: 3c51764f870c7c951a8ba318ec16c5712161fcf68062e5e447c9057e0eb526d1
+    - file: policy_falcon3.onnx
+      sha256: 3c51764f870c7c951a8ba318ec16c5712161fcf68062e5e447c9057e0eb526d1
+  # The point on the drone the policy calls its position: body frame, from the body origin (FLU). The S500 task
+  # reports base_link's centre of mass (castor_assets vehicle_mass_properties of s500.yaml).
+  point_local: [-0.00166, 0.0, -0.0252]
+
+training:                # what the training environment did, for reference and parity
+  setpoint_step_scale: 0.02
+  setpoint_max_speed: 1.0
+  setpoint_leash: 1.5
+
+flight:                  # what the onboard runner uses (castor_policy parameters)
+  # The trained settings, as px4_flight.py --trained_on s500 flies them. Measured with PX4 SITL
+  # (components/simulation/tests/marl_raptor/README.md): payload 0.021 m / 1.7 deg from the goal, with an 8 Hz
+  # vertical vibration of about 60 mm/s from hand-over. velocity_filter_s 0.1 cuts that to 7 mm/s at the same
+  # accuracy, but the payload drifted 0.27 m in the 3 s after hand-over.
+  setpoint_step_scale: 0.02
+  setpoint_max_speed: 1.0
+  setpoint_leash: 1.5
+  velocity_filter_s: 0.0
+  velocity_gain: 1.0
+  goal_box:                # payload goal positions seen in training, world frame; goals outside are clamped
+    min: [-1.0, -1.0, 0.5]
+    max: [1.0, 1.0, 1.5]
+
+rig:                     # the rig this policy has to be flown on (components/simulation/assets/config)
+  config: payload_rig_marl_s500.yaml
+  cable_length: 3.0
+  payload_height: 0.03
+  mount_local: [0.0, 0.0, -0.1875]   # cable tie point, drone body frame (mount.height 0.163, level with the skids)
+  anchors_local:                     # cable i's anchor on the payload, payload frame; slot i flies cable i
+    - [0.3, 0.0, 0.015]
+    - [-0.15, 0.259808, 0.015]
+    - [-0.15, -0.259808, 0.015]
+  drone_yaw_deg: [0.0, 120.0, 240.0]   # each drone faces away from the payload
+  takeoff_height: 1.3    # m above home for PX4's take-off (px4_rig.py --takeoff_alt); the cables go taut near 2.65 m
+  lift_height: 1.0       # payload centre above the ground when the policy takes over

@@ -132,7 +132,7 @@ echo "d /run/castor 0775 root docker -" > /etc/tmpfiles.d/castor.conf
 systemd-tmpfiles --create /etc/tmpfiles.d/castor.conf
 install -d -m 2775 -g docker /var/log/castor
 install -d -m 2775 -g docker /var/lib/castor /var/lib/castor/models
-echo "    /run/castor, /var/log/castor, /var/lib/castor (update state), /var/lib/castor/models (put policy.onnx here)"
+echo "    /run/castor, /var/log/castor, /var/lib/castor (update state), /var/lib/castor/models (model package overrides, see models/README.md)"
 
 say "systemd units"
 install -m 0644 "$SRC/deploy/pi/castor-stack.service" /etc/systemd/system/castor-stack.service

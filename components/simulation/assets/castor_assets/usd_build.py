@@ -16,13 +16,13 @@ import hashlib
 import json
 import math
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 
 import numpy as np
 from pxr import Gf, PhysxSchema, Sdf, Usd, UsdGeom, UsdLux, UsdPhysics, UsdShade
 
 from . import geometry as G
-from .config import RigCfg, VehicleCfg, to_dict
+from .config import ConfigError, RigCfg, VehicleCfg, to_dict
 
 COLORS = {
     "carbon": ((0.035, 0.035, 0.04), 0.35, 0.0),
@@ -408,7 +408,7 @@ def build_vehicle_usd(cfg: VehicleCfg, path: str) -> dict:
         "hover_throttle": (math.sqrt(mp.total_mass * G.GRAVITY / 4 / tc["rotor_constant"][0]) - 100.0) / 1000.0,
         "spawn_height_on_ground": float(geo.spawn_height_on_ground),
         "overall_height": float(geo.height_overall),
-        "mount_z_range": [float(geo.z_pole_top), float(geo.z_pole_bottom)],
+        "mount_z_range": [float(geo.z_pole_top), float(geo.z_skid)],
     }
     stage.GetRootLayer().customLayerData = {"castor_vehicle": _json(summary), "castor_config": _json(to_dict(cfg))}
     save_atomic(stage, path)
@@ -596,7 +596,7 @@ def author_rig(stage, rig: RigCfg, vinfo: VehicleInfo, layout: G.RigLayout, dron
                 dj.CreateSpringDampingAttr(float(c.damping))
             vis = f"{cable_root}/cable{i}_visual"
             _xform(stage, vis)
-            pts = G.cable_points(a_w, m_w, c.length, CABLE_VISUAL_SEGMENTS)
+            pts = G.cable_points(a_w, m_w, c.length, CABLE_VISUAL_SEGMENTS, c.radius)
             vis_segs = []
             for k in range(CABLE_VISUAL_SEGMENTS):
                 cyl = UsdGeom.Cylinder.Define(stage, f"{vis}/seg{k}")
@@ -681,6 +681,21 @@ def rig_layout_for(rig: RigCfg, vinfo: VehicleInfo):
                 f"real frame"
             )
     return layout, warnings
+
+
+def grounded_layout(rig: RigCfg, vinfo: VehicleInfo, layout: G.RigLayout, cables: bool = True) -> G.RigLayout:
+    """`layout` moved down to the ground for a PX4 boot: payload resting on its bottom face, every drone on its skids at
+    its formation x, y and yaw, cables slack. Only distance-joint cables can start slack; a rope is authored straight
+    from anchor to mount, so it needs the airborne layout. cables=False: no cables will be authored, skip that check."""
+    if cables and rig.cable.model != "distance":
+        raise ConfigError(f"a grounded rig needs cable.model=distance (got {rig.cable.model!r}): rope segments are "
+                          f"authored straight, so they cannot start slack")
+    lift = np.array([0.0, 0.0, rig.payload.height / 2.0 + 0.002 - layout.payload_pos[2]])
+    drone_pos = [np.array([p[0], p[1], vinfo.spawn_height_on_ground]) for p in layout.drone_pos]
+    mounts_world = [p + G.rot_z(yaw) @ np.asarray(m, dtype=float)
+                    for p, yaw, m in zip(drone_pos, layout.drone_yaw, layout.mounts_local)]
+    return replace(layout, payload_pos=layout.payload_pos + lift, anchors_world=[a + lift for a in layout.anchors_world],
+                   mounts_world=mounts_world, drone_pos=drone_pos)
 
 
 # --------------------------------------------------------------------------------------------------------------------

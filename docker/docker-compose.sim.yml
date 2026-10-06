@@ -1,5 +1,5 @@
 # The simulation container: Isaac Sim + Isaac Lab + Pegasus + PX4 SITL + ROS 2
-# Jazzy + training, one image (castor-simulation:local, docker/build_simulation.sh).
+# Jazzy + training, one image (ghcr.io/fyp-uav-entc-22/castor-simulation:latest: make sim-image or make sim-pull).
 # Laptop or GPU workstation only, never a Pi.
 #
 #   make sim-up / sim-shell / sim-down        headless; the repo is at /home/ws
@@ -11,7 +11,7 @@ name: castor-sim
 
 services:
   simulation:
-    image: castor-simulation:local
+    image: ${CASTOR_SIM_IMAGE:-ghcr.io/fyp-uav-entc-22/castor-simulation:latest}
     network_mode: host
     ipc: host
     gpus: all
@@ -29,7 +29,8 @@ services:
       ROS_DOMAIN_ID: ${ROS_DOMAIN_ID:-20}
     volumes:
       - ..:/home/ws
-      - ${CASTOR_ASSET_PACK:-/mnt/isaac/isaacsim_assets}:/mnt/isaac/isaacsim_assets:ro
+      # Optional NVIDIA asset pack; without one an empty folder is mounted and Kit uses S3.
+      - ${CASTOR_ASSET_PACK:-./simulation/no-asset-pack}:/mnt/isaac/isaacsim_assets:ro
       - /tmp/.X11-unix:/tmp/.X11-unix
       # Shader, Kit, compute and pip caches survive container restarts.
       - sim-kit-cache:/isaac-sim/kit/cache

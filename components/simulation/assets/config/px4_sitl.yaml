@@ -1,0 +1,50 @@
+# PX4 SITL settings for every simulated drone (components/simulation/stack_sim), on top of the defaults of PX4's
+# none_iris airframe, set through PX4_PARAM_* at each launch from fresh parameters. Simulation only: nothing here is
+# ever written to a real flight controller.
+#
+# Not here, because the vehicle file decides them (stack_sim/rig_check.py, px4_parameters):
+#   CA_ROTOR<i>_PX/PY   rotor positions, from the frame geometry (PX4 quad-X order, FRD)
+#   CA_ROTOR<i>_KM      yaw moment per thrust, from propulsion.torque_to_thrust and spin_directions (the same value
+#                       the simulated rotors use)
+#   MPC_THR_HOVER       hover throttle with the drone's share of the payload, from its mass and thrust curve
+#   IMU_GYRO_RATEMAX    the physics rate (RAPTOR build only)
+
+params:                    # every build
+  COM_RC_IN_MODE: 4        # no sticks: the mission arms in Takeoff mode, never in a manual one
+  NAV_RCL_ACT: 0
+  NAV_DLL_ACT: 0           # no ground station link
+  COM_DISARM_LAND: -1      # the land detector must not disarm a drone hanging on a cable
+  COM_DISARM_PRFLT: -1
+  MPC_TKO_SPEED: 0.7       # m/s climb in Takeoff mode
+  NAV_MC_ALT_RAD: 0.1      # PX4 ends Takeoff this close to the target height (default 0.8 m), then holds there
+  UXRCE_DDS_SYNCT: 0       # PX4's clock is the simulation's, the agents' the host's: do not sync them
+
+raptor_params:             # px4_sitl_raptor only
+  MC_RAPTOR_ENABLE: 1
+  MC_RAPTOR_OFFB: 0        # RAPTOR is its own mode and holds position until setpoints arrive
+  MC_RAPTOR_INTREF: 0
+
+gps:
+  model: rtk               # rtk | pegasus (Pegasus' default receiver: metre-level, random walk)
+  # Pegasus GPS sensor settings for the rtk model. Pegasus' defaults model a metre-level receiver whose random walk
+  # lets the drones' estimates drift apart by more than the formation tolerates. ("sattelites" is Pegasus' spelling.)
+  rtk_sensor:
+    eph: 0.02
+    epv: 0.03
+    fix_type: 6
+    gps_xy_random_walk: 0.0
+    gps_z_random_walk: 0.0
+    gps_xy_noise_density: 2.0e-5
+    gps_z_noise_density: 4.0e-5
+    gps_vxy_noise_density: 0.02
+    gps_vz_noise_density: 0.04
+    sattelites_visible: 18
+  rtk_params:              # EKF2 with an RTK receiver: GNSS height beats the barometer
+    EKF2_HGT_REF: 1
+    EKF2_GPS_P_NOISE: 0.05
+    EKF2_GPS_V_NOISE: 0.1
+
+takeoff:
+  # PX4's take-off height is never below the height where the cables go taut minus this margin, so the drones do not
+  # dangle low over a slack cable; a model's rig.takeoff_height above that floor is used as given.
+  taut_margin: 0.3         # m

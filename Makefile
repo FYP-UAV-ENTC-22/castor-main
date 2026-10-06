@@ -32,7 +32,8 @@ help:
 	@echo "                                local images and deploy/robot.laptop.yaml"
 	@echo "  make vehicle-px4-msgs         copy PX4's msg/srv into components/vehicle/px4_msgs"
 	@echo "  make vehicle-qgc              open QGroundControl from the running vehicle container"
-	@echo "  make sim-image                build castor-simulation:local (Isaac Sim, Isaac Lab, Pegasus, PX4, ROS 2, training)"
+	@echo "  make sim-image                build $(SIM_IMAGE) (Isaac Sim, Isaac Lab, Pegasus, PX4, ROS 2, training)"
+	@echo "  make sim-push | sim-pull      publish it to / fetch it from its private GHCR package (docker login ghcr.io first)"
 	@echo "  make sim-up | sim-shell | sim-down | sim-gui | sim-px4 | sim-train-smoke | sim-pegasus-ros2 | sim-own"
 	@echo ""
 	@echo "Components: $(COMPONENTS)"
@@ -89,12 +90,24 @@ vehicle-qgc:
 	$(STACK_ENV) $(PROD_COMPOSE) exec vehicle castor-qgc
 
 # ------------------------------------------------------------- simulation (GPU machine only)
+# NVIDIA's asset pack is mounted only when it is readable (an unplugged drive must not stop the container).
+SIM_ASSET_PACK ?= /mnt/isaac/isaacsim_assets
+CASTOR_ASSET_PACK ?= $(shell test -r $(SIM_ASSET_PACK)/Assets 2>/dev/null && echo $(SIM_ASSET_PACK))
+export CASTOR_ASSET_PACK
+# The one simulation image: built here, pushed to and pulled from its private GHCR package under the same name.
+SIM_IMAGE ?= ghcr.io/fyp-uav-entc-22/castor-simulation:latest
+export CASTOR_SIM_IMAGE := $(SIM_IMAGE)
 SIM_COMPOSE := docker compose -f docker/docker-compose.sim.yml
 SIM_EXEC := $(SIM_COMPOSE) exec simulation
 MARL_DIR := components/planning/MARL_cooperative_aerial_manipulation_ext
-.PHONY: sim-image sim-up sim-shell sim-down sim-gui sim-px4 sim-train-smoke sim-pegasus-ros2 sim-own dds-shm-clean
+.PHONY: sim-image sim-push sim-pull sim-up sim-shell sim-down sim-gui sim-px4 sim-train-smoke sim-pegasus-ros2 sim-own dds-shm-clean
 sim-image:
 	docker/build_simulation.sh
+# Private package: never make it public (NVIDIA's licence). Pushing needs a token with write:packages.
+sim-push:
+	docker push $(SIM_IMAGE)
+sim-pull:
+	docker pull $(SIM_IMAGE)
 sim-up:
 	$(SIM_COMPOSE) up -d
 sim-shell: sim-up
@@ -114,10 +127,18 @@ sim-train-smoke: sim-up
 	$(SIM_COMPOSE) exec -w /home/ws/$(MARL_DIR) simulation /isaac-sim/python.sh scripts/skrl/train.py \
 	  --task=Isaac-flycrane-payload-decentralized-hovering-v0 --headless --num_envs=8 --max_iterations=3 --seed=42 --algorithm=MAPPO; \
 	  s=$$?; $(MAKE) --no-print-directory sim-own; exit $$s
-# Pegasus S500s publishing drone<i>/state/* and drone<i>/sensors/* into the ROS graph (DRONES=1, 60 s).
-# From the host: source /opt/ros/<distro>/setup.bash && source docker/host_ros_env.sh && ros2 topic list
+# stack_sim's simulator: the model's rig (MODEL=<name>/<version>, default models/DEFAULT; the rig file it names in
+# components/simulation/assets/config) on the ground, one disarmed PX4 SITL per drone, until the window closes.
+# PX4 i waits for robot i+1's stack (components/simulation/stack_sim/stack_sim.sh up, with the same model).
+# Ground truth on sim/* and, with /clock, in each robot's domain.
+# Options: MODEL=, RIG=<file> (must match the model), HEADLESS=1, DURATION=s, PX4_BUILD=px4_sitl_default (default:
+# the RAPTOR build). Needs make sim-px4 once.
 sim-pegasus-ros2: sim-up
-	$(SIM_EXEC) /isaac-sim/python.sh components/simulation/tests/pegasus_ros2.py --headless --drones $(or $(DRONES),1)
+	@[ -n "$(HEADLESS)" ] || { command -v xhost >/dev/null && xhost +local: >/dev/null || echo "xhost not found; the GUI may not be allowed on the display"; }
+	$(SIM_EXEC) /isaac-sim/python.sh components/simulation/stack_sim/stack_sim_pegasus.py --duration $(or $(DURATION),0) \
+	  $(if $(MODEL),--model $(MODEL)) $(if $(RIG),--rig $(RIG)) $(if $(HEADLESS),--headless) \
+	  $(if $(PX4_BUILD),--build $(PX4_BUILD)); \
+	  s=$$?; $(MAKE) --no-print-directory sim-own; exit $$s
 # Fast DDS shared-memory segments left in /dev/shm by killed containers (root-owned); only unused ones go.
 dds-shm-clean:
 	docker run --rm --ipc host --entrypoint bash ghcr.io/fyp-uav-entc-22/castor-system:$(or $(CASTOR_TAG),local) -c 'source /opt/ros/jazzy/setup.bash && fastdds shm clean'
