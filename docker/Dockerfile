@@ -212,12 +212,15 @@ CMD ["ros2", "launch", "system_launch", "system.launch.py"]
 # ===================================================================== simulation
 # One image for everything that needs the GPU: Isaac Sim 5.1, Isaac Lab, Pegasus,
 # PX4 SITL (toolchain; built inside the container from the mounted checkout),
-# ROS 2 Jazzy, and the MARL training stack (skrl, MARL ext). Never pushed: NVIDIA's
-# licence forbids redistributing the base, so every machine builds it locally
-# with docker/build_simulation.sh. The repo is mounted at /home/ws at run time.
+# ROS 2 Jazzy, and the MARL training stack (skrl, MARL ext). Built with
+# docker/build_simulation.sh as ghcr.io/fyp-uav-entc-22/castor-simulation:latest,
+# and pushed (make sim-push) only to that private package, never anywhere public:
+# NVIDIA's licence forbids redistributing the base. The repo is mounted at
+# /home/ws at run time.
 #
 # Layers go from slowest-changing to fastest: OS packages, torch, Python
-# dependencies (resolved from package metadata only), small config files, and
+# dependencies (resolved from package metadata only; Isaac Lab's first, then
+# skrl's and the MARL ext's, which change more often), small config files, and
 # last the editable installs, which only point at the mounted repo. Editing
 # code needs no rebuild at all.
 #
@@ -265,21 +268,29 @@ RUN python3 -m venv /opt/px4-venv \
     && /opt/px4-venv/bin/pip install --no-cache-dir -r /tmp/px4-requirements.txt \
     && rm /tmp/px4-requirements.txt
 
-# Python dependencies of Isaac Lab, Pegasus, skrl and the MARL ext, resolved from
-# their metadata only (setup.py, extension.toml, stub packages): this layer only
-# rebuilds when a dependency list changes, never for a code edit.
-COPY --from=simmeta pkgs /opt/castor/sim-meta
-RUN cd /opt/castor/sim-meta \
-    && export PIP_CONSTRAINT=/opt/torch-constraints.txt \
-    && /isaac-sim/python.sh -m pip install --no-cache-dir toml "setuptools<81" \
-    && /isaac-sim/python.sh -m pip install --no-cache-dir --no-build-isolation flatdict==4.0.1 \
+# Python dependencies, resolved from package metadata only (setup.py,
+# extension.toml, stub packages): these layers rebuild when a dependency list
+# changes, never for a code edit. Two layers, so a change on the faster-moving
+# side (skrl, the MARL ext) does not download Isaac Lab's dependencies again.
+# Downloads go through a BuildKit cache mount, outside the image: a rebuilt
+# layer, or a retry after a dropped connection, fetches only what is new.
+COPY --from=simmeta isaaclab /opt/castor/sim-meta/IsaacLab
+RUN --mount=type=cache,id=castor-sim-pip,target=/root/.cache/pip,sharing=locked \
+    cd /opt/castor/sim-meta \
+    && export PIP_CONSTRAINT=/opt/torch-constraints.txt PIP_DEFAULT_TIMEOUT=60 PIP_RETRIES=10 \
+    && /isaac-sim/python.sh -m pip install toml "setuptools<81" \
+    && /isaac-sim/python.sh -m pip install --no-build-isolation flatdict==4.0.1 \
     && for p in isaaclab isaaclab_assets isaaclab_tasks isaaclab_rl isaaclab_mimic; do \
-         /isaac-sim/python.sh -m pip install --no-cache-dir "./IsaacLab/source/$p" || exit 1; done \
-    && /isaac-sim/python.sh -m pip install --no-cache-dir "./IsaacLab/source/isaaclab_rl[none]" \
-         ./skrl ./MARL_mav_carry_ext numpy scipy pyyaml pymavlink \
-    && /isaac-sim/python.sh -m pip uninstall -y isaaclab isaaclab_assets isaaclab_tasks isaaclab_rl \
-         isaaclab_mimic skrl MARL_mav_carry_ext \
-    && /isaac-sim/python.sh -m pip uninstall -y quadprog || true
+         /isaac-sim/python.sh -m pip install "./IsaacLab/source/$p" || exit 1; done \
+    && /isaac-sim/python.sh -m pip install "./IsaacLab/source/isaaclab_rl[none]" numpy scipy pyyaml pymavlink \
+    && /isaac-sim/python.sh -m pip uninstall -y isaaclab isaaclab_assets isaaclab_tasks isaaclab_rl isaaclab_mimic \
+    && { /isaac-sim/python.sh -m pip uninstall -y quadprog || true; }
+COPY --from=simmeta castor /opt/castor/sim-meta/castor
+RUN --mount=type=cache,id=castor-sim-pip,target=/root/.cache/pip,sharing=locked \
+    cd /opt/castor/sim-meta/castor \
+    && export PIP_CONSTRAINT=/opt/torch-constraints.txt PIP_DEFAULT_TIMEOUT=60 PIP_RETRIES=10 \
+    && /isaac-sim/python.sh -m pip install ./skrl ./MARL_mav_carry_ext \
+    && /isaac-sim/python.sh -m pip uninstall -y skrl MARL_mav_carry_ext
 
 # Small config files and helpers.
 COPY docker/fastdds_localhost.xml /opt/castor/fastdds_localhost.xml

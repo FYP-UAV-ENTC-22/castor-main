@@ -6,7 +6,7 @@
 #   isaac-shell                         # a shell next to Isaac (container mode)
 #
 # Which Isaac, in order (CASTOR_ISAAC=container|native forces one):
-#   1. container  the castor-simulation:local image (make sim-image). The container
+#   1. container  the simulation image (make sim-image or make sim-pull). The container
 #                 is started here (make sim-up); isaac-python runs
 #                 /isaac-sim/python.sh in it, in the same directory of the repo
 #                 (mounted at /home/ws), then gives root-owned output back
@@ -45,7 +45,7 @@
 
 CASTOR_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CASTOR_ENV="${CASTOR_ENV:-castor}"
-CASTOR_SIM_IMAGE="${CASTOR_SIM_IMAGE:-castor-simulation:local}"
+CASTOR_SIM_IMAGE="${CASTOR_SIM_IMAGE:-ghcr.io/fyp-uav-entc-22/castor-simulation:latest}"
 export CASTOR_ROOT
 export ISAACLAB_PATH="$CASTOR_ROOT/components/simulation/IsaacLab"
 export MARL_EXT_PATH="$CASTOR_ROOT/components/planning/MARL_cooperative_aerial_manipulation_ext"

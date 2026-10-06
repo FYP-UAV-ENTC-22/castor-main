@@ -1,5 +1,5 @@
 # The simulation container: Isaac Sim + Isaac Lab + Pegasus + PX4 SITL + ROS 2
-# Jazzy + training, one image (castor-simulation:local, docker/build_simulation.sh).
+# Jazzy + training, one image (ghcr.io/fyp-uav-entc-22/castor-simulation:latest: make sim-image or make sim-pull).
 # Laptop or GPU workstation only, never a Pi.
 #
 #   make sim-up / sim-shell / sim-down        headless; the repo is at /home/ws
@@ -11,7 +11,7 @@ name: castor-sim
 
 services:
   simulation:
-    image: castor-simulation:local
+    image: ${CASTOR_SIM_IMAGE:-ghcr.io/fyp-uav-entc-22/castor-simulation:latest}
     network_mode: host
     ipc: host
     gpus: all
