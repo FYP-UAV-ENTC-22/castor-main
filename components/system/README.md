@@ -13,9 +13,9 @@ Two nodes:
   gate; it commands nothing.
 - `mission` (temporary, the simplest form until the supervisor's mission trees
   replace it): take off, lift the payload with the team, wait for a goal, fly
-  the planning policy, hold, land. The sequence is the one the PX4 run in
-  `components/simulation/tests/marl_raptor` flew with one process for all three
-  drones, split across the drones:
+  the planning policy, hold, land. The sequence is the one Mugesram's PX4
+  harness (castor_marl_v1, removed after `241b700`) flew with one process for all
+  three drones, split across the drones:
   1. `/team/command` `takeoff`: PX4 Takeoff mode first, then arm (PX4 boots in
      Position mode, which needs sticks, and refuses to arm there without RC).
      PX4 climbs to `takeoff_height`, below where the cables go taut.

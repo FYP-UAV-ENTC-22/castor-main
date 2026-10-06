@@ -150,6 +150,8 @@ else
     warn "Installing skrl and the MARL extension (editable)"
     python -m pip install -e "$PLANNING_DIR/skrl"
     python -m pip install -e "$PLANNING_DIR/MARL_cooperative_aerial_manipulation_ext/exts/MARL_mav_carry_ext"
+    # checks an exported model package against its training trace (components/planning/tools/check_model.py)
+    python -m pip install onnxruntime "numpy==$(python -c 'import numpy; print(numpy.__version__)')"
 
     # A transitive dependency swapping torch out is the likeliest way for this
     # environment to end up subtly broken, so check instead of assuming.

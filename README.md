@@ -67,7 +67,8 @@ castor-main/
 │   └── simulation/           Isaac Sim based simulation
 │       ├── IsaacLab/         (fork) v2.3.0, patched for Isaac Sim 5.1
 │       ├── pegasus_simulator/  (fork) PX4 + ROS 2 bridge for Isaac Sim
-│       └── tests/            RAPTOR on Pegasus
+│       ├── assets/           S500 and payload rig generator, PX4 SITL settings
+│       └── stack_sim/        the onboard stacks of a simulated team, on Pegasus + PX4 SITL
 └── legacy/drone-ops/         retired ArduCopter spike, historical record only
 ```
 

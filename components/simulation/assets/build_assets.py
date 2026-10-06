@@ -13,7 +13,7 @@ numbers for the ext's controllers, which still hardcode the Falcon's).
 
 Writes generated/s500.usd and generated/rig_<vehicle>_n<N>_<cable>.usd (or --out). Open the rig file in Isaac Sim
 (File > Open) and press Play: with --pin_drones each drone is fixed to the world and the payload hangs; without it
-nothing drives the rotors, so everything falls. To fly it, use components/simulation/tests/raptor/raptor_payload.py.
+nothing drives the rotors, so everything falls. To fly it, use stack_sim (make sim-pegasus-ros2).
 """
 
 import argparse
