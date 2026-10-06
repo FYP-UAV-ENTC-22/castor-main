@@ -66,7 +66,7 @@ parser.add_argument("--goal_time", type=float, default=12.0)
 parser.add_argument("--lift_height", type=float, default=1.0, help="payload height above the ground after the lift")
 parser.add_argument("--lift_speed", type=float, default=0.15, help="m/s while the cables go taut and the payload lifts")
 parser.add_argument("--trained_on", choices=("falcon", "s500"), default="falcon",
-                    help="the task the policy in --models was trained on: sets the point given to the policy as the "
+                    help="the task whose policy is flown (models/<trained_on>/): sets the point given to the policy as the "
                          "drone's position, the step scale, the setpoint speed cap and the velocity filter. Give "
                          "px4_rig.py the same, for the rig. See the README")
 parser.add_argument("--step_scale", type=float, default=None,
@@ -82,14 +82,15 @@ parser.add_argument("--payload_filter", type=float, default=0.0, metavar="SECOND
 parser.add_argument("--velocity_filter", type=float, default=None, metavar="SECONDS",
                     help="time constant of a low-pass filter on the velocity feedforward; 0 = none. Default: 0.1 for "
                          "a Falcon policy, 0 for an S500 policy, which was trained with the feedforward as it is")
-parser.add_argument("--models", default=None, help="model package directory; default: models/DEFAULT")
+parser.add_argument("--models", default=None, help="model package directory; default: the --trained_on task's")
 parser.add_argument("--payload_port", type=int, default=14600)
 parser.add_argument("--goal_port", type=int, default=14601)
 parser.add_argument("--num_drones", type=int, default=3)
 args = parser.parse_args()
 
-args.models = args.models or MP.default_models()
 trained = MP.TRAINED_ON[args.trained_on]
+if args.models is None:
+    args.models = MP.models_dir(args.trained_on)
 if args.step_scale is None:
     args.step_scale = 0.015 if args.trained_on == "falcon" else trained["step_scale"]
 if args.max_speed is None:

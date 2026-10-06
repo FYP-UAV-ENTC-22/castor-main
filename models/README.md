@@ -16,6 +16,21 @@ A committed version never changes. A re-export, a retrain or a new flight settin
 `DEFAULT` then moves to it in its own commit. Identical files (the per-slot actors of a shared policy) are stored
 once by git. Checkpoints (`.pt`) stay in the MARL repo's logs, not here.
 
+## The packages
+
+| Package | Trained on | Rig (`rig.config`) | Flown with |
+|---|---|---|---|
+| `castor_hover_falcon/v1` (`DEFAULT`) | `Isaac-castor-payload-decentralized-hovering-v0`, Falcon drones | `payload_rig_marl.yaml`: 0.5 m disc, 2 m cables | step 0.015 (trained 0.05), velocity filter 0.1 s, point 0.03 m above the tie point |
+| `castor_hover_s500/v1` | `Isaac-castor-s500-payload-decentralized-hovering-v0`, S500 | `payload_rig_marl_s500.yaml`: 0.3 m disc, 3 m cables | the trained settings: step 0.02, speed cap 1 m/s, point at the centre of mass |
+
+A policy only works on the rig it was trained on, and the runner takes the rig's geometry (cable length, anchors)
+from the manifest for the lift and the hand-over check. In SIL the simulator has to build the same rig:
+
+```bash
+make sim-pegasus-ros2 RIG=payload_rig_marl_s500.yaml
+components/simulation/sil/sil.sh up --model castor_hover_s500/v1
+```
+
 ## What reads the manifest
 
 | Field | Used by |

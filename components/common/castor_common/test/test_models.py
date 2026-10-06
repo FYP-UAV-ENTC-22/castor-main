@@ -77,9 +77,23 @@ def test_missing_models_say_where_they_looked(tmp_path):
         models.find("bad/v1", roots=(str(tmp_path),))
 
 
+def repo_packages():
+    if not os.path.isdir(REPO_MODELS):
+        return []
+    return sorted(f"{name}/{version}" for name in os.listdir(REPO_MODELS)
+                  if os.path.isdir(os.path.join(REPO_MODELS, name))
+                  for version in os.listdir(os.path.join(REPO_MODELS, name))
+                  if os.path.isfile(os.path.join(REPO_MODELS, name, version, "model.yaml")))
+
+
 @pytest.mark.skipif(not os.path.isdir(REPO_MODELS), reason="the repo's models/ is not next to this checkout")
-def test_repo_default_model_is_complete():
-    m = models.find(roots=(REPO_MODELS,))
+def test_repo_default_model_exists():
+    assert models.find(roots=(REPO_MODELS,)).id in repo_packages()
+
+
+@pytest.mark.parametrize("model_id", repo_packages())
+def test_repo_model_is_complete(model_id):
+    m = models.find(model_id, roots=(REPO_MODELS,))
     team = m.manifest["policy"]["team_size"]
     for i in range(team):
         p = m.runner_parameters(team_size=team, team_index=i)

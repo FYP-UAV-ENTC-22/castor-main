@@ -21,7 +21,8 @@ frame, the angular one too: that is what the training environment feeds the poli
 Run it on its own to check all three pieces against a trace recorded in the training environment
 (scripts/tools/capture_policy_trace.py in the MARL repo); exits 1 on a mismatch:
 
-    python marl_policy.py                       # the package in models/DEFAULT at the repo root
+    python marl_policy.py                       # the Falcon task's policy: models/castor_hover_falcon/v1
+    python marl_policy.py --trained_on s500     # models/castor_hover_s500/v1
     python marl_policy.py --models ../../../../models/<name>/<version>
 """
 
@@ -40,12 +41,6 @@ sys.path.insert(0, os.path.join(HERE, ".deps" if sys.version_info[:2] == (3, 11)
 MODELS_ROOT = os.environ.get("CASTOR_MODELS_ROOT") or os.path.normpath(os.path.join(HERE, "../../../../models"))
 
 
-def default_models():
-    """The package directory models/DEFAULT names."""
-    with open(os.path.join(MODELS_ROOT, "DEFAULT")) as f:
-        return os.path.join(MODELS_ROOT, f.read().strip())
-
-
 FRAME_DIM = 45
 HISTORY = 3
 STEP_SCALE = 0.05  # m per policy step at unit action (setpoint_step_scale)
@@ -59,11 +54,19 @@ POLICY_DT = 0.02  # s: the policy runs at 50 Hz
 #               of mass (the S500 task reports base_link's)
 #   step_scale  setpoint_step_scale in training, m per unit action per step
 #   max_speed   setpoint_max_speed in training, m/s; None = no cap
+#   model       the exported policy of that task: a package under MODELS_ROOT
 TRAINED_ON = {
-    "falcon": {"rig": "payload_rig_marl.yaml", "point": "mount", "step_scale": 0.05, "max_speed": None},
-    "s500": {"rig": "payload_rig_marl_s500.yaml", "point": "com", "step_scale": 0.02, "max_speed": 1.0},
+    "falcon": {"rig": "payload_rig_marl.yaml", "point": "mount", "step_scale": 0.05, "max_speed": None,
+               "model": "castor_hover_falcon/v1"},
+    "s500": {"rig": "payload_rig_marl_s500.yaml", "point": "com", "step_scale": 0.02, "max_speed": 1.0,
+             "model": "castor_hover_s500/v1"},
 }
 POINT_ABOVE_MOUNT = 0.03  # m, for point = "mount"
+
+
+def models_dir(trained_on):
+    """The package the exported policy of that task is kept in."""
+    return os.path.join(MODELS_ROOT, TRAINED_ON[trained_on]["model"])
 
 
 def policy_point(trained_on, mount_local, com_local):
@@ -209,8 +212,9 @@ def check(trace_path, model_dir):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--models", default=None, help="model package directory; default: models/DEFAULT")
+    parser.add_argument("--trained_on", choices=tuple(TRAINED_ON), default="falcon")
+    parser.add_argument("--models", default=None, help="model package directory; default: the --trained_on task's")
     parser.add_argument("--trace", default=None)
     args = parser.parse_args()
-    args.models = args.models or default_models()
+    args.models = args.models or models_dir(args.trained_on)
     sys.exit(0 if check(args.trace or os.path.join(args.models, "policy_trace.npz"), args.models) else 1)
