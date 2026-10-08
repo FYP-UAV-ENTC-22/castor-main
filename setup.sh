@@ -66,7 +66,27 @@ fi
 warn "$(git -C "$ROOT" submodule status | wc -l) submodules checked out"
 [ "$RECURSIVE" -eq 1 ] || warn "nested submodules skipped; pass --recursive if you need PX4 firmware builds"
 
-# ------------------------------------------------------- 2. Isaac Sim link
+# ------------------------------------------------------- 2. developer docs
+
+if [ "$SKIP_DOCS" -eq 1 ]; then
+    say "Skipping developer docs (--skip-docs)"
+elif [ -d "$ROOT/dev-docs/.git" ]; then
+    say "Updating developer docs"
+    git -C "$ROOT/dev-docs" pull --quiet --ff-only || warn "could not fast-forward dev-docs; leaving as-is"
+    [ -x "$ROOT/dev-docs/scripts/link-docs.sh" ] && "$ROOT/dev-docs/scripts/link-docs.sh"
+else
+    say "Fetching developer docs"
+    if git clone --quiet "$DEV_DOCS_REPO" "$ROOT/dev-docs" 2>/dev/null; then
+        [ -x "$ROOT/dev-docs/scripts/link-docs.sh" ] && "$ROOT/dev-docs/scripts/link-docs.sh"
+        warn "developer docs installed in dev-docs/"
+    else
+        rm -rf "$ROOT/dev-docs"
+        warn "no access to castor-dev-docs, skipping."
+        warn "This is expected unless you are a member of the FYP-UAV-ENTC-22 org."
+    fi
+fi
+
+# ------------------------------------------------------- 3. Isaac Sim link
 
 say "Linking Isaac Sim"
 [ -d "$ISAACSIM_PATH" ] || die "Isaac Sim not found at $ISAACSIM_PATH
@@ -76,7 +96,7 @@ say "Linking Isaac Sim"
 ln -sfn "$ISAACSIM_PATH" "$ISAACLAB_DIR/_isaac_sim"
 warn "components/simulation/IsaacLab/_isaac_sim -> $ISAACSIM_PATH"
 
-# ------------------------------------------------------- 3. conda environment
+# ------------------------------------------------------- 4. conda environment
 
 if [ "$SKIP_ENV" -eq 1 ]; then
     say "Skipping conda environment (--skip-env)"
@@ -165,25 +185,6 @@ else
     unset PIP_CONSTRAINT
 fi
 
-# ------------------------------------------------------- 4. developer docs
-
-if [ "$SKIP_DOCS" -eq 1 ]; then
-    say "Skipping developer docs (--skip-docs)"
-elif [ -d "$ROOT/dev-docs/.git" ]; then
-    say "Updating developer docs"
-    git -C "$ROOT/dev-docs" pull --quiet --ff-only || warn "could not fast-forward dev-docs; leaving as-is"
-    [ -x "$ROOT/dev-docs/scripts/link-docs.sh" ] && "$ROOT/dev-docs/scripts/link-docs.sh"
-else
-    say "Fetching developer docs"
-    if git clone --quiet "$DEV_DOCS_REPO" "$ROOT/dev-docs" 2>/dev/null; then
-        [ -x "$ROOT/dev-docs/scripts/link-docs.sh" ] && "$ROOT/dev-docs/scripts/link-docs.sh"
-        warn "developer docs installed in dev-docs/"
-    else
-        rm -rf "$ROOT/dev-docs"
-        warn "no access to castor-dev-docs, skipping."
-        warn "This is expected unless you are a member of the FYP-UAV-ENTC-22 org."
-    fi
-fi
 
 # ------------------------------------------------------- done
 
