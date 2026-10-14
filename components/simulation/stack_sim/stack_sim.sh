@@ -2,7 +2,7 @@
 # stack_sim: the onboard stacks of a simulated team on one machine, one per simulated flight controller, exactly as
 # each drone's Pi would run them, plus a ground station. The simulator (make sim-pegasus-ros2) flies the drones.
 #
-#   components/simulation/stack_sim/stack_sim.sh up [--model NAME/VERSION|DIR] [--tag TAG] [--payload]
+#   components/simulation/stack_sim/stack_sim.sh up [--model NAME/VERSION|DIR] [--tag TAG] [--payload] [--own-state sim]
 #   components/simulation/stack_sim/stack_sim.sh status | down
 #
 # Mission (the system layer's mission node, from the ground station's domain 20):
@@ -18,6 +18,8 @@
 # drones is the rig's; the take-off height is the model's rig.takeoff_height, but never below the height where the
 # cables go taut minus px4_sitl.yaml's takeoff.taut_margin (CASTOR_TAKEOFF_HEIGHT replaces the model's, same floor).
 # Start the simulator with the same model (make sim-pegasus-ros2 MODEL=...; both default to models/DEFAULT).
+# Each drone flies on PX4's own estimate, which its localization places in the world frame from the datum in
+# px4_sitl.yaml (the simulated world's origin); --own-state sim flies on the simulator's ground truth instead.
 #
 # What makes it faithful to N separate Pis on one host:
 #   - every robot gets its own ROS 2 domain (drone i: 20+i, payload: after the drones), so no DDS traffic passes
@@ -40,7 +42,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../../.." && pwd)"
 STATE="${CASTOR_STACK_SIM_DIR:-$ROOT/.stack_sim}"
 COMPOSE=(docker compose -f "$ROOT/docker/docker-compose.prod.yml" -f "$ROOT/docker/docker-compose.stack_sim.yml")
-PAYLOAD=0 TAG="${CASTOR_TAG:-local}" MODEL=""
+PAYLOAD=0 TAG="${CASTOR_TAG:-local}" MODEL="" OWN_STATE=localization
 
 cmd="${1:-}"; shift || true
 if [ "$cmd" != goal ]; then
@@ -49,6 +51,7 @@ if [ "$cmd" != goal ]; then
             --payload) PAYLOAD=1; shift ;;
             --tag) TAG="$2"; shift 2 ;;
             --model) MODEL="$2"; shift 2 ;;
+            --own-state) OWN_STATE="$2"; shift 2 ;;
             *) echo "unknown option '$1'" >&2; exit 2 ;;
         esac
     done
@@ -90,6 +93,8 @@ CASTOR_RUN_DIR=$dir/run
 CASTOR_LOG_DIR=$dir/log
 CASTOR_MODELS_DIR=$dir/models
 CASTOR_TAKEOFF_HEIGHT=$TAKEOFF_HEIGHT
+CASTOR_DATUM=$DATUM
+CASTOR_OWN_STATE=$OWN_STATE
 EOF
     # PX4 SITL instance (id-1): same domain, own agent port, no namespace (/fmu/... as on hardware)
     printf '%s ROS_DOMAIN_ID=%s PX4_UXRCE_DDS_PORT=%s PX4_UXRCE_DDS_NS=\n' "$((id - 1))" "$dom" "$aport" >> "$STATE/px4.env"
@@ -104,8 +109,10 @@ up)
     plan="$("${check[@]}")" || exit 2
     MODEL_ID=$(sed -n 's/^MODEL_ID=//p' <<<"$plan"); MODEL_DIR=$(sed -n 's/^MODEL_DIR=//p' <<<"$plan")
     RIG=$(sed -n 's/^RIG=//p' <<<"$plan"); DRONES=$(sed -n 's/^DRONES=//p' <<<"$plan")
-    TAKEOFF_HEIGHT=$(sed -n 's/^TAKEOFF_HEIGHT=//p' <<<"$plan")
+    TAKEOFF_HEIGHT=$(sed -n 's/^TAKEOFF_HEIGHT=//p' <<<"$plan"); DATUM=$(sed -n 's/^DATUM=//p' <<<"$plan")
+    case "$OWN_STATE" in localization | sim) ;; *) echo "--own-state must be localization or sim" >&2; exit 2 ;; esac
     echo "==> model $MODEL_ID ($MODEL_DIR), rig $RIG, $DRONES drones, take-off height $TAKEOFF_HEIGHT m"
+    echo "==> world datum $DATUM, drone state from $OWN_STATE"
     # Stacks from an earlier run (their bridges mount run/ directories that are about to be replaced).
     [ -d "$STATE" ] && "$0" down >/dev/null 2>&1 || true
     rm -rf "$STATE"; mkdir -p "$STATE/gcs/run"
@@ -156,5 +163,5 @@ down)
     for d in $(robots); do "${COMPOSE[@]}" --env-file "$d/stack.env" down; done
     CASTOR_TAKEOFF_HEIGHT=0 "${COMPOSE[@]}" -p castor-stack-sim-gcs down
     ;;
-*) sed -n '2,36p' "$0" | sed 's/^# \?//'; exit 2 ;;
+*) sed -n '2,38p' "$0" | sed 's/^# \?//'; exit 2 ;;
 esac

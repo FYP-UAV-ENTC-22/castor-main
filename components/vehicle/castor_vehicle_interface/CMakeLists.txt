@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(nav_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(px4_msgs REQUIRED)
 find_package(castor_interfaces REQUIRED)
 
@@ -19,6 +20,7 @@ target_include_directories(vehicle_interface PRIVATE
 target_link_libraries(vehicle_interface PRIVATE
   rclcpp::rclcpp
   ${nav_msgs_TARGETS}
+  ${sensor_msgs_TARGETS}
   ${px4_msgs_TARGETS}
   ${castor_interfaces_TARGETS})
 

@@ -130,9 +130,10 @@ struct Setpoint {
   bool leashed{false};  // the leash bound on the last step
 };
 
-// max_speed <= 0: no cap (setpoint_max_speed None in the env).
+// max_speed <= 0: no cap (setpoint_max_speed None in the env). step_gain scales the step after the cap: 1 in the
+// env, below 1 only for the onboard drone speed limit (flight.hpp).
 inline void advance(Setpoint &sp, const std::array<float, 3> &action, const Vec3 &drone_position, double step_scale,
-                    double step_dt, double leash, double max_speed = 0.0) {
+                    double step_dt, double leash, double max_speed = 0.0, double step_gain = 1.0) {
   Vec3 inc{};
   for (int i = 0; i < 3; ++i) inc[i] = static_cast<double>(action[i]) * step_scale;
   if (max_speed > 0.0) {
@@ -140,6 +141,7 @@ inline void advance(Setpoint &sp, const std::array<float, 3> &action, const Vec3
     const double k = std::fmin(max_speed * step_dt / std::fmax(norm(inc), 1e-9), 1.0);
     for (double &x : inc) x *= k;
   }
+  for (double &x : inc) x *= step_gain;
   for (int i = 0; i < 3; ++i) {
     sp.position[i] += inc[i];
     sp.velocity[i] = inc[i] / step_dt;

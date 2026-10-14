@@ -3,8 +3,12 @@
 // and for the steps that get the payload into the state the policy trained from.
 //
 //   <ns>/planning/command  castor_interfaces/PlanningCommand   from the system layer: mode + payload goal
-//   own state, payload pose (world frame; Isaac ground truth in stack_sim for now, localization later)
-//   <ns>/vehicle/odom      the vehicle's own local frame, to express setpoints in it
+//   <ns>/localization/odom, map_to_odom   own state in the world frame (PX4's estimate) and PX4's local frame
+//                          in it, to express setpoints in that frame
+//   payload pose           world frame (payload_state_prefix; in stack_sim the simulator's model of the payload's
+//                          estimate over Wi-Fi)
+//   own_state_source "sim": own state from the simulator's ground truth instead (own_state_prefix), setpoints
+//                          through <ns>/vehicle/odom. stack_sim only, to compare against.
 //   -> <ns>/vehicle/setpoint castor_interfaces/PositionSetpoint  at rate_hz while active
 //   -> <ns>/planning/status  castor_interfaces/PolicyStatus      1 Hz
 //
@@ -50,6 +54,7 @@
 #include "castor_policy/lift.hpp"
 #include "castor_policy/team.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
+#include "geometry_msgs/msg/transform_stamped.hpp"
 #include "geometry_msgs/msg/twist_stamped.hpp"
 #include "nav_msgs/msg/odometry.hpp"
 #include "rclcpp/rclcpp.hpp"
@@ -104,6 +109,9 @@ public:
     point_local_ = vec3_param("policy_point_local").value_or(Vec3{0.0, 0.0, 0.0});
     velocity_filter_s_ = declare_parameter<double>("velocity_filter_s", 0.0);
     velocity_gain_ = declare_parameter<double>("velocity_gain", 1.0);
+    // The task's drone speed limits (flight.hpp speed_gain); 0 = none.
+    speed_soft_ = declare_parameter<double>("drone_speed_soft", 0.0);
+    speed_hard_ = declare_parameter<double>("drone_speed_limit", 0.0);
     goal_lo_ = vec3_param("goal_box_min");
     goal_hi_ = vec3_param("goal_box_max");
     // "Goal reached", the env's goal_achieved_range / goal_achieved_ori_range.
@@ -122,8 +130,14 @@ public:
     lift_cfg_.speed = declare_parameter<double>("lift_speed", lift_cfg_.speed);
     lift_cfg_.accel = declare_parameter<double>("lift_accel", lift_cfg_.accel);
     lift_cfg_.max_climb = declare_parameter<double>("lift_max_climb", handover_cfg_.cable_length + 1.5);
-    // World-frame state. stack_sim: the simulator's ground truth, published into this robot's domain.
-    const auto own = declare_parameter<std::string>("own_state_prefix", "/sim/" + ns + "/state");
+    // World-frame state: own from localization (PX4's estimate), or from the simulator's ground truth.
+    own_source_ = declare_parameter<std::string>("own_state_source", "localization");
+    if (own_source_ != "localization" && own_source_ != "sim") {
+      throw std::invalid_argument("own_state_source must be localization or sim, not '" + own_source_ + "'");
+    }
+    const std::string root = ns.empty() ? "" : "/" + ns;
+    const auto own_sim = declare_parameter<std::string>("own_state_prefix", "/sim/" + ns + "/state");
+    const auto own = own_source_ == "sim" ? own_sim : root + "/localization";
     const auto payload = declare_parameter<std::string>("payload_state_prefix", "/sim/payload/state");
 
     one_hot_ = castor_policy::one_hot(team_size_, team_index_);  // throws on a bad team config
@@ -145,19 +159,26 @@ public:
       set_fifo(fifo_priority);
     }
 
-    const std::string root = ns.empty() ? "" : "/" + ns;
     const auto qos = rclcpp::SensorDataQoS();
-    own_pose_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
-      own + "/pose", qos, [this](const geometry_msgs::msg::PoseStamped &m) { own_pose_ = {m, Clock::now()}; });
-    own_twist_sub_ = create_subscription<geometry_msgs::msg::TwistStamped>(
-      own + "/twist", qos, [this](const geometry_msgs::msg::TwistStamped &m) { own_twist_ = {m, Clock::now()}; });
-    own_twist_w_sub_ = create_subscription<geometry_msgs::msg::TwistStamped>(
-      own + "/twist_inertial", qos,
-      [this](const geometry_msgs::msg::TwistStamped &m) { own_twist_w_ = {m, Clock::now()}; });
+    if (own_source_ == "sim") {
+      own_pose_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
+        own + "/pose", qos, [this](const geometry_msgs::msg::PoseStamped &m) { own_pose_ = {m, Clock::now()}; });
+      own_twist_sub_ = create_subscription<geometry_msgs::msg::TwistStamped>(
+        own + "/twist", qos, [this](const geometry_msgs::msg::TwistStamped &m) { own_twist_ = {m, Clock::now()}; });
+      own_twist_w_sub_ = create_subscription<geometry_msgs::msg::TwistStamped>(
+        own + "/twist_inertial", qos,
+        [this](const geometry_msgs::msg::TwistStamped &m) { own_twist_w_ = {m, Clock::now()}; });
+      odom_sub_ = create_subscription<nav_msgs::msg::Odometry>(
+        root + "/vehicle/odom", 10, [this](const nav_msgs::msg::Odometry &m) { odom_ = {m, Clock::now()}; });
+    } else {
+      world_odom_sub_ = create_subscription<nav_msgs::msg::Odometry>(
+        own + "/odom", 10, [this](const nav_msgs::msg::Odometry &m) { world_odom_ = {m, Clock::now()}; });
+      map_to_odom_sub_ = create_subscription<geometry_msgs::msg::TransformStamped>(
+        own + "/map_to_odom", rclcpp::QoS(1).transient_local(),
+        [this](const geometry_msgs::msg::TransformStamped &m) { on_map_to_odom(m); });
+    }
     payload_sub_ = create_subscription<geometry_msgs::msg::PoseStamped>(
       payload + "/pose", qos, [this](const geometry_msgs::msg::PoseStamped &m) { on_payload(m); });
-    odom_sub_ = create_subscription<nav_msgs::msg::Odometry>(
-      root + "/vehicle/odom", 10, [this](const nav_msgs::msg::Odometry &m) { odom_ = {m, Clock::now()}; });
     command_sub_ = create_subscription<castor_interfaces::msg::PlanningCommand>(
       "command", 10, [this](const castor_interfaces::msg::PlanningCommand &m) { command_ = {m, Clock::now()}; });
 
@@ -279,13 +300,54 @@ private:
       if (!obs_ok_) return "model input width does not match the team";
       if (action_dim_ != 3) return "model does not output a 3-D position increment";
     }
-    if (!fresh(own_pose_, now, state_timeout_s_) || !fresh(own_twist_, now, state_timeout_s_) ||
-        !fresh(own_twist_w_, now, state_timeout_s_)) {
-      return "own state stale";
-    }
+    if (!own_fresh(now)) return "own state stale";
     if (mode != C::STEADY && !fresh(payload_pose_, now, state_timeout_s_)) return "payload pose stale";
-    if (!fresh(odom_, now, state_timeout_s_)) return "vehicle odometry stale";
+    if (own_source_ == "sim") {
+      if (!fresh(odom_, now, state_timeout_s_)) return "vehicle odometry stale";
+    } else if (!map_to_odom_) {
+      return "no world frame from localization (datum, or PX4 without a global position)";
+    }
     return "";
+  }
+
+  bool own_fresh(Clock::time_point now) const {
+    if (own_source_ != "sim") return fresh(world_odom_, now, state_timeout_s_);
+    return fresh(own_pose_, now, state_timeout_s_) && fresh(own_twist_, now, state_timeout_s_) &&
+           fresh(own_twist_w_, now, state_timeout_s_);
+  }
+
+  // This drone's body origin in the world frame, velocities in the world frame too (as the env observes them).
+  BodyState own_state() const {
+    BodyState own;
+    if (own_source_ == "sim") {
+      const auto &pose = own_pose_->msg.pose;
+      own.position = vec(pose.position);
+      own.orientation = quat(pose.orientation);
+      own.linear_velocity = vec(own_twist_w_->msg.twist.linear);
+      // Pegasus' twist carries body-frame rates.
+      own.angular_velocity =
+        castor_policy::apply(castor_policy::rotation(own.orientation), vec(own_twist_->msg.twist.angular));
+      return own;
+    }
+    const auto &o = world_odom_->msg;
+    own.position = vec(o.pose.pose.position);
+    own.orientation = quat(o.pose.pose.orientation);
+    const auto r = castor_policy::rotation(own.orientation);  // nav_msgs/Odometry: twist in the body frame
+    own.linear_velocity = castor_policy::apply(r, vec(o.twist.twist.linear));
+    own.angular_velocity = castor_policy::apply(r, vec(o.twist.twist.angular));
+    return own;
+  }
+
+  // PX4's local frame in the world frame. A move (PX4 reset its origin) re-anchors the setpoint at the drone.
+  void on_map_to_odom(const geometry_msgs::msg::TransformStamped &m) {
+    const auto &t = m.transform;
+    const auto frame = castor_policy::LocalFrame::from(vec(t.translation), castor_policy::yaw_of(quat(t.rotation)),
+                                                       {0.0, 0.0, 0.0}, 0.0);
+    if (map_to_odom_ && frame.world_anchor != map_to_odom_->world_anchor) {
+      RCLCPP_WARN(get_logger(), "the vehicle's local frame moved in the world frame");
+      deactivate("local frame moved");
+    }
+    map_to_odom_ = frame;
   }
 
   // The commanded goal position, clamped into the box the policy saw in training when the model gives one.
@@ -309,7 +371,7 @@ private:
   void update_handover(Clock::time_point now) {
     cable_span_ = payload_z_ = -1.0;
     handover_ = {};
-    const bool own = fresh(own_pose_, now, state_timeout_s_);
+    const bool own = own_fresh(now);
     const bool load = fresh(payload_pose_, now, state_timeout_s_);
     if (load) payload_z_ = payload_pose_->msg.pose.position.z;
     if (!rig_mount_ || !rig_anchor_ || handover_cfg_.cable_length <= 0.0) {
@@ -320,9 +382,9 @@ private:
       handover_.reason = !own ? "own state stale" : "payload pose stale";
       return;
     }
-    const auto &d = own_pose_->msg.pose;
+    const BodyState d = own_state();
     const auto &p = payload_pose_->msg.pose;
-    cable_span_ = castor_policy::cable_span(vec(d.position), quat(d.orientation), *rig_mount_, vec(p.position),
+    cable_span_ = castor_policy::cable_span(d.position, d.orientation, *rig_mount_, vec(p.position),
                                             quat(p.orientation), *rig_anchor_);
     handover_ = castor_policy::handover_check(cable_span_, payload_z_, handover_cfg_);
   }
@@ -406,18 +468,17 @@ private:
       return;
     }
 
-    const auto &pose = own_pose_->msg.pose;
-    BodyState own;
-    own.position = vec(pose.position);
-    own.orientation = quat(pose.orientation);
-    own.linear_velocity = vec(own_twist_w_->msg.twist.linear);
-    // Pegasus' twist carries body-frame rates; the env observes world-frame ones.
-    own.angular_velocity = castor_policy::apply(castor_policy::rotation(own.orientation), vec(own_twist_->msg.twist.angular));
+    const BodyState own = own_state();
 
     if (!hold_valid_) {
-      const auto &o = odom_->msg.pose.pose;
-      local_ = castor_policy::LocalFrame::from(own.position, castor_policy::yaw_of(own.orientation), vec(o.position),
-                                               castor_policy::yaw_of(quat(o.orientation)));
+      if (own_source_ == "sim") {
+        // from one simultaneous pair of poses: the simulator's and PX4's
+        const auto &o = odom_->msg.pose.pose;
+        local_ = castor_policy::LocalFrame::from(own.position, castor_policy::yaw_of(own.orientation), vec(o.position),
+                                                 castor_policy::yaw_of(quat(o.orientation)));
+      } else {
+        local_ = *map_to_odom_;
+      }
       hold_ = {};
       hold_.position = own.position;
       hold_.yaw = castor_policy::yaw_of(own.orientation);
@@ -469,8 +530,8 @@ private:
       history_.clear();
       policy_pending_ = false;
       RCLCPP_INFO(get_logger(), "policy: started at (%.2f, %.2f, %.2f), yaw %.2f; step %.3f m, speed cap %.2f m/s, "
-                  "velocity filter %.2f s", point.position[0], point.position[1], point.position[2], sp_.yaw,
-                  step_scale_, max_speed_, velocity_filter_s_);
+                  "velocity filter %.2f s, drone speed limit %.2f to %.2f m/s", point.position[0], point.position[1],
+                  point.position[2], sp_.yaw, step_scale_, max_speed_, velocity_filter_s_, speed_soft_, speed_hard_);
     }
     const Vec3 goal = goal_position();
     if (goal != last_goal_) {
@@ -502,7 +563,14 @@ private:
       return false;
     }
 
-    castor_policy::advance(sp_, {action[0], action[1], action[2]}, point.position, step_scale_, dt, leash_, max_speed_);
+    const double speed = castor_policy::norm(own.linear_velocity);
+    const double gain = castor_policy::speed_gain(speed, speed_soft_, speed_hard_);
+    if (gain < 1.0) {
+      ++speed_limited_steps_;
+      max_limited_speed_ = std::max(max_limited_speed_, speed);
+    }
+    castor_policy::advance(sp_, {action[0], action[1], action[2]}, point.position, step_scale_, dt, leash_, max_speed_,
+                           gain);
     leash_steps_ += sp_.leashed ? 1 : 0;
     const Vec3 v{sp_.velocity[0] * velocity_gain_, sp_.velocity[1] * velocity_gain_, sp_.velocity[2] * velocity_gain_};
     filtered_velocity_ = castor_policy::low_pass(filtered_velocity_, v, dt, velocity_filter_s_);
@@ -585,6 +653,13 @@ private:
       RCLCPP_WARN(get_logger(), "setpoint leash bound on %u steps in the last second", leash_steps_);
     }
     leash_steps_ = 0;
+    if (active_ && speed_limited_steps_ > 0) {
+      RCLCPP_WARN(get_logger(), "drone speed limit: the setpoint step was reduced on %u steps in the last second "
+                  "(up to %.2f m/s; the limit is %.2f to %.2f m/s)", speed_limited_steps_, max_limited_speed_,
+                  speed_soft_, speed_hard_);
+    }
+    speed_limited_steps_ = 0;
+    max_limited_speed_ = 0.0;
     status_pub_->publish(s);
     steps_ = 0;
     max_late_ms_ = 0.0;
@@ -597,6 +672,9 @@ private:
   std::optional<rclcpp::Time> last_payload_stamp_;
   double rate_hz_{50.0}, step_scale_{0.05}, leash_{1.5}, goal_pos_tol_{0.3}, goal_ori_tol_{0.4};
   double max_speed_{0.0}, velocity_filter_s_{0.0}, velocity_gain_{1.0};
+  double speed_soft_{0.0}, speed_hard_{0.0}, max_limited_speed_{0.0};
+  uint32_t speed_limited_steps_{0};
+  std::string own_source_{"localization"};
   Vec3 point_local_{}, filtered_velocity_{}, last_goal_{};
   std::optional<Vec3> goal_lo_, goal_hi_;
   double command_timeout_s_{0.5}, state_timeout_s_{0.2};
@@ -625,7 +703,8 @@ private:
 
   std::optional<Stamped<geometry_msgs::msg::PoseStamped>> own_pose_, payload_pose_;
   std::optional<Stamped<geometry_msgs::msg::TwistStamped>> own_twist_, own_twist_w_;
-  std::optional<Stamped<nav_msgs::msg::Odometry>> odom_;
+  std::optional<Stamped<nav_msgs::msg::Odometry>> odom_, world_odom_;
+  std::optional<castor_policy::LocalFrame> map_to_odom_;
   std::optional<Stamped<castor_interfaces::msg::PlanningCommand>> command_;
 
   Clock::duration period_{};
@@ -643,7 +722,8 @@ private:
 
   rclcpp::Subscription<geometry_msgs::msg::PoseStamped>::SharedPtr own_pose_sub_, payload_sub_;
   rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr own_twist_sub_, own_twist_w_sub_;
-  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_;
+  rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr odom_sub_, world_odom_sub_;
+  rclcpp::Subscription<geometry_msgs::msg::TransformStamped>::SharedPtr map_to_odom_sub_;
   rclcpp::Subscription<castor_interfaces::msg::PlanningCommand>::SharedPtr command_sub_;
   rclcpp::Publisher<castor_interfaces::msg::PositionSetpoint>::SharedPtr setpoint_pub_;
   rclcpp::Publisher<castor_interfaces::msg::PolicyStatus>::SharedPtr status_pub_;

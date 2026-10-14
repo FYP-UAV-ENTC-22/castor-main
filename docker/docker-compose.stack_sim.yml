@@ -3,9 +3,13 @@
 #   vehicle   forwards setpoints and commands to its PX4 SITL instance, so the mission node can fly it
 #   system    the mission node times its states on the simulator's /clock (simulated time, PX4's time)
 #   planning  one policy step per payload sample, which the simulator sends every 1/rate of simulated time
+#   localization  the datum is the simulated world's origin
 #
 #   CASTOR_TAKEOFF_HEIGHT   metres above home for PX4's take-off; stack_sim.sh sets it (components/simulation/stack_sim/
 #                           rig_check.py: the model's rig.takeoff_height, never below the cables' taut height - margin)
+#   CASTOR_DATUM            <latitude>,<longitude>,<altitude> of the world's origin; stack_sim.sh sets it from
+#                           components/simulation/assets/config/px4_sitl.yaml (datum)
+#   CASTOR_OWN_STATE        localization (default: PX4's estimate) or sim (the simulator's ground truth)
 
 services:
   vehicle:
@@ -15,4 +19,7 @@ services:
     command: ["ros2", "launch", "system_launch", "system.launch.py",
               "takeoff_height:=${CASTOR_TAKEOFF_HEIGHT:?stack_sim.sh sets CASTOR_TAKEOFF_HEIGHT}", "use_sim_time:=true"]
   planning:
-    command: ["ros2", "launch", "planning_launch", "planning.launch.py", "step_trigger:=payload", "use_sim_time:=true"]
+    command: ["ros2", "launch", "planning_launch", "planning.launch.py", "step_trigger:=payload", "use_sim_time:=true",
+              "own_state:=${CASTOR_OWN_STATE:-localization}"]
+  localization:
+    command: ["ros2", "launch", "localization_launch", "localization.launch.py", "datum:=${CASTOR_DATUM:-}"]

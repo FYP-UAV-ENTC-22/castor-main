@@ -11,7 +11,7 @@ description: >-
 
 source:
   repo: FYP-UAV-ENTC-22/MARL_cooperative_aerial_manipulation_ext
-  commit: null           # the S500 task is not pushed to the MARL repo yet; set this when it is
+  commit: a241bdb        # branch raptor_v2_flycrane
   task: Isaac-castor-s500-payload-decentralized-hovering-v0
   experiment: logs/skrl/mappo_castor_s500_hover (204,800 steps)
   checkpoint: best_agent.pt
@@ -50,6 +50,10 @@ flight:                  # what the onboard runner uses (castor_policy parameter
   setpoint_leash: 1.5
   velocity_filter_s: 0.0
   velocity_gain: 1.0
+  # The task's drone speed limits: training penalises a drone above the soft one and ends the episode at the hard
+  # one. Onboard the setpoint's step shrinks from the soft limit and stops at the hard one.
+  drone_speed_soft: 1.8
+  drone_speed_limit: 2.0
   goal_box:                # payload goal positions seen in training, world frame; goals outside are clamped
     min: [-1.0, -1.0, 0.5]
     max: [1.0, 1.0, 1.5]

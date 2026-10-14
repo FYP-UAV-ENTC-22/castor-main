@@ -22,6 +22,9 @@ once by git. Checkpoints (`.pt`) stay in the MARL repo's logs, not here.
 |---|---|---|---|
 | `castor_hover_falcon/v1` | `Isaac-castor-payload-decentralized-hovering-v0`, Falcon drones | `payload_rig_marl.yaml`: 0.5 m disc, 2 m cables | step 0.015 (trained 0.05), velocity filter 0.1 s, point 0.03 m above the tie point |
 | `castor_hover_s500/v1` (`DEFAULT`) | `Isaac-castor-s500-payload-decentralized-hovering-v0`, S500 | `payload_rig_marl_s500.yaml`: 0.3 m disc, 3 m cables | the trained settings: step 0.02, speed cap 1 m/s, point at the centre of mass |
+| `castor_hover_s500/v2` | `Isaac-castor-s500-px4-payload-decentralized-hovering-v0`, S500 with a model of the flight stack (RAPTOR at 400 Hz on PX4's estimate, payload estimate over Wi-Fi) | `payload_rig_marl_s500.yaml` | the trained settings; the point is the body origin. Interim checkpoint (step 79,900 of 204,800) |
+| `castor_hover_s500/v3` | the same task, continued with a bonus for holding still at the goal | `payload_rig_marl_s500.yaml` | the trained settings. Interim checkpoint (step 115,000 of 204,800), no trace yet |
+| `castor_hover_s500/v4` | the same continued run, finished (204,800 steps) | `payload_rig_marl_s500.yaml` | the trained settings. No trace yet |
 
 A policy only works on the rig it was trained on, and the runner takes the rig's geometry (cable length, anchors)
 from the manifest for the lift and the hand-over check. In stack_sim the simulator builds the rig the manifest names
@@ -38,7 +41,7 @@ components/simulation/stack_sim/stack_sim.sh up --model castor_hover_falcon/v1
 |---|---|
 | `policy.slots[i]` | `castor_policy` on the drone with `team.index = i` |
 | `policy.frame_dim`, `history`, `rate_hz`, `point_local` | `castor_policy`: observation width, loop rate, the point given to the policy as the drone's position |
-| `flight.*` | `castor_policy`: step scale, speed cap, leash, velocity filter, goal clamp |
+| `flight.*` | `castor_policy`: step scale, speed cap, leash, velocity filter, drone speed limits (optional), goal clamp |
 | `rig.*` | `castor_policy`: cable span for the hand-over check, lift height; stack_sim: which rig to simulate, and the take-off height (never below the cables' taut height minus a margin) |
 | `training.*` | reference only, and the parity check in `components/planning/tools/check_model.py` |
 

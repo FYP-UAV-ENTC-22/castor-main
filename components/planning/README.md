@@ -32,9 +32,13 @@ climbs until the payload hangs at the model's lift height, `policy` runs the
 MARL policy; `off` (or a stale command) publishes nothing and RAPTOR holds
 position. In every mode it reports the hand-over check (own cable taut, payload
 clear of the ground) from the model's rig geometry.
-World-frame state comes from `own_state_prefix` / `payload_state_prefix`, for now
-the simulator's ground truth. `<ns>/planning/status` reports whether it is active,
-why not, and the goal errors.
+Its own state is PX4's estimate in the world frame, from the localization
+component (`<ns>/localization/odom`), and it turns its world-frame setpoints back
+into PX4's frame with `<ns>/localization/map_to_odom`; without them it does not
+fly. The payload pose comes from `payload_state_prefix`: in stack_sim the
+simulator's model of the payload's estimate over Wi-Fi. `own_state:=sim` takes
+the simulator's ground truth for the drone instead (stack_sim only).
+`<ns>/planning/status` reports whether it is active, why not, and the goal errors.
 
 The policy is a versioned model package from [`models/`](../../models) at the
 repo root, baked into the planning image and overridable by mounting
@@ -43,4 +47,6 @@ repo root, baked into the planning image and overridable by mounting
 manifest says how to fly the policy on this airframe (`flight.hpp`): the point
 on the drone the policy calls its position (its setpoint is moved back to the
 body origin for RAPTOR), the step scale, an optional speed cap, a low-pass on
-the velocity feedforward, and the box goals are clamped into.
+the velocity feedforward, the box goals are clamped into, and the task's drone
+speed limits: the setpoint's step shrinks above the soft limit and stops at the
+hard one, where training would have ended the episode.

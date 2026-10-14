@@ -8,6 +8,7 @@
 #                       the simulated rotors use)
 #   MPC_THR_HOVER       hover throttle with the drone's share of the payload, from its mass and thrust curve
 #   IMU_GYRO_RATEMAX    the physics rate (RAPTOR build only)
+#   IMU_INTEG_RATE      the physics rate (lockstep needs the estimator to run on every simulated IMU sample)
 
 params:                    # every build
   COM_RC_IN_MODE: 4        # no sticks: the mission arms in Takeoff mode, never in a manual one
@@ -29,6 +30,7 @@ gps:
   # Pegasus GPS sensor settings for the rtk model. Pegasus' defaults model a metre-level receiver whose random walk
   # lets the drones' estimates drift apart by more than the formation tolerates. ("sattelites" is Pegasus' spelling.)
   rtk_sensor:
+    update_rate: 5.0       # Hz: fixes per second of the F9P as PX4 runs it (Pegasus' default is one per physics step)
     eph: 0.02
     epv: 0.03
     fix_type: 6
@@ -43,6 +45,14 @@ gps:
     EKF2_HGT_REF: 1
     EKF2_GPS_P_NOISE: 0.05
     EKF2_GPS_V_NOISE: 0.1
+
+datum:
+  # Where the simulated world's origin is on the globe. The simulated receivers report fixes relative to it, and
+  # every drone's localization is given the same point (stack_sim.sh: CASTOR_DATUM), so that each PX4's local
+  # frame, which starts wherever its estimator did, can be placed in the one world frame the policy works in.
+  latitude: 38.736832      # deg (Pegasus' default origin)
+  longitude: -9.137977     # deg
+  altitude: 90.0           # m AMSL
 
 takeoff:
   # PX4's take-off height is never below the height where the cables go taut minus this margin, so the drones do not

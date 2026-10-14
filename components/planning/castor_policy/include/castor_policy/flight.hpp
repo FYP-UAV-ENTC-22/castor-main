@@ -7,6 +7,9 @@
 //             RAPTOR flies the body origin, so the setpoint is moved back by the same offset.
 //   filter    a first-order low-pass on the velocity feedforward: the raw one (increment / dt) rocks the S500.
 //   goal box  goals outside the positions seen in training are clamped into them.
+//   speed     training penalises a drone flying faster than a soft limit and ends the episode at a hard one, so
+//             the policy has never flown beyond it. Onboard nothing resets: the setpoint's step shrinks from the
+//             soft limit and stops at the hard one, and RAPTOR brakes the drone toward a setpoint that waits.
 
 #pragma once
 
@@ -49,6 +52,14 @@ inline Vec3 low_pass(const Vec3 &previous, const Vec3 &x, double dt, double tau)
   const double a = dt / (tau + dt);
   return {previous[0] + a * (x[0] - previous[0]), previous[1] + a * (x[1] - previous[1]),
           previous[2] + a * (x[2] - previous[2])};
+}
+
+// How much of the policy's setpoint step is applied at this drone speed: 1 up to `soft`, falling to 0 at `hard`.
+// hard <= 0: no limit.
+inline double speed_gain(double speed, double soft, double hard) {
+  if (hard <= 0.0) return 1.0;
+  if (soft >= hard) return speed < hard ? 1.0 : 0.0;
+  return std::clamp((hard - speed) / (hard - soft), 0.0, 1.0);
 }
 
 inline Vec3 clamp_box(const Vec3 &v, const Vec3 &lo, const Vec3 &hi) {

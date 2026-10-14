@@ -1,0 +1,27 @@
+# The payload pose each simulated drone is given (components/simulation/stack_sim/payload_link.py): the payload's
+# own estimate (a small flight controller fusing an RTK receiver and a compass), sent to every drone over Wi-Fi.
+# Simulation only. The same model and numbers the policy is trained against: MARL_mav_carry_ext
+# localization/payload_estimator.py (PayloadEstimatorCfg) and wifi_link.py (WifiLinkCfg). Change them together.
+#
+# [low, high] is drawn once per run. Values not from a data sheet are placeholders until hover logs of the real
+# payload and link replace them.
+
+enabled: true              # false, or stack_sim_pegasus.py --exact-payload: every drone gets the exact pose
+
+estimate:
+  rate_hz: 50.0            # the telemetry stream the drones receive
+  # RTK fixed, Emlid Reach M+: 7 mm + 1 ppm horizontal, 14 mm + 2 ppm vertical, widened
+  pos_noise_std_xy: [0.007, 0.02]    # m
+  pos_noise_std_z: [0.014, 0.04]     # m
+  pos_bias_std_xy: 0.01              # m, steady for the run
+  pos_bias_std_z: 0.015              # m
+  tilt_noise_std: [0.0087, 0.026]    # rad: 0.5 to 1.5 degrees of roll and pitch
+  yaw_noise_std: [0.0087, 0.0175]    # rad: 0.5 to 1 degree
+  yaw_bias_std: 0.044                # rad: compass offset, 2.5 degrees, cut at twice that
+  correlation_time: 0.5              # s, how slowly the errors move
+
+link:
+  delay_s: [0.005, 0.030]  # per drone
+  jitter_s: 0.003          # std, per read
+  late_probability: 0.01   # share of reads that find the newest packet missing
+  late_extra_s: 0.1        # how late such a packet can be

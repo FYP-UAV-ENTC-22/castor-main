@@ -3,6 +3,7 @@
 //   /fmu/out/vehicle_odometry   (NED/FRD) -> odom  nav_msgs/Odometry (ENU/FLU)
 //   /fmu/out/vehicle_status_vN            -> state castor_interfaces/VehicleState
 //   /fmu/out/vehicle_land_detected, home_position -> state (landed; home altitude kept for TAKEOFF)
+//   /fmu/out/vehicle_local_position_vN    -> local_origin sensor_msgs/NavSatFix: where odom's origin is on the globe
 //   setpoint castor_interfaces/PositionSetpoint (ENU) -> /fmu/in/trajectory_setpoint (NED)
 //   command  castor_interfaces/VehicleCommand        -> /fmu/in/vehicle_command
 //
@@ -34,9 +35,11 @@
 #include "px4_msgs/msg/vehicle_command.hpp"
 #include "px4_msgs/msg/vehicle_command_ack.hpp"
 #include "px4_msgs/msg/vehicle_land_detected.hpp"
+#include "px4_msgs/msg/vehicle_local_position.hpp"
 #include "px4_msgs/msg/vehicle_odometry.hpp"
 #include "px4_msgs/msg/vehicle_status.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include "sensor_msgs/msg/nav_sat_fix.hpp"
 
 using namespace std::chrono_literals;
 namespace f = castor_vehicle_interface::frames;
@@ -45,6 +48,7 @@ using px4_msgs::msg::OffboardControlMode;
 using px4_msgs::msg::TrajectorySetpoint;
 using px4_msgs::msg::VehicleCommandAck;
 using px4_msgs::msg::VehicleLandDetected;
+using px4_msgs::msg::VehicleLocalPosition;
 using px4_msgs::msg::VehicleOdometry;
 using px4_msgs::msg::VehicleStatus;
 
@@ -82,6 +86,8 @@ public:
     const std::string land_topic = versioned(fmu + "/out/vehicle_land_detected", VehicleLandDetected::MESSAGE_VERSION);
     const std::string home_topic = versioned(fmu + "/out/home_position", HomePosition::MESSAGE_VERSION);
     const std::string ack_topic = versioned(fmu + "/out/vehicle_command_ack", VehicleCommandAck::MESSAGE_VERSION);
+    const std::string local_topic =
+      versioned(fmu + "/out/vehicle_local_position", VehicleLocalPosition::MESSAGE_VERSION);
     const std::string cmd_topic =
       versioned(fmu + "/in/vehicle_command", px4_msgs::msg::VehicleCommand::MESSAGE_VERSION);
 
@@ -103,12 +109,16 @@ public:
           home_alt_ = m.alt;
         }
       });
+    local_sub_ = create_subscription<VehicleLocalPosition>(
+      local_topic, rclcpp::SensorDataQoS(), [this](const VehicleLocalPosition &m) { on_local_position(m); });
     ack_sub_ = create_subscription<VehicleCommandAck>(
       ack_topic, rclcpp::SensorDataQoS(), [this](const VehicleCommandAck &m) { on_ack(m); });
 
     // Reliable publishers match both reliable and best-effort subscribers.
     odom_pub_ = create_publisher<nav_msgs::msg::Odometry>("odom", 10);
     state_pub_ = create_publisher<castor_interfaces::msg::VehicleState>("state", 10);
+    // Latched: it changes only when PX4's estimator moves its origin, and a late reader must still get it.
+    origin_pub_ = create_publisher<sensor_msgs::msg::NavSatFix>("local_origin", rclcpp::QoS(1).transient_local());
 
     setpoint_sub_ = create_subscription<castor_interfaces::msg::PositionSetpoint>(
       "setpoint", 10, [this](const castor_interfaces::msg::PositionSetpoint &s) { on_setpoint(s); });
@@ -203,6 +213,34 @@ private:
     failsafe_ = m.failsafe;
     preflight_ok_ = m.pre_flight_checks_pass;
     system_id_ = m.system_id;
+  }
+
+  // The geodetic origin of PX4's local frame (odom's origin), published when PX4 first has one, when it moves
+  // and once a second. Localization places odom in the world frame with it.
+  void on_local_position(const VehicleLocalPosition &m) {
+    if (!m.xy_global || !m.z_global || !std::isfinite(m.ref_lat) || !std::isfinite(m.ref_lon) ||
+        !std::isfinite(m.ref_alt)) {
+      return;
+    }
+    const bool moved = !origin_ || origin_->latitude != m.ref_lat || origin_->longitude != m.ref_lon ||
+                       origin_->altitude != static_cast<double>(m.ref_alt);
+    if (moved) {
+      sensor_msgs::msg::NavSatFix o;
+      o.header.frame_id = world_frame_;
+      o.latitude = m.ref_lat;
+      o.longitude = m.ref_lon;
+      o.altitude = m.ref_alt;
+      o.position_covariance_type = sensor_msgs::msg::NavSatFix::COVARIANCE_TYPE_UNKNOWN;
+      origin_ = o;
+      RCLCPP_INFO(get_logger(), "local frame origin at lat %.7f lon %.7f alt %.2f m AMSL", m.ref_lat, m.ref_lon,
+                  static_cast<double>(m.ref_alt));
+    }
+    const auto t = now();
+    if (moved || !origin_sent_ || (t - *origin_sent_).seconds() >= 1.0) {
+      origin_->header.stamp = t;
+      origin_pub_->publish(*origin_);
+      origin_sent_ = t;
+    }
   }
 
   void on_ack(const VehicleCommandAck &m) {
@@ -331,18 +369,22 @@ private:
   bool armed_{false}, failsafe_{false}, preflight_ok_{false}, landed_{true};
   std::optional<uint8_t> system_id_;
   std::optional<float> home_alt_;
+  std::optional<sensor_msgs::msg::NavSatFix> origin_;
+  std::optional<rclcpp::Time> origin_sent_;
   uint8_t nav_state_{0};
 
   rclcpp::Subscription<VehicleOdometry>::SharedPtr odom_sub_;
   rclcpp::Subscription<VehicleStatus>::SharedPtr status_sub_;
   rclcpp::Subscription<VehicleLandDetected>::SharedPtr land_sub_;
   rclcpp::Subscription<HomePosition>::SharedPtr home_sub_;
+  rclcpp::Subscription<VehicleLocalPosition>::SharedPtr local_sub_;
   rclcpp::Subscription<VehicleCommandAck>::SharedPtr ack_sub_;
   rclcpp::Subscription<castor_interfaces::msg::VehicleCommand>::SharedPtr command_sub_;
   rclcpp::Publisher<px4_msgs::msg::VehicleCommand>::SharedPtr cmd_pub_;
   rclcpp::Subscription<castor_interfaces::msg::PositionSetpoint>::SharedPtr setpoint_sub_;
   rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
   rclcpp::Publisher<castor_interfaces::msg::VehicleState>::SharedPtr state_pub_;
+  rclcpp::Publisher<sensor_msgs::msg::NavSatFix>::SharedPtr origin_pub_;
   rclcpp::Publisher<TrajectorySetpoint>::SharedPtr traj_pub_;
   rclcpp::Publisher<OffboardControlMode>::SharedPtr offboard_pub_;
   rclcpp::TimerBase::SharedPtr state_timer_;

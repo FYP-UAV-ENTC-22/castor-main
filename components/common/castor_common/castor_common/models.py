@@ -50,6 +50,8 @@ class Model:
             "setpoint_max_speed": float(flight.get("setpoint_max_speed") or 0.0),
             "velocity_filter_s": float(flight.get("velocity_filter_s") or 0.0),
             "velocity_gain": float(flight.get("velocity_gain", 1.0)),
+            "drone_speed_soft": float(flight.get("drone_speed_soft") or 0.0),
+            "drone_speed_limit": float(flight.get("drone_speed_limit") or 0.0),
             "policy_point_local": [float(x) for x in p.get("point_local", (0.0, 0.0, 0.0))],
             # the rig, for the lift and the hand-over check
             "rig_mount_local": [float(x) for x in rig["mount_local"]],

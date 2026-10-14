@@ -12,6 +12,10 @@ castor_policy), replays the package's policy_trace.npz through it and compares e
              drone position (3), drone rotation (9), drone linear velocity (3), drone angular velocity (3),
              goal position - payload position (3), goal rotation @ payload rotation^T (9)]
 
+The trace says which task it was recorded in and with which settings; these are checked against the manifest first
+(source.task, policy.rate_hz and history, training.*), so a package cannot carry another task's trace or a manifest
+that describes other settings than the ones the policy was trained with.
+
 The trace comes from scripts/tools/capture_policy_trace.py in the MARL repo. Run in the castor conda env (numpy,
 pyyaml, onnxruntime); exits 1 on a mismatch:
 
@@ -35,6 +39,34 @@ MODELS_ROOT = os.environ.get("CASTOR_MODELS_ROOT") or os.path.normpath(
 STEP_SCALE = 0.05  # m per policy step at unit action (setpoint_step_scale)
 LEASH = 1.5  # m (setpoint_leash)
 POLICY_DT = 0.02  # s: the policy runs at 50 Hz
+
+
+def same(a, b):
+    """Equal settings: both unset, or the same number."""
+    if a is None or b is None:
+        return a is None and b is None
+    return abs(float(a) - float(b)) <= 1e-9
+
+
+def check_manifest(manifest, meta):
+    """The manifest against what the trace recorded about its task. Returns False on a contradiction."""
+    policy, training, source = manifest["policy"], manifest.get("training") or {}, manifest.get("source") or {}
+    pairs = [("source.task", source.get("task"), "task"), ("policy.history", policy.get("history"), "history_len")]
+    pairs += [(f"training.{k}", training.get(k), k) for k in ("setpoint_step_scale", "setpoint_max_speed",
+                                                               "setpoint_leash") if k in training]
+    ok = True
+    for name, value, key in pairs:
+        if key not in meta:
+            continue  # an older trace that did not record it
+        good = value == meta[key] if isinstance(meta[key], str) else same(value, meta[key])
+        ok &= good
+        if not good:
+            print(f"  {name}: manifest {value!r}, trace {meta[key]!r}  FAIL")
+    if "policy_dt" in meta and not same(1.0 / float(policy["rate_hz"]), meta["policy_dt"]):
+        ok = False
+        print(f"  policy.rate_hz: manifest {policy['rate_hz']} Hz, trace steps every {meta['policy_dt']} s  FAIL")
+    print(f"  manifest and trace describe the same task and settings  {'PASS' if ok else 'FAIL'}")
+    return ok
 
 
 def quat_wxyz_to_matrix(q):
@@ -119,7 +151,8 @@ def sha256(path):
 
 def check(model_dir, trace_path):
     with open(os.path.join(model_dir, "model.yaml")) as f:
-        policy = yaml.safe_load(f)["policy"]
+        manifest = yaml.safe_load(f)
+    policy = manifest["policy"]
     ok = True
     for i, s in enumerate(policy["slots"]):
         good = sha256(os.path.join(model_dir, s["file"])) == s["sha256"]
@@ -129,8 +162,9 @@ def check(model_dir, trace_path):
     t = np.load(trace_path)
     steps, n = t["obs"].shape[:2]
     meta = ast.literal_eval(str(t["meta"])) if "meta" in t.files else {}
+    ok &= check_manifest(manifest, meta)
     settings = {"step_scale": meta.get("setpoint_step_scale", STEP_SCALE), "leash": meta.get("setpoint_leash", LEASH),
-                "max_speed": meta.get("setpoint_max_speed")}
+                "max_speed": meta.get("setpoint_max_speed"), "dt": meta.get("policy_dt", 1.0 / float(policy["rate_hz"]))}
     history, obs_dim = policy["history"], policy["frame_dim"] * policy["history"]
     observations = [Observation(i, n, history) for i in range(n)]
     policies = [OnnxPolicy(os.path.join(model_dir, policy["slots"][i]["file"]), obs_dim) for i in range(n)]

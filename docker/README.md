@@ -254,10 +254,21 @@ one it uses.
 
 `docker/docker-compose.stack_sim.yml` is everything that differs from a Pi: the
 vehicle component forwards commands and setpoints to PX4, the mission node times
-its states on the simulator's `/clock`, and the planning policy steps once per
+its states on the simulator's `/clock`, the planning policy steps once per
 payload sample, which the simulator sends every 1/rate of simulated time (so the
 policy runs on the time PX4 and the physics live in, however fast the simulation
-runs).
+runs), and localization is given the simulated world's origin as its datum.
+
+Each drone flies on what it would have on the aircraft. Its own state is PX4's
+estimate, which the localization component places in the world frame
+(`<ns>/localization/odom`; see
+[components/localization](../components/localization/README.md)). The payload
+pose is the payload's own estimate over a Wi-Fi link per drone
+(`stack_sim/payload_link.py`, numbers in `assets/config/payload_link.yaml`, the
+same model the policy is trained against). To compare against exact inputs:
+`stack_sim.sh up --own-state sim` flies on the simulator's ground truth for the
+drone, and `stack_sim_pegasus.py --exact-payload` gives every drone the exact
+payload pose.
 
 Each drone's stack is the Pi's compose file under its own project
 (`castor-stack-sim-drone<i>`), on its own ROS domain (20 + i), with its own XRCE
@@ -274,12 +285,18 @@ stack's domain and agent port (`castor_px4.py`, from `.stack_sim/px4.env`, or th
 same scheme when `stack_sim.sh up` has not run yet). PX4 boots disarmed and
 nothing takes off until a stack commands it. PX4 runs the RAPTOR build by
 default. The simulation never runs ahead of real time (with three drones it runs
-behind it, see the printed real-time factor). Isaac ground truth goes to domain
+behind it, see the printed real-time factor). The drones are
+`stack_sim/castor_multirotor.py`'s: within a physics step the sensors are read,
+PX4 is exchanged with and the rotor forces applied, in that order, so a
+measurement reaches the rotors one step later (Pegasus' own order takes three),
+and the rotors follow their command with the vehicle file's
+`propulsion.motor_time_constant`. Isaac ground truth goes to domain
 20 at 50 Hz: `sim/drone<i>/state/{pose,twist,twist_inertial,accel}` and
 `sim/payload/state/{pose,twist_inertial}` (ENU, frame `map`). Each robot's own
-domain also gets `/sim/drone<i>/state/{pose,twist,twist_inertial}` and
-`/sim/payload/state/pose`, stamped with simulated time, and `/clock`: the world
-frame the planning policy uses until localization exists. The XRCE agent binds
+domain gets `/clock` and, stamped with simulated time, `/sim/payload/state/pose`
+(the pose that drone has received, see above) and
+`/sim/drone<i>/state/{pose,twist,twist_inertial}` (ground truth, used only with
+`--own-state sim`). The XRCE agent binds
 UDP on all interfaces (v2.4.3 has no bind option), so on a shared network
 firewall ports 8888-8899.
 

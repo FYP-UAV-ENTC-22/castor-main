@@ -67,7 +67,8 @@ propulsion:
   torque_to_thrust: 0.0138      # [pub] m: yaw reaction torque per newton of thrust, 0.18 N m / 13.07 N, same table
   max_rotor_velocity: 1100.0    # rad/s at throttle 1. RaptorBackend maps throttle u to 1000 u + 100 rad/s.
   spin_directions: [-1, -1, 1, 1]  # PX4 quad-X: 1 FR CCW, 2 BL CCW, 3 FL CW, 4 BR CW (Pegasus: -1 = CCW)
-  motor_time_constant: 0.0      # s. 0 = instantaneous, as Pegasus' Iris. 0.03-0.05 is typical for this motor class.
+  motor_time_constant: 0.03     # [est] s, first-order lag of rotor speed on its command. 0 = instantaneous, as Pegasus'
+                                #   Iris. 0.03-0.05 is typical for this motor class; the policies train on 0 to 0.04.
   linear_drag: [0.50, 0.30, 0.0]  # [est] N/(m/s) in the body frame, Pegasus' Iris values
 
 physics:

@@ -7,7 +7,8 @@ Isaac Sim's Python (stack_sim_pegasus.py) alike.
 Sources of truth:
   - the model package (models/<name>/<version>/model.yaml) names the rig it was trained on (rig.config); its other rig
     numbers are checked against that file and a mismatch is an error, because the onboard runner flies with them;
-  - components/simulation/assets/config: the rig file, its vehicle file, and px4_sitl.yaml for PX4's SIL settings;
+  - components/simulation/assets/config: the rig file, its vehicle file, px4_sitl.yaml for PX4's SIL settings and the
+    world's datum, and payload_link.yaml for the payload pose the drones are given;
   - take-off height: the height above home where the cables go taut (from the rig geometry) minus px4_sitl.yaml's
     takeoff.taut_margin is the floor; the model's rig.takeoff_height is used when it is above that floor.
 """
@@ -31,6 +32,7 @@ from castor_assets import config as C  # noqa: E402
 from castor_assets import geometry as G  # noqa: E402
 
 PX4_SITL = "px4_sitl.yaml"
+PAYLOAD_LINK = "payload_link.yaml"
 TOLERANCE_M = 1e-3
 TOLERANCE_DEG = 0.1
 
@@ -68,6 +70,7 @@ class RigPlan:
     takeoff_floor: float        # taut_height - margin
     takeoff_config: float | None
     takeoff_height: float       # what PX4 is asked for
+    datum: tuple | None = None  # latitude, longitude [deg], altitude [m] of the simulated world's origin
     mismatches: list = field(default_factory=list)
     notes: list = field(default_factory=list)
 
@@ -138,14 +141,23 @@ def plan(model: str | None = None, rig_override: str | None = None, rig_override
         height = float(config)
         notes.append(f"take-off height {height:.2f} m as configured (floor {floor:.2f} m, cables taut at {taut:.2f} m)"
                      + ("; above the taut height, PX4's take-off lifts the payload" if height > taut else ""))
+    datum = sitl.get("datum")
+    if datum is not None:
+        try:
+            datum = tuple(float(datum[k]) for k in ("latitude", "longitude", "altitude"))
+        except (KeyError, TypeError, ValueError) as e:
+            raise RigError(f"{PX4_SITL}: datum needs latitude, longitude and altitude ({e})") from e
     return RigPlan(model_id, model_dir, rig_file, rig, vehicle, sitl, [float(x) for x in mount], anchors, yaw_deg, home,
-                   taut, floor, config, height, mismatches, notes)
+                   taut, floor, config, height, datum, mismatches, notes)
 
 
 def px4_parameters(p: RigPlan, build: str, physics_hz: float, drone_mass: float | None = None,
                    payload: bool = True) -> dict:
     """PX4_PARAM_* for every SITL instance: px4_sitl.yaml plus what the vehicle file decides."""
     params = dict(p.sitl.get("params") or {})
+    # Lockstep: PX4 answers a sensor message only once its estimator has run on it, and the estimator runs once per
+    # integrated IMU sample. At another rate than the physics' (PX4's SITL default is 250) the two wait on each other.
+    params["IMU_INTEG_RATE"] = int(physics_hz)
     if build == "px4_sitl_raptor":
         params.update(p.sitl.get("raptor_params") or {})
         params["IMU_GYRO_RATEMAX"] = int(physics_hz)  # mc_raptor leaves its mode on gyro samples older than 10 ms
@@ -166,6 +178,12 @@ def px4_parameters(p: RigPlan, build: str, physics_hz: float, drone_mass: float 
     w_max = prop.max_rotor_velocity
     params["MPC_THR_HOVER"] = round((w_max * math.sqrt(hover) - 100.0) / (w_max - 100.0), 3)
     return {f"PX4_PARAM_{k}": str(v) for k, v in params.items()}
+
+
+def payload_link(p: RigPlan) -> dict | None:
+    """Settings of the payload pose each drone is given (payload_link.py), or None for the exact pose."""
+    cfg = C.load_yaml(PAYLOAD_LINK)
+    return cfg if cfg.get("enabled", True) else None
 
 
 def gps_sensor(p: RigPlan) -> dict | None:
@@ -195,7 +213,8 @@ def main():
         print(f"  MISMATCH {m}", file=out)
     if a.shell:
         print(f"MODEL_ID={p.model_id}\nMODEL_DIR={p.model_dir}\nRIG={p.rig_file}\nDRONES={p.rig.num_drones}\n"
-              f"TAKEOFF_HEIGHT={p.takeoff_height:.2f}\nTAUT_HEIGHT={p.taut_height:.2f}")
+              f"TAKEOFF_HEIGHT={p.takeoff_height:.2f}\nTAUT_HEIGHT={p.taut_height:.2f}\n"
+              f"DATUM={','.join(repr(x) for x in p.datum) if p.datum else ''}")
     if p.mismatches:
         print("rig_check: the rig in the assets is not the rig this model was trained on (see MISMATCH)",
               file=sys.stderr)

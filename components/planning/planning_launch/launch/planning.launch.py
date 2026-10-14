@@ -10,8 +10,12 @@ runner's built-in defaults instead. Without any model the runner still starts
 and reports model_loaded=false on <ns>/planning/status.
 
 It flies only when the system layer enables it on <ns>/planning/command, and
-then publishes <ns>/vehicle/setpoint. World-frame state comes from
-own_state_prefix / payload_state_prefix: the simulator's ground truth for now.
+then publishes <ns>/vehicle/setpoint. Its own state is PX4's estimate in the
+world frame, from the localization component (<ns>/localization/odom and
+map_to_odom); own_state:=sim takes the simulator's ground truth instead
+(own_state_prefix, stack_sim only). The payload pose comes from
+payload_state_prefix: in stack_sim the simulator's model of the payload's
+estimate over Wi-Fi.
 """
 
 import os
@@ -34,6 +38,7 @@ def runner(context):
         "team_size": cfg.team_size,
         "team_index": cfg.team_index,
         "robot_namespace": cfg.namespace,
+        "own_state_source": arg("own_state"),
         "own_state_prefix": arg("own_state_prefix"),
         "payload_state_prefix": arg("payload_state_prefix"),
         "sched_fifo_priority": int(arg("sched_fifo_priority")),
@@ -77,8 +82,11 @@ def generate_launch_description():
                               "empty = DEFAULT of the mounted, then the baked models"),
         DeclareLaunchArgument("model_path", default_value="", description="a bare .onnx instead of a package"),
         DeclareLaunchArgument("rate_hz", default_value="", description="override the model's training rate"),
+        DeclareLaunchArgument("own_state", default_value="localization",
+                              description="this drone's state: localization (PX4's estimate in the world frame) or "
+                              "sim (the simulator's ground truth, stack_sim only)"),
         DeclareLaunchArgument("own_state_prefix", default_value=f"/sim/{cfg.namespace}/state",
-                              description="world-frame pose, twist (body rates), twist_inertial of this drone"),
+                              description="with own_state:=sim: world-frame pose, twist (body rates), twist_inertial"),
         DeclareLaunchArgument("payload_state_prefix", default_value="/sim/payload/state",
                               description="world-frame payload pose"),
         DeclareLaunchArgument("sched_fifo_priority", default_value="0",
