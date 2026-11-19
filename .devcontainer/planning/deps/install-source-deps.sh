@@ -23,16 +23,40 @@ mkdir -p "$PREFIX" "$PREFIX/env.d"
 
 echo "==> ONNX Runtime $ORT_VERSION ($ort_arch)"
 tgz="onnxruntime-linux-${ort_arch}-${ORT_VERSION}.tgz"
-curl -fsSL --retry 10 --retry-all-errors --retry-delay 3 -C - -o "$work/$tgz" \
-    "https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/$tgz"
-if [ -n "$ort_sha256" ]; then
-    echo "$ort_sha256  $work/$tgz" | sha256sum -c -
+if curl -fsSL --retry 2 --retry-delay 2 -o "$work/$tgz" \
+    "https://github.com/microsoft/onnxruntime/releases/download/v${ORT_VERSION}/$tgz"; then
+    if [ -n "$ort_sha256" ]; then
+        echo "$ort_sha256  $work/$tgz" | sha256sum -c -
+    else
+        echo "    (no pinned checksum for $ORT_VERSION; not verified)"
+    fi
+    tar -xzf "$work/$tgz" -C "$work"
+    rm -rf "$PREFIX/onnxruntime"
+    mv "$work/onnxruntime-linux-${ort_arch}-${ORT_VERSION}" "$PREFIX/onnxruntime"
 else
-    echo "    (no pinned checksum for $ORT_VERSION; not verified)"
+    echo "    GitHub release unavailable; falling back to NuGet microsoft.ml.onnxruntime $ORT_VERSION"
+    nuget_arch="$ort_arch"
+    [ "$ort_arch" = "aarch64" ] && nuget_arch="arm64"
+    nupkg="$work/ort.nupkg"
+    # --retry alone does not cover a transfer that dies mid-stream (curl error 18), which this ~170 MB
+    # download does often enough to break builds; --retry-all-errors retries that too.
+    curl -fsSL --retry 5 --retry-delay 2 --retry-all-errors -o "$nupkg" \
+        "https://api.nuget.org/v3-flatcontainer/microsoft.ml.onnxruntime/${ORT_VERSION}/microsoft.ml.onnxruntime.${ORT_VERSION}.nupkg"
+    python3 -m zipfile -e "$nupkg" "$work/nupkg"
+    rm -rf "$PREFIX/onnxruntime"
+    mkdir -p "$PREFIX/onnxruntime/include" "$PREFIX/onnxruntime/lib"
+    cp -a "$work/nupkg/build/native/include/." "$PREFIX/onnxruntime/include/"
+    cp -a "$work/nupkg/runtimes/linux-${nuget_arch}/native/." "$PREFIX/onnxruntime/lib/"
+    # NuGet ships the library as a plain libonnxruntime.so, but its SONAME is libonnxruntime.so.1, so that is the
+    # name the loader looks for: without it anything linked against ORT dies with "cannot open shared object file".
+    # The GitHub release ships both links; here we add them (major from ORT_VERSION, e.g. 1.30.0 -> 1).
+    if [ -f "$PREFIX/onnxruntime/lib/libonnxruntime.so" ]; then
+        for suffix in "${ORT_VERSION%%.*}" "$ORT_VERSION"; do
+            [ -e "$PREFIX/onnxruntime/lib/libonnxruntime.so.$suffix" ] \
+                || ln -s libonnxruntime.so "$PREFIX/onnxruntime/lib/libonnxruntime.so.$suffix"
+        done
+    fi
 fi
-tar -xzf "$work/$tgz" -C "$work"
-rm -rf "$PREFIX/onnxruntime"
-mv "$work/onnxruntime-linux-${ort_arch}-${ORT_VERSION}" "$PREFIX/onnxruntime"
 
 echo "==> planning source deps installed under $PREFIX"
 du -sh "$PREFIX"/* 2>/dev/null || true
