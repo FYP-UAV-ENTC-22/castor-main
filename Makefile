@@ -132,11 +132,13 @@ sim-train-smoke: sim-up
 # PX4 i waits for robot i+1's stack (components/simulation/stack_sim/stack_sim.sh up, with the same model).
 # Ground truth on sim/* and, with /clock, in each robot's domain.
 # Options: MODEL=, RIG=<file> (must match the model), HEADLESS=1, DURATION=s, PX4_BUILD=px4_sitl_default (default:
-# the RAPTOR build). Needs make sim-px4 once.
+# the RAPTOR build), RENDER_EVERY=N (GUI: draw every Nth step, so rendering does not starve the stacks' policy loop
+# below its trained rate; try 10-20 if the payload will not lift with the window open). Needs make sim-px4 once.
 sim-pegasus-ros2: sim-up
 	@[ -n "$(HEADLESS)" ] || { command -v xhost >/dev/null && xhost +local: >/dev/null || echo "xhost not found; the GUI may not be allowed on the display"; }
 	$(SIM_EXEC) /isaac-sim/python.sh components/simulation/stack_sim/stack_sim_pegasus.py --duration $(or $(DURATION),0) \
 	  $(if $(MODEL),--model $(MODEL)) $(if $(RIG),--rig $(RIG)) $(if $(HEADLESS),--headless) \
+	  $(if $(RENDER_EVERY),--render-every $(RENDER_EVERY)) \
 	  $(if $(PX4_BUILD),--build $(PX4_BUILD)); \
 	  s=$$?; $(MAKE) --no-print-directory sim-own; exit $$s
 # Fast DDS shared-memory segments left in /dev/shm by killed containers (root-owned); only unused ones go.
