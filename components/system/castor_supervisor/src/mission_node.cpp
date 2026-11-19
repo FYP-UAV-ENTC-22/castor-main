@@ -199,6 +199,7 @@ private:
     in.team_ready = team_ready_ = m::payload_ready(state_) && team_all(m::payload_ready);
     in.planning_alive = planning_ && since(planning_at_) < planning_timeout_s_;
     in.planning_ready = in.planning_alive && planning_->model_loaded && planning_->obs_dim_ok;
+    in.planning_in_lift = in.planning_alive && planning_->mode == PlanningCommand::LIFT;
     in.lift_done = in.planning_alive && planning_->lift_done;
     in.lift_failed = in.planning_alive && planning_->lift_failed;
     in.handover_ok = in.planning_alive && planning_->handover_ok;

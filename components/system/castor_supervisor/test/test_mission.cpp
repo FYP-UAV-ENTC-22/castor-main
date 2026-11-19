@@ -127,6 +127,7 @@ TEST(Mission, LiftStartsOnceTheWholeTeamIsInRaptor) {
 TEST(Mission, LiftEndsWithThePayloadUpOrGivesUpHolding) {
   Inputs in = flying(cfg.raptor_nav_state);
   in.planning_alive = true;
+  in.planning_in_lift = true;
   auto out = step(LIFT, in, cfg);
   EXPECT_EQ(out.state, LIFT);
   EXPECT_EQ(out.planning, Planning::LIFT);
@@ -142,6 +143,38 @@ TEST(Mission, LiftEndsWithThePayloadUpOrGivesUpHolding) {
   in.lift_failed = false;
   in.time_in_state = cfg.lift_timeout_s + 1.0;
   EXPECT_EQ(step(LIFT, in, cfg).state, LIFTED);
+}
+
+// The status is published independently of the command, so the samples that arrive just after LIFT is asked for
+// still describe the mode before it. After an earlier flight they carry lift_done, and acting on them ended the
+// lift in the step it started, leaving the payload on the ground and the team stuck in LIFTED.
+TEST(Mission, LiftIgnoresAnEarlierFlightsResultUntilPlanningIsLifting) {
+  Inputs in = flying(cfg.raptor_nav_state);
+  in.planning_alive = true;
+  in.lift_done = true;          // left over from the previous mission
+  in.planning_in_lift = false;  // the planning node has not picked the mode up yet
+
+  auto out = step(LIFT, in, cfg);
+  EXPECT_EQ(out.state, LIFT);
+  EXPECT_EQ(out.planning, Planning::LIFT);
+
+  in.lift_failed = true;  // a stale failure is ignored for the same reason
+  EXPECT_EQ(step(LIFT, in, cfg).state, LIFT);
+  in.lift_failed = false;
+
+  in.planning_in_lift = true;  // now the result is this lift's
+  EXPECT_EQ(step(LIFT, in, cfg).state, LIFTED);
+}
+
+// A planning node that never reports the mode must not hold the team in LIFT for ever.
+TEST(Mission, LiftStillTimesOutWhenPlanningNeverReportsLifting) {
+  Inputs in = flying(cfg.raptor_nav_state);
+  in.planning_alive = true;
+  in.planning_in_lift = false;
+  in.time_in_state = cfg.lift_timeout_s + 1.0;
+  auto out = step(LIFT, in, cfg);
+  EXPECT_EQ(out.state, LIFTED);
+  EXPECT_EQ(out.planning, Planning::STEADY);
 }
 
 TEST(Mission, HandoverWaitsToSettleThenNeedsTheCheck) {

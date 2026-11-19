@@ -58,6 +58,7 @@ struct Inputs {
   bool team_ready{false};  // every teammate in READY, MARL or HOLD
   bool planning_alive{false};  // a fresh planning status
   bool planning_ready{false};  // model loaded with the right input width
+  bool planning_in_lift{false};  // the planning status says it is lifting: its lift result is this lift's
   bool lift_done{false}, lift_failed{false};
   bool handover_ok{false};
   bool goal_reached{false};
@@ -187,11 +188,16 @@ inline Outputs step(const std::string &state, const Inputs &in, const Config &cf
     }
   } else if (state == LIFT) {
     out.planning = Planning::LIFT;
-    if (in.lift_done) {
+    // A lift result belongs to the lift it came from. The planning status is published independently of the
+    // command, so the first samples to arrive here are still the ones from before LIFT was asked for, and after an
+    // earlier flight those carry lift_done. Acting on them ends the lift in the same step it started, with the
+    // payload still on the ground. Wait until the status says it is lifting. The timeout stays ungated so a
+    // planning node that never picks the mode up cannot hold the state for ever.
+    if (in.planning_in_lift && in.lift_done) {
       go(LIFTED, "payload at the lift height");
       out.planning = Planning::STEADY;
-    } else if (in.lift_failed || in.time_in_state > cfg.lift_timeout_s) {
-      go(LIFTED, in.lift_failed ? "lift gave up; holding" : "lift timed out; holding");
+    } else if ((in.planning_in_lift && in.lift_failed) || in.time_in_state > cfg.lift_timeout_s) {
+      go(LIFTED, in.planning_in_lift && in.lift_failed ? "lift gave up; holding" : "lift timed out; holding");
       out.planning = Planning::STEADY;
     }
   } else if (state == LIFTED) {

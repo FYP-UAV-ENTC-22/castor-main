@@ -69,6 +69,12 @@ parser.add_argument("--keep-params", action="store_true", help="keep each PX4 in
 parser.add_argument("--duration", type=float, default=60.0, help="simulated seconds; 0 = until the window closes")
 parser.add_argument("--fast", action="store_true",
                     help="do not hold the simulation to real time (the stacks' links and timeouts run on wall time)")
+parser.add_argument("--render-every", type=int, default=1, metavar="N",
+                    help="with the GUI, draw only every Nth physics step (default 1, every step). Rendering costs "
+                         "real time, and the policy steps once per payload sample, so on a machine that cannot "
+                         "render every step the stacks' control loop is starved below the rate the model was "
+                         "trained at and the payload never lifts; N of 10-20 keeps the view usable. Ignored "
+                         "when --headless")
 args = parser.parse_args()
 
 # config mistakes fail here, before Isaac Sim starts
@@ -361,13 +367,18 @@ def main():
 
     timeline = omni.timeline.get_timeline_interface()
     timeline.play()
+    render_every = max(1, args.render_every)
+    if not args.headless and render_every > 1:
+        print(f"[stack_sim] drawing every {render_every} physics steps "
+              f"({1.0 / (render_every * world.get_physics_dt()):.0f} Hz simulated)")
     print("[stack_sim] running: PX4 boots disarmed; nothing arms or takes off until a stack commands it")
     wall0, steps = time.perf_counter(), 0
     try:
         while simulation_app.is_running() and (args.duration <= 0 or world.current_time < args.duration):
-            if rig_rt is not None and not args.headless:
+            render = not args.headless and steps % render_every == 0
+            if rig_rt is not None and render:
                 rig_rt.update_visuals()
-            world.step(render=not args.headless)
+            world.step(render=render)
             steps += 1
             ahead = world.current_time - (time.perf_counter() - wall0)
             if not args.fast and ahead > 0.002:

@@ -331,6 +331,9 @@ private:
     using C = castor_interfaces::msg::PlanningCommand;
     RCLCPP_INFO(get_logger(), "mode %s -> %s", mode_.c_str(), mode.c_str());
     if (mode == C::LIFT) lift_pending_ = true;
+    // A lift result describes one lift. Clearing it on the way out keeps the status from reporting the last
+    // flight's lift_done while the next one is still on the ground; entering LIFT seeds the lift again anyway.
+    if (mode != C::LIFT) lift_ = castor_policy::Lift{};
     if (mode == C::POLICY) policy_pending_ = true;
     mode_ = mode;
   }
